@@ -1,2 +1,120 @@
 .qodo/
+
+### General ###
+# OS-specific files
+.DS_Store
+.thumbsdb
+
+# Logs
+*.log
+*.log.*
+*.log.gz
+logs/
+log/
+tmp/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editor-specific files
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Temporary files
+*.swp
+*.swo
+
+### Backend (Java/Spring) ###
+# Build artifacts
+target/
+build/
+out/
+bin/
+
+# Maven
+.mvn/
+dependency-reduced-pom.xml
+!.mvn/wrapper/maven-wrapper.jar
+
+# Compiled files
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# Runtime files
+hs_err_pid*
+
+### Frontend (React) ###
+# Node modules
 node_modules/
+
+# Build directories
+build/
+dist/
+.cache/
+
+# Dependency files
+package-lock.json
+yarn.lock
+.yarn/
+.yarnrc
+
+# Testing and coverage
+coverage/
+.eslintcache
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# PnP (Plug'n'Play)
+/.pnp
+.pnp.js
+
+### Database ###
+# Local database files
+*.db
+*.sql
+*.h2.db
+
+### Docker ###
+# Docker override files
+docker-compose.override.yml
+
+### Local Development ###
+# Local configuration files
+application-local.properties
+src/main/resources/application-dev.properties
+
+### IDE ###
+# Eclipse/STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### Testing ###
+# Test output
+/test-output/
+jacoco.exec
+*.jfr
