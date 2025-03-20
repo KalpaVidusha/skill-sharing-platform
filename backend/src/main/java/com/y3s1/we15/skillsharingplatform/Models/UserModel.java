@@ -1,43 +1,48 @@
 package com.y3s1.we15.skillsharingplatform.Models;
 
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-
-
 @Document(collection = "users")
 public class UserModel {
-    
+
     @Id
-    private Integer id;
-    private String name;
+    private String id;
     private String username;
     private String email;
     private String password;
+    private String firstName;
+    private String lastName;
+    private List<String> skills;
     private String contactNumber;
     private Set<String> role;
     private String profilePicture;
-    private String skills;
     private String location;
     private String socialLinks;
-    
 
-    public Integer getId() {
+    // Default constructor required for MongoDB
+    public UserModel() {}
+
+    // Constructor with fields
+    public UserModel(String username, String email, String password, String firstName, String lastName, List<String> skills) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.skills = skills;
+    }
+
+    // Getters and Setters
+    public String getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(String id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getUsername() {
@@ -63,6 +68,31 @@ public class UserModel {
     public void setPassword(String password) {
         this.password = password;
     }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public List<String> getSkills() {
+        return skills;
+    }
+
+    public void setSkills(List<String> skills) {
+        this.skills = skills;
+    }
+
     public String getContactNumber() {
         return contactNumber;
     }
@@ -87,14 +117,6 @@ public class UserModel {
         this.profilePicture = profilePicture;
     }
 
-    public String getSkills() {
-        return skills;
-    }
-
-    public void setSkills(String skills) {
-        this.skills = skills;
-    }
-
     public String getLocation() {
         return location;
     }
@@ -114,9 +136,8 @@ public class UserModel {
     @Override
     public String toString() {
         return "UserModel [contactNumber=" + contactNumber + ", email=" + email + ", id=" + id + ", location=" + location
-                + ", name=" + name + ", password=" + password + ", profilePicture=" + profilePicture + ", role=" + role
+                + ", firstName=" + firstName + ", lastName=" + lastName + ", password=" + password + ", profilePicture=" + profilePicture + ", role=" + role
                 + ", skills=" + skills + ", socialLinks=" + socialLinks + ", username=" + username + "]";
     }
-    
-}   
+}
 
