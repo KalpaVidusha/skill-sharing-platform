@@ -1,6 +1,9 @@
 package com.y3s1.we15.skillsharingplatform.Repositories;
 
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
+
+import java.util.Optional;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
