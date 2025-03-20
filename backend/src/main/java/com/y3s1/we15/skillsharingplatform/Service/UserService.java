@@ -12,6 +12,6 @@ public interface UserService {
     void deleteUser(String id);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
-    Optional<UserModel> findByUsername(String username);
-    Optional<UserModel> findByEmail(String email);
+    UserModel findByUsername(String username);
+    UserModel findByEmail(String email);
 }
