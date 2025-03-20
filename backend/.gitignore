@@ -93,6 +93,8 @@ docker-compose.override.yml
 # Local configuration files
 application-local.properties
 src/main/resources/application-dev.properties
+src/main/resources/application.properties
+src/main/resources/application.properties
 
 ### IDE ###
 # Eclipse/STS
