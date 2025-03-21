@@ -130,8 +130,21 @@ public class UserController {
         }
     }
 
-    @GetMapping("/getUser")
-    public String getUser() {
-        return "My name is Buwaneka";
+    @GetMapping("/username/{username}")
+    public ResponseEntity<UserModel> getUserByUsername(@PathVariable String username) {
+        UserModel user = userService.findByUsername(username);
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/email/{email}")
+    public ResponseEntity<UserModel> getUserByEmail(@PathVariable String email) {
+        UserModel user = userService.findByEmail(email);
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        }
+        return ResponseEntity.notFound().build();
     }
 }

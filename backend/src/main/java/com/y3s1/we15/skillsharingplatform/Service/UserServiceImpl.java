@@ -60,4 +60,14 @@ public class UserServiceImpl implements UserService {
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }
+
+    @Override
+    public UserModel findByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+
+    @Override
+    public UserModel findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 }
