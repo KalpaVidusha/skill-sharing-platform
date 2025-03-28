@@ -4,24 +4,24 @@ import { Link } from 'react-router-dom';
 
 const Home = () => {
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(to bottom, #ffffff, #e0f2ff)', color: '#1f2937' }}>
-      {/* Header / Navbar */}
-      <header style={{ backgroundColor: '#ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#2563eb' }}>SkillSphere</h1>
+    <div style={containerStyle}>
+      <div style={overlayStyle}></div>
+
+      {/* Header */}
+      <header style={headerStyle}>
+        <h1 style={logoStyle}>SkillSphere</h1>
         <nav>
           <Link to="/" style={navLink}>Home</Link>
           <Link to="/login" style={navLink}>Login</Link>
-          <Link to="/register" style={navLink}>Register</Link>
+          <Link to="/signup" style={navLink}>Register</Link>
         </nav>
       </header>
 
       {/* Hero Section */}
-      <section style={{ textAlign: 'center', padding: '80px 20px' }}>
-        <h2 style={{ fontSize: '36px', fontWeight: '800', marginBottom: '16px', color: '#1d4ed8' }}>
-          Welcome to SkillSphere
-        </h2>
-        <p style={{ fontSize: '18px', maxWidth: '600px', margin: '0 auto 32px', color: '#4b5563' }}>
-          A platform where you can share, explore, and track skills — from coding to cooking, photography to DIY.
+      <section style={heroSection}>
+        <h2 style={heroTitle}>Welcome to SkillSphere</h2>
+        <p style={heroText}>
+          A dark, modern space to share and track skills — from coding to cooking, photography to DIY.
         </p>
         <Link to="/posts" style={buttonStyle}>
           Explore Posts
@@ -29,67 +29,142 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section style={{ backgroundColor: '#ffffff', padding: '64px 20px' }}>
+      <section style={featuresSection}>
         <div style={featuresGrid}>
           <div style={featureBox}>
             <h3 style={featureTitle}>Share Skills</h3>
-            <p style={featureText}>Upload photos, videos, and write descriptions to teach others your talents.</p>
+            <p style={featureText}>Upload media and descriptions to showcase your talents.</p>
           </div>
           <div style={featureBox}>
             <h3 style={featureTitle}>Track Progress</h3>
-            <p style={featureText}>Document your learning journey and stay motivated with visual updates.</p>
+            <p style={featureText}>Log your learning milestones and stay consistent.</p>
           </div>
           <div style={featureBox}>
             <h3 style={featureTitle}>Connect & Learn</h3>
-            <p style={featureText}>Follow other users, like posts, and engage in a community of learners.</p>
+            <p style={featureText}>Engage with others, give feedback, and grow together.</p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer style={{ backgroundColor: '#2563eb', color: '#ffffff', textAlign: 'center', padding: '24px' }}>
+      <footer style={footerStyle}>
         <p>© 2025 SkillSphere. Built with ❤️ at SLIIT</p>
       </footer>
     </div>
   );
 };
 
+// 🌌 Styles
+const containerStyle = {
+  minHeight: "100vh",
+  backgroundImage: `url("https://images.unsplash.com/photo-1526045612212-70caf35c14df")`,
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  position: "relative",
+  color: "#f3f4f6",
+};
+
+const overlayStyle = {
+  position: "absolute",
+  inset: 0,
+  backgroundColor: "rgba(0, 0, 0, 0.7)",
+  zIndex: 0,
+};
+
+const headerStyle = {
+  position: "relative",
+  zIndex: 1,
+  padding: "16px 32px",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  backgroundColor: "rgba(0,0,0,0.6)",
+  borderBottom: "1px solid #333",
+};
+
+const logoStyle = {
+  fontSize: "24px",
+  fontWeight: "bold",
+  color: "#60a5fa",
+};
+
 const navLink = {
-  marginLeft: '16px',
-  color: '#4b5563',
-  textDecoration: 'none',
-  fontWeight: '500',
+  marginLeft: "16px",
+  color: "#d1d5db",
+  textDecoration: "none",
+  fontWeight: "500",
+};
+
+const heroSection = {
+  position: "relative",
+  zIndex: 1,
+  textAlign: "center",
+  padding: "100px 20px",
+};
+
+const heroTitle = {
+  fontSize: "40px",
+  fontWeight: "800",
+  marginBottom: "16px",
+  color: "#93c5fd",
+};
+
+const heroText = {
+  fontSize: "18px",
+  maxWidth: "600px",
+  margin: "0 auto 32px",
+  color: "#e5e7eb",
 };
 
 const buttonStyle = {
-  backgroundColor: '#2563eb',
-  color: '#ffffff',
-  padding: '12px 24px',
-  borderRadius: '9999px',
-  textDecoration: 'none',
-  fontWeight: '600',
+  backgroundColor: "#3b82f6",
+  color: "#fff",
+  padding: "12px 24px",
+  borderRadius: "8px",
+  textDecoration: "none",
+  fontWeight: "600",
+  fontSize: "16px",
+  border: "none",
+  cursor: "pointer",
+};
+
+const featuresSection = {
+  backgroundColor: "rgba(17, 24, 39, 0.9)",
+  padding: "64px 20px",
+  position: "relative",
+  zIndex: 1,
 };
 
 const featuresGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-  gap: '40px',
-  textAlign: 'center',
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+  gap: "40px",
+  textAlign: "center",
 };
 
 const featureBox = {
-  padding: '20px',
+  padding: "20px",
 };
 
 const featureTitle = {
-  fontSize: '20px',
-  fontWeight: '600',
-  color: '#2563eb',
-  marginBottom: '8px',
+  fontSize: "20px",
+  fontWeight: "600",
+  color: "#60a5fa",
+  marginBottom: "8px",
 };
 
 const featureText = {
-  color: '#4b5563',
+  color: "#d1d5db",
+};
+
+const footerStyle = {
+  position: "relative",
+  zIndex: 1,
+  backgroundColor: "#1f2937",
+  color: "#9ca3af",
+  textAlign: "center",
+  padding: "24px",
+  borderTop: "1px solid #374151",
 };
 
 export default Home;
