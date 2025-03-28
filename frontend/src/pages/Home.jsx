@@ -1,6 +1,7 @@
 // src/pages/Home.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { FaSignInAlt, FaUserPlus } from 'react-icons/fa'; // 🔥 Icons added
 
 const Home = () => {
   return (
@@ -10,10 +11,14 @@ const Home = () => {
       {/* Header */}
       <header style={headerStyle}>
         <h1 style={logoStyle}>SkillSphere</h1>
-        <nav>
+        <nav style={navStyle}>
           <Link to="/" style={navLink}>Home</Link>
-          <Link to="/login" style={navLink}>Login</Link>
-          <Link to="/signup" style={navLink}>Register</Link>
+          <Link to="/login" style={navLink}>
+            <FaSignInAlt style={iconStyle} /> Login
+          </Link>
+          <Link to="/signup" style={navLink}>
+            <FaUserPlus style={iconStyle} /> Register
+          </Link>
         </nav>
       </header>
 
@@ -82,6 +87,11 @@ const headerStyle = {
   borderBottom: "1px solid #333",
 };
 
+const navStyle = {
+  display: "flex",
+  alignItems: "center",
+};
+
 const logoStyle = {
   fontSize: "24px",
   fontWeight: "bold",
@@ -93,6 +103,12 @@ const navLink = {
   color: "#d1d5db",
   textDecoration: "none",
   fontWeight: "500",
+  display: "flex",
+  alignItems: "center",
+};
+
+const iconStyle = {
+  marginRight: "6px",
 };
 
 const heroSection = {

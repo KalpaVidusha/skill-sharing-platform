@@ -18,7 +18,8 @@ const Signup = () => {
 
   return (
     <div style={containerStyle}>
-      <div style={cardStyle}>
+      <div style={overlayStyle}></div>
+      <div style={formWrapperStyle}>
         <h2 style={titleStyle}>Create Your Account</h2>
         <form onSubmit={handleSignup} style={formStyle}>
           <input
@@ -42,29 +43,42 @@ const Signup = () => {
   );
 };
 
-// Inline styles (same as login for consistency)
+// 🌌 Background + Overlay
 const containerStyle = {
   minHeight: "100vh",
+  backgroundImage: `url("https://images.unsplash.com/photo-1503264116251-35a269479413")`,
+  backgroundSize: "cover",
+  backgroundPosition: "center",
   display: "flex",
-  alignItems: "center",
   justifyContent: "center",
-  background: "linear-gradient(to bottom right, #e0f2ff, #ffffff)",
+  alignItems: "center",
+  position: "relative",
 };
 
-const cardStyle = {
-  background: "#fff",
+const overlayStyle = {
+  position: "absolute",
+  inset: 0,
+  backgroundColor: "rgba(0, 0, 0, 0.7)",
+  zIndex: 0,
+};
+
+const formWrapperStyle = {
+  position: "relative",
+  zIndex: 1,
+  backgroundColor: "#1f2937", // dark gray
   padding: "40px",
   borderRadius: "12px",
-  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+  boxShadow: "0 6px 18px rgba(0, 0, 0, 0.5)",
   width: "100%",
   maxWidth: "400px",
   textAlign: "center",
+  color: "#f3f4f6",
 };
 
 const titleStyle = {
   marginBottom: "24px",
-  fontSize: "24px",
-  color: "#2563eb",
+  fontSize: "26px",
+  color: "#60a5fa",
 };
 
 const formStyle = {
@@ -75,20 +89,24 @@ const formStyle = {
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: "8px",
-  border: "1px solid #ccc",
+  borderRadius: "6px",
+  border: "none",
   fontSize: "16px",
+  backgroundColor: "#374151", // darker input bg
+  color: "#fff",
+  outline: "none",
 };
 
 const buttonStyle = {
   padding: "12px",
-  backgroundColor: "#2563eb",
+  backgroundColor: "#3b82f6",
   color: "#fff",
   border: "none",
-  borderRadius: "8px",
+  borderRadius: "6px",
   fontWeight: "bold",
   fontSize: "16px",
   cursor: "pointer",
+  transition: "background 0.3s",
 };
 
 export default Signup;

@@ -1,9 +1,12 @@
+// src/pages/Login.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -14,6 +17,7 @@ const Login = () => {
       });
       alert("Login successful!");
       console.log(response.data);
+      navigate("/userdashboard"); 
     } catch (error) {
       console.error("Login failed:", error.response?.data || error.message);
       alert("Login failed. Please check your email and password.");
@@ -47,7 +51,7 @@ const Login = () => {
   );
 };
 
-// 🎨 Dark Background Image
+// 🎨 Styles
 const containerStyle = {
   minHeight: "100vh",
   backgroundImage: `url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e")`,
@@ -69,7 +73,7 @@ const overlayStyle = {
 const formWrapperStyle = {
   position: "relative",
   zIndex: 1,
-  backgroundColor: "#1f2937", // dark gray
+  backgroundColor: "#1f2937",
   padding: "40px",
   borderRadius: "12px",
   boxShadow: "0 6px 18px rgba(0, 0, 0, 0.5)",
@@ -82,7 +86,7 @@ const formWrapperStyle = {
 const titleStyle = {
   marginBottom: "24px",
   fontSize: "26px",
-  color: "#60a5fa", // light blue
+  color: "#60a5fa",
 };
 
 const formStyle = {
@@ -96,14 +100,14 @@ const inputStyle = {
   borderRadius: "6px",
   border: "none",
   fontSize: "16px",
-  backgroundColor: "#374151", // darker gray
+  backgroundColor: "#374151",
   color: "#fff",
   outline: "none",
 };
 
 const buttonStyle = {
   padding: "12px",
-  backgroundColor: "#3b82f6", // blue
+  backgroundColor: "#3b82f6",
   color: "#fff",
   border: "none",
   borderRadius: "6px",
