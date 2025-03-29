@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 const Signup = () => {
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [skills, setSkills] = useState("");
   const [agree, setAgree] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -20,13 +23,18 @@ const Signup = () => {
     }
 
     try {
-      await axios.post("http://localhost:8081/api/signup", {
-        name,
+      const response = await axios.post("http://localhost:8081/api/users", {
+        username,
         email,
         password,
+        firstName,
+        lastName,
+        skills: skills.split(",").map((skill) => skill.trim()),
       });
       alert("Account created successfully!");
+      console.log(response.data);
     } catch (err) {
+      console.error(err);
       alert("Signup failed. Try again.");
     }
   };
@@ -40,9 +48,9 @@ const Signup = () => {
         <form onSubmit={handleSignup} style={formStyle}>
           <input
             type="text"
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
             style={inputStyle}
           />
@@ -60,6 +68,29 @@ const Signup = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            style={inputStyle}
+          />
+          <input
+            type="text"
+            placeholder="First Name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            required
+            style={inputStyle}
+          />
+          <input
+            type="text"
+            placeholder="Last Name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            required
+            style={inputStyle}
+          />
+          <input
+            type="text"
+            placeholder="Skills (comma separated)"
+            value={skills}
+            onChange={(e) => setSkills(e.target.value)}
             style={inputStyle}
           />
 
@@ -95,8 +126,7 @@ const Signup = () => {
   );
 };
 
-// 🎨 Shared Styles (matching your Login page)
-
+// Styles (same as yours)
 const containerStyle = {
   height: "100vh",
   width: "100vw",

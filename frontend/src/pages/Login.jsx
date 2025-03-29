@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const Login = () => {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -15,11 +16,25 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:8081/api/login", { email, password });
+      const response = await axios.post("http://localhost:8081/api/users/login", {
+        username,
+        email,
+        password,
+      });
+
+      const { userId, username: loggedInUsername, email: loggedInEmail } = response.data;
+
       alert("Login successful!");
+
+      // Store user info in localStorage
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("username", loggedInUsername);
+      localStorage.setItem("email", loggedInEmail);
+
       navigate("/userdashboard");
     } catch (err) {
-      alert("Login failed. Please check your credentials.");
+      console.error(err);
+      alert("Login failed. Please check your username, email, or password.");
     }
   };
 
@@ -30,6 +45,14 @@ const Login = () => {
         <p style={subtitleStyle}>Login to continue to SkillSphere</p>
 
         <form onSubmit={handleLogin} style={formStyle}>
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            style={inputStyle}
+          />
           <input
             type="email"
             placeholder="Email"
@@ -48,26 +71,12 @@ const Login = () => {
           />
           <button type="submit" style={loginBtn}>Login</button>
         </form>
-
-        <p style={dividerStyle}>or continue with</p>
-
-        <div style={socials}>
-          <button style={socialBtn}>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" style={iconStyle} />
-            Google
-          </button>
-          <button style={socialBtn}>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" alt="Apple" style={iconStyle} />
-            Apple
-          </button>
-        </div>
       </div>
     </div>
   );
 };
 
-// 🎨 Styles
-
+// 🎨 Styling
 const containerStyle = {
   height: "100vh",
   width: "100vw",
@@ -139,36 +148,6 @@ const loginBtn = {
   borderRadius: "8px",
   border: "none",
   cursor: "pointer",
-};
-
-const dividerStyle = {
-  margin: "20px 0 10px",
-  fontSize: "13px",
-  color: "#aaa",
-};
-
-const socials = {
-  display: "flex",
-  justifyContent: "center",
-  gap: "12px",
-};
-
-const socialBtn = {
-  backgroundColor: "#0f172a",
-  color: "#fff",
-  border: "none",
-  padding: "10px 20px",
-  borderRadius: "6px",
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
-  fontSize: "14px",
-  cursor: "pointer",
-};
-
-const iconStyle = {
-  width: "20px",
-  height: "20px",
 };
 
 export default Login;
