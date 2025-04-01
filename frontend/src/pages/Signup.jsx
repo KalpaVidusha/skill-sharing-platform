@@ -1,84 +1,177 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 
 const Signup = () => {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [skills, setSkills] = useState("");
+  const [agree, setAgree] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setLoaded(true);
+  }, []);
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    if (!agree) {
+      alert("Please agree to the Terms & Conditions.");
+      return;
+    }
+
     try {
-      await axios.post("http://localhost:8081/api/signup", { email, password });
-      alert("Signup successful! You can now log in.");
-    } catch (error) {
-      console.error("Signup failed:", error.response?.data || error.message);
-      alert("Signup failed. Please try again.");
+      const response = await axios.post("http://localhost:8081/api/users", {
+        username,
+        email,
+        password,
+        firstName,
+        lastName,
+        skills: skills.split(",").map((skill) => skill.trim()),
+      });
+      alert("Account created successfully!");
+      console.log(response.data);
+    } catch (err) {
+      console.error(err);
+      alert("Signup failed. Try again.");
     }
   };
 
   return (
     <div style={containerStyle}>
-      <div style={overlayStyle}></div>
-      <div style={formWrapperStyle}>
+      <div style={{ ...cardStyle, ...(loaded ? fadeIn : hiddenStyle) }}>
         <h2 style={titleStyle}>Create Your Account</h2>
+        <p style={subtitleStyle}>Join SkillSphere and start learning today</p>
+
         <form onSubmit={handleSignup} style={formStyle}>
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            style={inputStyle}
+          />
           <input
             type="email"
             placeholder="Email"
-            style={inputStyle}
+            value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            style={inputStyle}
           />
           <input
             type="password"
             placeholder="Password"
-            style={inputStyle}
+            value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            style={inputStyle}
           />
-          <button type="submit" style={buttonStyle}>Sign Up</button>
+          <input
+            type="text"
+            placeholder="First Name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            required
+            style={inputStyle}
+          />
+          <input
+            type="text"
+            placeholder="Last Name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            required
+            style={inputStyle}
+          />
+          <input
+            type="text"
+            placeholder="Skills (comma separated)"
+            value={skills}
+            onChange={(e) => setSkills(e.target.value)}
+            style={inputStyle}
+          />
+
+          <div style={checkboxRow}>
+            <input
+              type="checkbox"
+              checked={agree}
+              onChange={() => setAgree(!agree)}
+              style={{ marginRight: "8px" }}
+            />
+            <span style={{ fontSize: "14px", color: "#e2e8f0" }}>
+              I agree to the <span style={link}>Terms & Conditions</span>
+            </span>
+          </div>
+
+          <button type="submit" style={loginBtn}>Sign Up</button>
         </form>
+
+        <p style={dividerStyle}>or continue with</p>
+
+        <div style={socials}>
+          <button style={socialBtn}>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" style={iconStyle} />
+            Google
+          </button>
+          <button style={socialBtn}>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" alt="Apple" style={iconStyle} />
+            Apple
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
-// 🌌 Background + Overlay
+// Styles (same as yours)
 const containerStyle = {
-  minHeight: "100vh",
-  backgroundImage: `url("https://images.unsplash.com/photo-1503264116251-35a269479413")`,
+  height: "100vh",
+  width: "100vw",
+  backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), url("https://images.unsplash.com/photo-1603791440384-56cd371ee9a7?auto=format&fit=crop&w=1470&q=80")`,
   backgroundSize: "cover",
   backgroundPosition: "center",
+  backgroundRepeat: "no-repeat",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  position: "relative",
+  fontFamily: "sans-serif",
 };
 
-const overlayStyle = {
-  position: "absolute",
-  inset: 0,
-  backgroundColor: "rgba(0, 0, 0, 0.7)",
-  zIndex: 0,
-};
-
-const formWrapperStyle = {
-  position: "relative",
-  zIndex: 1,
-  backgroundColor: "#1f2937", // dark gray
+const cardStyle = {
+  backgroundColor: "rgba(0, 0, 0, 0.6)",
+  borderRadius: "20px",
   padding: "40px",
-  borderRadius: "12px",
-  boxShadow: "0 6px 18px rgba(0, 0, 0, 0.5)",
-  width: "100%",
   maxWidth: "400px",
+  width: "100%",
+  color: "#ffffff",
+  boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
   textAlign: "center",
-  color: "#f3f4f6",
+  backdropFilter: "blur(10px)",
+  transition: "opacity 1s ease, transform 1s ease",
+};
+
+const hiddenStyle = {
+  opacity: 0,
+  transform: "translateY(40px)",
+};
+
+const fadeIn = {
+  opacity: 1,
+  transform: "translateY(0)",
 };
 
 const titleStyle = {
+  fontSize: "28px",
+  fontWeight: "bold",
+  marginBottom: "8px",
+};
+
+const subtitleStyle = {
+  color: "#cbd5e1",
   marginBottom: "24px",
-  fontSize: "26px",
-  color: "#60a5fa",
 };
 
 const formStyle = {
@@ -89,24 +182,64 @@ const formStyle = {
 
 const inputStyle = {
   padding: "12px",
-  borderRadius: "6px",
+  borderRadius: "8px",
   border: "none",
-  fontSize: "16px",
-  backgroundColor: "#374151", // darker input bg
+  backgroundColor: "#1e293b",
   color: "#fff",
-  outline: "none",
+  fontSize: "14px",
 };
 
-const buttonStyle = {
-  padding: "12px",
+const loginBtn = {
   backgroundColor: "#3b82f6",
   color: "#fff",
-  border: "none",
-  borderRadius: "6px",
+  padding: "12px",
   fontWeight: "bold",
   fontSize: "16px",
+  borderRadius: "8px",
+  border: "none",
   cursor: "pointer",
-  transition: "background 0.3s",
+};
+
+const checkboxRow = {
+  display: "flex",
+  alignItems: "center",
+  fontSize: "14px",
+  marginTop: "4px",
+};
+
+const dividerStyle = {
+  margin: "20px 0 10px",
+  fontSize: "13px",
+  color: "#aaa",
+};
+
+const socials = {
+  display: "flex",
+  justifyContent: "center",
+  gap: "12px",
+};
+
+const socialBtn = {
+  backgroundColor: "#0f172a",
+  color: "#fff",
+  border: "none",
+  padding: "10px 20px",
+  borderRadius: "6px",
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  fontSize: "14px",
+  cursor: "pointer",
+};
+
+const iconStyle = {
+  width: "20px",
+  height: "20px",
+};
+
+const link = {
+  color: "#60a5fa",
+  cursor: "pointer",
 };
 
 export default Signup;

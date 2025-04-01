@@ -16,7 +16,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserModel createUser(UserModel user) {
-        // Check if username or email already exists
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
@@ -26,8 +25,6 @@ public class UserServiceImpl implements UserService {
         }
 
         // In a real application, you would hash the password here
-        // user.setPassword(passwordEncoder.encode(user.getPassword()));
-        
         return userRepository.save(user);
     }
 
@@ -69,5 +66,42 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserModel findByEmail(String email) {
         return userRepository.findByEmail(email).orElse(null);
+    }
+
+    // Legacy login method - will use either username+password or email+password
+    @Override
+    public UserModel login(String username, String email, String password) {
+        if (username != null && !username.isEmpty()) {
+            return loginByUsername(username, password);
+        } else if (email != null && !email.isEmpty()) {
+            return loginByEmail(email, password);
+        }
+        return null;
+    }
+    
+    // New method to login with username
+    @Override
+    public UserModel loginByUsername(String username, String password) {
+        Optional<UserModel> optionalUser = userRepository.findByUsername(username);
+        if (optionalUser.isPresent()) {
+            UserModel user = optionalUser.get();
+            if (user.getPassword().equals(password)) {
+                return user;
+            }
+        }
+        return null;
+    }
+    
+    // New method to login with email
+    @Override
+    public UserModel loginByEmail(String email, String password) {
+        Optional<UserModel> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isPresent()) {
+            UserModel user = optionalUser.get();
+            if (user.getPassword().equals(password)) {
+                return user;
+            }
+        }
+        return null;
     }
 }

@@ -1,42 +1,29 @@
 package com.y3s1.we15.skillsharingplatform.Controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
 import com.y3s1.we15.skillsharingplatform.Service.UserService;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "http://localhost:3000")
 public class UserController {
-    
+
     @Autowired
     private UserService userService;
 
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody UserModel user) {
         try {
-            // Validate input
             if (user.getUsername() == null || user.getUsername().isEmpty() ||
                 user.getEmail() == null || user.getEmail().isEmpty() ||
                 user.getPassword() == null || user.getPassword().isEmpty()) {
-                
                 Map<String, String> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Username, email, and password are required fields");
                 return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
@@ -80,8 +67,6 @@ public class UserController {
             Optional<UserModel> userOptional = userService.getUserById(id);
             if (userOptional.isPresent()) {
                 UserModel user = userOptional.get();
-                
-                // Update user fields
                 if (userDetails.getUsername() != null) user.setUsername(userDetails.getUsername());
                 if (userDetails.getEmail() != null) user.setEmail(userDetails.getEmail());
                 if (userDetails.getPassword() != null) user.setPassword(userDetails.getPassword());
@@ -93,7 +78,7 @@ public class UserController {
                 if (userDetails.getSkills() != null) user.setSkills(userDetails.getSkills());
                 if (userDetails.getLocation() != null) user.setLocation(userDetails.getLocation());
                 if (userDetails.getSocialLinks() != null) user.setSocialLinks(userDetails.getSocialLinks());
-                
+
                 UserModel updatedUser = userService.updateUser(user);
                 return new ResponseEntity<>(updatedUser, HttpStatus.OK);
             } else {
@@ -145,5 +130,36 @@ public class UserController {
             return ResponseEntity.ok(user);
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginData) {
+        String username = loginData.get("username");
+        String email = loginData.get("email");
+        String password = loginData.get("password");
+        
+        UserModel user = null;
+        
+        // Check if login is by username
+        if (username != null && !username.isEmpty()) {
+            user = userService.loginByUsername(username, password);
+        } 
+        // Otherwise, check if login is by email
+        else if (email != null && !email.isEmpty()) {
+            user = userService.loginByEmail(email, password);
+        }
+        
+        if (user != null) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Login successful");
+            response.put("userId", user.getId());
+            response.put("username", user.getUsername());
+            response.put("email", user.getEmail());
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } else {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Invalid credentials");
+            return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+        }
     }
 }
