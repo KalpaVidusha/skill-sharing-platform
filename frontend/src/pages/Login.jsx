@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const Login = () => {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState(""); // Single field for username or email
   const [password, setPassword] = useState("");
   const [loaded, setLoaded] = useState(false);
   const navigate = useNavigate();
@@ -16,11 +15,23 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:8081/api/users/login", {
-        username,
-        email,
-        password,
-      });
+      // Determine if the identifier is an email or username
+      const isEmail = identifier.includes('@');
+      
+      const payload = {
+        password
+      };
+      
+      // Set either email or username based on the input
+      if (isEmail) {
+        payload.email = identifier;
+        payload.username = "";
+      } else {
+        payload.username = identifier;
+        payload.email = "";
+      }
+
+      const response = await axios.post("http://localhost:8081/api/users/login", payload);
 
       const { userId, username: loggedInUsername, email: loggedInEmail } = response.data;
 
@@ -34,7 +45,7 @@ const Login = () => {
       navigate("/userdashboard");
     } catch (err) {
       console.error(err);
-      alert("Login failed. Please check your username, email, or password.");
+      alert("Login failed. Please check your username/email or password.");
     }
   };
 
@@ -47,17 +58,9 @@ const Login = () => {
         <form onSubmit={handleLogin} style={formStyle}>
           <input
             type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            style={inputStyle}
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Username or Email"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             required
             style={inputStyle}
           />

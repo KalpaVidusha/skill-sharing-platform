@@ -68,13 +68,37 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmail(email).orElse(null);
     }
 
-    // ✅ Login method using username + email + password
+    // Legacy login method - will use either username+password or email+password
     @Override
     public UserModel login(String username, String email, String password) {
+        if (username != null && !username.isEmpty()) {
+            return loginByUsername(username, password);
+        } else if (email != null && !email.isEmpty()) {
+            return loginByEmail(email, password);
+        }
+        return null;
+    }
+    
+    // New method to login with username
+    @Override
+    public UserModel loginByUsername(String username, String password) {
         Optional<UserModel> optionalUser = userRepository.findByUsername(username);
         if (optionalUser.isPresent()) {
             UserModel user = optionalUser.get();
-            if (user.getEmail().equals(email) && user.getPassword().equals(password)) {
+            if (user.getPassword().equals(password)) {
+                return user;
+            }
+        }
+        return null;
+    }
+    
+    // New method to login with email
+    @Override
+    public UserModel loginByEmail(String email, String password) {
+        Optional<UserModel> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isPresent()) {
+            UserModel user = optionalUser.get();
+            if (user.getPassword().equals(password)) {
                 return user;
             }
         }
