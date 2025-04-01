@@ -137,8 +137,18 @@ public class UserController {
         String username = loginData.get("username");
         String email = loginData.get("email");
         String password = loginData.get("password");
-    
-        UserModel user = userService.login(username, email, password);
+        
+        UserModel user = null;
+        
+        // Check if login is by username
+        if (username != null && !username.isEmpty()) {
+            user = userService.loginByUsername(username, password);
+        } 
+        // Otherwise, check if login is by email
+        else if (email != null && !email.isEmpty()) {
+            user = userService.loginByEmail(email, password);
+        }
+        
         if (user != null) {
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful");
@@ -148,10 +158,8 @@ public class UserController {
             return new ResponseEntity<>(response, HttpStatus.OK);
         } else {
             Map<String, String> error = new HashMap<>();
-            error.put("error", "Invalid username, email or password");
+            error.put("error", "Invalid credentials");
             return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
         }
     }
-    
-
 }

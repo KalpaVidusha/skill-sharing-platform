@@ -11,13 +11,13 @@ public interface UserService {
     Optional<UserModel> getUserById(String id);
     UserModel updateUser(UserModel user);
     void deleteUser(String id);
-
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
-
     UserModel findByUsername(String username);
     UserModel findByEmail(String email);
-
-    // ✅ Login method
+    
+    // Modified to support logging in by username OR email
     UserModel login(String username, String email, String password);
+    UserModel loginByUsername(String username, String password);
+    UserModel loginByEmail(String email, String password);
 }
