@@ -1,6 +1,6 @@
 package com.y3s1.we15.skillsharingplatform.Service;
 
-import com.y3s1.we15.skillsharingplatform.Models.PostModel;
+import com.y3s1.we15.skillsharingplatform.Models.Post;
 import com.y3s1.we15.skillsharingplatform.Repositories.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,19 +14,19 @@ public class PostService {
     @Autowired
     private PostRepository postRepository;
 
-    public PostModel createPost(PostModel post) {
+    public Post createPost(Post post) {
         return postRepository.save(post);
     }
 
-    public List<PostModel> getAllPosts() {
+    public List<Post> getAllPosts() {
         return postRepository.findAll();
     }
 
-    public List<PostModel> getPostsByUserId(String userId) {
+    public List<Post> getPostsByUserId(String userId) {
         return postRepository.findByUserId(userId);
     }
 
-    public Optional<PostModel> getPostById(String id) {
+    public Optional<Post> getPostById(String id) {
         return postRepository.findById(id);
     }
 

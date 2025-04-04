@@ -2,40 +2,37 @@ package com.y3s1.we15.skillsharingplatform.Models;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Document(collection = "posts")
-public class PostModel {
-
+public class Post {
     @Id
     private String id;
-
-    private String userId; // ID of the user who created the post
-
+    private String title;
     private String description;
-
-    // List of media URLs (could be S3, local path, etc.)
+    private String category;
     private List<String> mediaUrls;
-
-    // Type for each media file: photo or video
-    private List<String> mediaTypes;
-
+    private String userId;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     // Constructors
-    public PostModel() {}
-
-    public PostModel(String userId, String description, List<String> mediaUrls, List<String> mediaTypes) {
-        this.userId = userId;
-        this.description = description;
-        this.mediaUrls = mediaUrls;
-        this.mediaTypes = mediaTypes;
+    public Post() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    // Getters & Setters
+    public Post(String title, String description, String category, List<String> mediaUrls, String userId) {
+        this();
+        this.title = title;
+        this.description = description;
+        this.category = category;
+        this.mediaUrls = mediaUrls;
+        this.userId = userId;
+    }
+
+    // Getters and Setters
     public String getId() {
         return id;
     }
@@ -44,12 +41,12 @@ public class PostModel {
         this.id = id;
     }
 
-    public String getUserId() {
-        return userId;
+    public String getTitle() {
+        return title;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getDescription() {
@@ -60,6 +57,14 @@ public class PostModel {
         this.description = description;
     }
 
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
     public List<String> getMediaUrls() {
         return mediaUrls;
     }
@@ -68,12 +73,12 @@ public class PostModel {
         this.mediaUrls = mediaUrls;
     }
 
-    public List<String> getMediaTypes() {
-        return mediaTypes;
+    public String getUserId() {
+        return userId;
     }
 
-    public void setMediaTypes(List<String> mediaTypes) {
-        this.mediaTypes = mediaTypes;
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -82,5 +87,13 @@ public class PostModel {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
