@@ -2,7 +2,6 @@ import axios from "axios";
 
 const API_BASE_URL = "http://localhost:8081/api";
 
-// Create axios instance with base configuration
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -10,7 +9,7 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor for authentication
+// Request interceptor for authentication
 api.interceptors.request.use(config => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -19,34 +18,44 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-// Define all API methods
+// Response interceptor for consistent error handling
+api.interceptors.response.use(
+  response => response.data,
+  error => {
+    console.error("API Error:", error.response?.data || error.message);
+    return Promise.reject(error.response?.data || error.message);
+  }
+);
+
 const apiService = {
-  // Authentication endpoints
+  // Authentication
   login: (identifier, password) => {
-    const isEmail = identifier.includes('@');
-    const payload = { password };
-    isEmail ? payload.email = identifier : payload.username = identifier;
+    const payload = identifier.includes('@') 
+      ? { email: identifier, password }
+      : { username: identifier, password };
     return api.post("/users/login", payload);
   },
 
   signup: (userData) => api.post("/users", userData),
 
-  // User endpoints
+  // Users
   getUserProfile: (userId) => api.get(`/users/${userId}`),
   updateUserProfile: (userId, userData) => api.put(`/users/${userId}`, userData),
 
-  // Post endpoints
+  // Posts
   createPost: (postData) => api.post("/posts", postData),
-  getPostsByUser: (userId) => api.get(`/posts/user/${userId}`),
   getAllPosts: () => api.get("/posts"),
   getPostById: (postId) => api.get(`/posts/${postId}`),
   updatePost: (postId, data) => api.put(`/posts/${postId}`, data),
   deletePost: (postId) => api.delete(`/posts/${postId}`),
+  getPostsByUser: (userId) => api.get(`/posts/user/${userId}`),
+  getPostsByCategory: (category) => api.get(`/posts/category/${category}`),
+  searchPosts: (title) => api.get(`/posts/search?title=${title}`),
 
-  // Comment endpoints
+  // Comments
   createComment: (postId, comment) => api.post(`/posts/${postId}/comments`, comment),
-  
-  // File upload
+
+  // Files
   uploadFiles: (files) => {
     const formData = new FormData();
     files.forEach(file => formData.append("files", file));

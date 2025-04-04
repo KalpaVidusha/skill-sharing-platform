@@ -1,46 +1,58 @@
 package com.y3s1.we15.skillsharingplatform.Controllers;
 
-import java.util.List; 
 import com.y3s1.we15.skillsharingplatform.Models.Post;
-import com.y3s1.we15.skillsharingplatform.Repositories.PostRepository;
-
+import com.y3s1.we15.skillsharingplatform.Service.PostService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
 @CrossOrigin(origins = "http://localhost:3000")
 public class PostController {
-    private final PostRepository postRepository;
 
-    public PostController(PostRepository postRepository) {
-        this.postRepository = postRepository;
+    private final PostService postService;
+
+    public PostController(PostService postService) {
+        this.postService = postService;
     }
 
     @PostMapping
     public Post createPost(@RequestBody Post post) {
-        return postRepository.save(post);
+        return postService.createPost(post);
     }
 
     @GetMapping
     public List<Post> getAllPosts() {
-        return postRepository.findAll();
-    }
-
-    @GetMapping("/category/{category}")
-    public List<Post> getPostsByCategory(@PathVariable String category) {
-        return postRepository.findByCategory(category);
-    }
-
-    @GetMapping("/search")
-    public List<Post> searchPosts(@RequestParam String title) {
-        return postRepository.findByTitleContainingIgnoreCase(title);
+        return postService.getAllPosts();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Post> getPostById(@PathVariable String id) {
-    return postRepository.findById(id)
-        .map(post -> ResponseEntity.ok(post))
-        .orElse(ResponseEntity.notFound().build());
-}
+        return postService.getPostById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/category/{category}")
+    public List<Post> getPostsByCategory(@PathVariable String category) {
+        return postService.getPostsByCategory(category);
+    }
+
+    @GetMapping("/search")
+    public List<Post> searchPosts(@RequestParam String title) {
+        return postService.searchPosts(title);
+    }
+
+    @GetMapping("/user/{userId}")
+    public List<Post> getPostsByUser(@PathVariable String userId) {
+        return postService.getPostsByUserId(userId);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePost(@PathVariable String id) {
+        postService.deletePost(id);
+        return ResponseEntity.noContent().build();
+    }
 }

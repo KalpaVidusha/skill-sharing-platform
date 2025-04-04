@@ -3,8 +3,9 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import UserDashboard from "./pages/UserDashboard";
+import Posts from './pages/Posts/Posts';
 //import CreatePost from "./pages/Posts/CreatePost";
-import PostDetail from "./pages/Posts/PostDetail";
+
 //import Profile from "./pages/Profile";
 //import LearningPlans from "./pages/Posts/LearningPlans";
 //import Search from "./pages/Posts/Search";
@@ -21,7 +22,7 @@ function App() {
         
         {/* Post Management */}
        
-        <Route path="/post/:postId" element={<PostDetail />} />
+        <Route path="/posts" element={<Posts />} />
        
         
         {/* User Management */}
