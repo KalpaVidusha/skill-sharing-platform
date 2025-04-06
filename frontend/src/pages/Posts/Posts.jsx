@@ -39,11 +39,86 @@ const Posts = () => {
     }, [fetchPosts]);
 
     const categories = [...new Set(posts.map(post => post?.category).filter(Boolean))];
+    
+    const styles = {
+        container: `
+            min-height: 100vh;
+            background-color: #f5f7fa;
+            padding: 40px 20px;
+            font-family: 'Roboto', sans-serif;
+        `,
+        content: `
+            max-width: 1200px;
+            margin: 0 auto;
+        `,
+        header: `
+            margin-bottom: 30px;
+            color: #333;
+            font-size: 32px;
+            font-weight: 600;
+        `,
+        grid: `
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        `,
+        sortSection: `
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        `,
+        sortLabel: `
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+            font-size: 14px;
+            color: #666;
+        `,
+        sortSelect: `
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background-color: white;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+        `,
+        errorMessage: `
+            color: #e74c3c;
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            background-color: #fdecea;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        `,
+        loader: `
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 50px 0;
+        `,
+        spinner: `
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        `,
+        emptyState: `
+            text-align: center;
+            padding: 50px 0;
+            color: #888;
+            font-size: 18px;
+            grid-column: 1 / -1;
+        `
+    };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
-            <div className="max-w-7xl mx-auto">
-                <h1 className="text-4xl font-bold mb-8 text-blue-400">Explore Skill Posts</h1>
+        <div style={{ cssText: styles.container }}>
+            <div style={{ cssText: styles.content }}>
+                <h1 style={{ cssText: styles.header }}>Explore Skill Posts</h1>
                 
                 <SearchFilter 
                     searchTerm={searchTerm}
@@ -53,25 +128,40 @@ const Posts = () => {
                     setSelectedCategory={setSelectedCategory}
                 />
 
+                <div style={{ cssText: styles.sortSection }}>
+                    <span style={{ cssText: styles.sortLabel }}>Sort by:</span>
+                    <select style={{ cssText: styles.sortSelect }}>
+                        <option>Most popular</option>
+                        <option>Newest</option>
+                        <option>Oldest</option>
+                    </select>
+                </div>
+
                 {error && (
-                    <div className="text-red-400 text-center mb-4">
+                    <div style={{ cssText: styles.errorMessage }}>
                         {error}
                     </div>
                 )}
 
                 {loading ? (
-                    <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto"></div>
+                    <div style={{ cssText: styles.loader }}>
+                        <div style={{ cssText: styles.spinner }}></div>
+                        <style>{`
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        `}</style>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div style={{ cssText: styles.grid }}>
                         {posts.length > 0 ? (
                             posts.map(post => (
                                 <PostCard key={post.id} post={post} />
                             ))
                         ) : (
-                            <div className="col-span-full text-center py-12">
-                                <p className="text-xl text-gray-400">No posts found matching your criteria</p>
+                            <div style={{ cssText: styles.emptyState }}>
+                                No posts found matching your criteria
                             </div>
                         )}
                     </div>
