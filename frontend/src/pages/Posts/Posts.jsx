@@ -11,6 +11,60 @@ const Posts = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
 
+    const styles = {
+        container: {
+            minHeight: '100vh',
+            backgroundColor: '#f5f7fa',
+            padding: '40px 20px',
+            fontFamily: "'Roboto', sans-serif"
+        },
+        content: {
+            maxWidth: '1200px',
+            margin: '0 auto'
+        },
+        header: {
+            marginBottom: '30px',
+            color: '#333',
+            fontSize: '32px',
+            fontWeight: '600',
+            textAlign: 'center'
+        },
+        grid: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+            gap: '25px'
+        },
+        errorMessage: {
+            color: '#e74c3c',
+            textAlign: 'center',
+            padding: '20px',
+            fontSize: '16px',
+            backgroundColor: '#fdecea',
+            borderRadius: '8px',
+            marginBottom: '20px'
+        },
+        loader: {
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '50px 0'
+        },
+        spinner: {
+            border: '4px solid rgba(0, 0, 0, 0.1)',
+            borderTop: '4px solid #3498db',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            animation: 'spin 1s linear infinite'
+        },
+        emptyState: {
+            textAlign: 'center',
+            padding: '50px 0',
+            color: '#888',
+            fontSize: '18px',
+            gridColumn: '1 / -1'
+        }
+    };
+
     const fetchPosts = useCallback(async () => {
         try {
             setLoading(true);
@@ -41,9 +95,9 @@ const Posts = () => {
     const categories = [...new Set(posts.map(post => post?.category).filter(Boolean))];
 
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
-            <div className="max-w-7xl mx-auto">
-                <h1 className="text-4xl font-bold mb-8 text-blue-400">Explore Skill Posts</h1>
+        <div style={styles.container}>
+            <div style={styles.content}>
+                <h1 style={styles.header}>Explore Skill Posts</h1>
                 
                 <SearchFilter 
                     searchTerm={searchTerm}
@@ -54,24 +108,30 @@ const Posts = () => {
                 />
 
                 {error && (
-                    <div className="text-red-400 text-center mb-4">
+                    <div style={styles.errorMessage}>
                         {error}
                     </div>
                 )}
 
                 {loading ? (
-                    <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto"></div>
+                    <div style={styles.loader}>
+                        <div style={styles.spinner}></div>
+                        <style>{`
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        `}</style>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div style={styles.grid}>
                         {posts.length > 0 ? (
                             posts.map(post => (
                                 <PostCard key={post.id} post={post} />
                             ))
                         ) : (
-                            <div className="col-span-full text-center py-12">
-                                <p className="text-xl text-gray-400">No posts found matching your criteria</p>
+                            <div style={styles.emptyState}>
+                                No posts found matching your criteria
                             </div>
                         )}
                     </div>

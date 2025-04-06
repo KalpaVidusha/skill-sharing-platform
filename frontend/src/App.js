@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import UserDashboard from "./pages/UserDashboard";
 import Posts from './pages/Posts/Posts';
+import PostDetail from './pages/Posts/PostDetail';
 //import CreatePost from "./pages/Posts/CreatePost";
 
 //import Profile from "./pages/Profile";
@@ -23,7 +24,7 @@ function App() {
         {/* Post Management */}
        
         <Route path="/posts" element={<Posts />} />
-       
+       <Route path="/posts/:id" element={<PostDetail />} />
         
         {/* User Management */}
         <Route path="/userdashboard" element={<UserDashboard />} />
