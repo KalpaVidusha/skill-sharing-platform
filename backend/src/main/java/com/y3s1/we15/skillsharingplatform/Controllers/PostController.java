@@ -4,14 +4,12 @@ import com.y3s1.we15.skillsharingplatform.Models.Post;
 import com.y3s1.we15.skillsharingplatform.Service.PostService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
 @CrossOrigin(origins = "http://localhost:3000")
 public class PostController {
-
     private final PostService postService;
 
     public PostController(PostService postService) {

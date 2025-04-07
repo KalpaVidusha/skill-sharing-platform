@@ -3,13 +3,11 @@ package com.y3s1.we15.skillsharingplatform.Service;
 import com.y3s1.we15.skillsharingplatform.Models.Post;
 import com.y3s1.we15.skillsharingplatform.Repositories.PostRepository;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class PostService {
-
     private final PostRepository postRepository;
 
     public PostService(PostRepository postRepository) {

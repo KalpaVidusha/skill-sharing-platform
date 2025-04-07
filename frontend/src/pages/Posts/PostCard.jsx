@@ -1,4 +1,3 @@
-// src/pages/Posts/PostCard.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -100,7 +99,6 @@ const PostCard = ({ post }) => {
       fontSize: '12px',
       fontWeight: '500'
     };
-
     switch(category) {
       case 'programming':
         return { ...style, backgroundColor: '#e3f9e5', color: '#00875a' };
@@ -131,22 +129,18 @@ const PostCard = ({ post }) => {
           </svg>
         </div>
       </div>
-      
       <div style={styles.content}>
         <h3 style={styles.title}>{post.title}</h3>
         <p style={styles.description}>{post.description}</p>
-        
         <div style={{ marginBottom: '15px' }}>
           <span style={{ fontWeight: '500' }}>Tutor: </span>
           <span>{instructor}</span>
         </div>
-        
         <div style={styles.footer}>
           <span style={getBadgeStyle()}>
             {post.category}
           </span>
         </div>
-        
         <Link 
           to={`/posts/${post.id}`}
           style={styles.viewButton}
