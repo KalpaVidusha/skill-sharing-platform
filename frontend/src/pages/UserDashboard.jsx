@@ -85,6 +85,11 @@ const UserDashboard = () => {
     return baseStyle;
   };
 
+  // Handler for add post navigation
+  const handleAddPost = () => {
+    navigate("/add-post");
+  };
+
   return (
     <div style={styles.pageWrapper}>
       <div className="rain">{createRain()}</div>
@@ -93,7 +98,7 @@ const UserDashboard = () => {
         <h2 style={styles.logo}>SkillSphere</h2>
         {[
           { id: "profile", icon: <FaUser />, label: "Profile" },
-          { id: "addpost", icon: <FaPlus />, label: "Add Post", onClick: () => navigate("/add-post") },
+          { id: "addpost", icon: <FaPlus />, label: "Add Post", onClick: handleAddPost },
           { id: "progress", icon: <FaChartLine />, label: "Progress" },
           { id: "docs", icon: <FaFileAlt />, label: "Documents" },
           { id: "comments", icon: <FaComments />, label: "Manage Comments" },
@@ -112,6 +117,7 @@ const UserDashboard = () => {
         <button
           style={getButtonStyle(styles.logoutButton, "logout")}
           onClick={() => {
+            localStorage.removeItem("userId"); // Clear the user ID
             alert("Logged out successfully.");
             navigate("/login");
           }}
@@ -135,7 +141,7 @@ const UserDashboard = () => {
           <h1 style={styles.pageTitle}>Welcome, Jane 👋</h1>
           <button
             style={getButtonStyle(styles.addButton, "mainAddPost")}
-            onClick={() => navigate("/add-post")}
+            onClick={handleAddPost}
             onMouseEnter={() => setHovered("mainAddPost")}
             onMouseLeave={() => setHovered(null)}
           >

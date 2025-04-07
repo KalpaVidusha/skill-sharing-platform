@@ -52,9 +52,6 @@ const apiService = {
   getPostsByCategory: (category) => api.get(`/posts/category/${category}`),
   searchPosts: (title) => api.get(`/posts/search?title=${title}`),
 
-  // Comments
-  createComment: (postId, comment) => api.post(`/posts/${postId}/comments`, comment),
-
   // Files
   uploadFiles: (files) => {
     const formData = new FormData();

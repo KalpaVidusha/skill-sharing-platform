@@ -5,12 +5,7 @@ import Signup from "./pages/Signup";
 import UserDashboard from "./pages/UserDashboard";
 import Posts from './pages/Posts/Posts';
 import PostDetail from './pages/Posts/PostDetail';
-//import CreatePost from "./pages/Posts/CreatePost";
-
-//import Profile from "./pages/Profile";
-//import LearningPlans from "./pages/Posts/LearningPlans";
-//import Search from "./pages/Posts/Search";
-//import EditPost from "./pages/Posts/EditPost"; // Create this component
+import CreatePost from "./pages/Posts/CreatePost";
 
 function App() {
   return (
@@ -22,15 +17,12 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         
         {/* Post Management */}
-       
         <Route path="/posts" element={<Posts />} />
-       <Route path="/posts/:id" element={<PostDetail />} />
+        <Route path="/posts/:id" element={<PostDetail />} />
+        <Route path="/add-post" element={<CreatePost />} />
         
         {/* User Management */}
         <Route path="/userdashboard" element={<UserDashboard />} />
-        
-        
-       
         
         {/* Optional: Category Filter */}
         <Route path="/category/:categoryName" element={<Home />} />
