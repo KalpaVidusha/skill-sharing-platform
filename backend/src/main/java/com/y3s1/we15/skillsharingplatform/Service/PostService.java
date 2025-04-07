@@ -1,17 +1,23 @@
 package com.y3s1.we15.skillsharingplatform.Service;
 
 import com.y3s1.we15.skillsharingplatform.Models.Post;
+import com.y3s1.we15.skillsharingplatform.Models.UserModel;
 import com.y3s1.we15.skillsharingplatform.Repositories.PostRepository;
+import com.y3s1.we15.skillsharingplatform.Repositories.UserRepository; // Import the UserRepository
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class PostService {
-    private final PostRepository postRepository;
 
-    public PostService(PostRepository postRepository) {
+    private final PostRepository postRepository;
+    private final UserRepository userRepository; // Add UserRepository
+
+    public PostService(PostRepository postRepository, UserRepository userRepository) {
         this.postRepository = postRepository;
+        this.userRepository = userRepository; // Initialize UserRepository
     }
 
     public Post createPost(Post post) {
