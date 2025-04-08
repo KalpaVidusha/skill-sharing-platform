@@ -1,7 +1,9 @@
 package com.y3s1.we15.skillsharingplatform.Service;
 
 import com.y3s1.we15.skillsharingplatform.Models.Post;
+import com.y3s1.we15.skillsharingplatform.Models.UserModel;
 import com.y3s1.we15.skillsharingplatform.Repositories.PostRepository;
+import com.y3s1.we15.skillsharingplatform.Repositories.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,12 +13,19 @@ import java.util.Optional;
 public class PostService {
 
     private final PostRepository postRepository;
+    private final UserRepository userRepository;
 
-    public PostService(PostRepository postRepository) {
+    public PostService(PostRepository postRepository, UserRepository userRepository) {
         this.postRepository = postRepository;
+        this.userRepository = userRepository;
     }
 
     public Post createPost(Post post) {
+        // Ensure created and updated timestamps are set
+        if (post.getCreatedAt() == null) {
+            post.setCreatedAt(java.time.LocalDateTime.now());
+        }
+        post.setUpdatedAt(java.time.LocalDateTime.now());
         return postRepository.save(post);
     }
 
@@ -37,7 +46,11 @@ public class PostService {
     }
 
     public List<Post> getPostsByUserId(String userId) {
-        return postRepository.findByUserId(userId);
+        Optional<UserModel> user = userRepository.findById(userId);
+        if (user.isPresent()) {
+            return postRepository.findByUser(user.get());
+        }
+        return List.of(); // Return empty list if user not found
     }
 
     public void deletePost(String id) {

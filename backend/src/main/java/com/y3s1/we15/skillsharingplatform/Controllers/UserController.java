@@ -4,17 +4,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
 import com.y3s1.we15.skillsharingplatform.Service.UserService;
-
 import java.util.*;
 
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "http://localhost:3000")
 public class UserController {
-
     @Autowired
     private UserService userService;
 
@@ -28,7 +25,6 @@ public class UserController {
                 errorResponse.put("error", "Username, email, and password are required fields");
                 return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
             }
-
             UserModel createdUser = userService.createUser(user);
             return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
         } catch (Exception e) {
@@ -78,7 +74,6 @@ public class UserController {
                 if (userDetails.getSkills() != null) user.setSkills(userDetails.getSkills());
                 if (userDetails.getLocation() != null) user.setLocation(userDetails.getLocation());
                 if (userDetails.getSocialLinks() != null) user.setSocialLinks(userDetails.getSocialLinks());
-
                 UserModel updatedUser = userService.updateUser(user);
                 return new ResponseEntity<>(updatedUser, HttpStatus.OK);
             } else {
@@ -137,9 +132,8 @@ public class UserController {
         String username = loginData.get("username");
         String email = loginData.get("email");
         String password = loginData.get("password");
-        
         UserModel user = null;
-        
+
         // Check if login is by username
         if (username != null && !username.isEmpty()) {
             user = userService.loginByUsername(username, password);
@@ -148,7 +142,7 @@ public class UserController {
         else if (email != null && !email.isEmpty()) {
             user = userService.loginByEmail(email, password);
         }
-        
+
         if (user != null) {
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful");

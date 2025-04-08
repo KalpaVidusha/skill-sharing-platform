@@ -1,4 +1,3 @@
-// src/pages/Posts/PostCard.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -89,7 +88,7 @@ const PostCard = ({ post }) => {
 
   const hasImage = post.mediaUrls?.length > 0;
   const defaultImageUrl = 'https://via.placeholder.com/400x200?text=Skill+Post';
-  const instructor = post.instructor || 'Instructor Name';
+  const tutor = post.user ? `${post.user.firstName} ${post.user.lastName}` : 'Instructor Name'; // Get tutor's name
 
   const getBadgeStyle = () => {
     const category = post.category?.toLowerCase() || '';
@@ -100,7 +99,6 @@ const PostCard = ({ post }) => {
       fontSize: '12px',
       fontWeight: '500'
     };
-
     switch(category) {
       case 'programming':
         return { ...style, backgroundColor: '#e3f9e5', color: '#00875a' };
@@ -138,7 +136,7 @@ const PostCard = ({ post }) => {
         
         <div style={{ marginBottom: '15px' }}>
           <span style={{ fontWeight: '500' }}>Tutor: </span>
-          <span>{instructor}</span>
+          <span>{tutor}</span> {/* Display tutor's name */}
         </div>
         
         <div style={styles.footer}>

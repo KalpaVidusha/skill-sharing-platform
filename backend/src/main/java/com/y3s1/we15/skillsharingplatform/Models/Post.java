@@ -2,6 +2,7 @@ package com.y3s1.we15.skillsharingplatform.Models;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DBRef; // Import this for referencing another document
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,7 +14,10 @@ public class Post {
     private String description;
     private String category;
     private List<String> mediaUrls;
-    private String userId;
+
+    @DBRef // This annotation indicates a reference to another document
+    private UserModel user; // Change from userId to UserModel
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -23,13 +27,13 @@ public class Post {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Post(String title, String description, String category, List<String> mediaUrls, String userId) {
+    public Post(String title, String description, String category, List<String> mediaUrls, UserModel user) {
         this();
         this.title = title;
         this.description = description;
         this.category = category;
         this.mediaUrls = mediaUrls;
-        this.userId = userId;
+        this.user = user; // Set the user directly
     }
 
     // Getters and Setters
@@ -73,12 +77,12 @@ public class Post {
         this.mediaUrls = mediaUrls;
     }
 
-    public String getUserId() {
-        return userId;
+    public UserModel getUser () {
+        return user;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setUser (UserModel user) {
+        this.user = user;
     }
 
     public LocalDateTime getCreatedAt() {
