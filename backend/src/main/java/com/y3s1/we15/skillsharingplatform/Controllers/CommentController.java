@@ -1,5 +1,7 @@
-// CommentController.java
 package com.y3s1.we15.skillsharingplatform.Controllers;
+
+
+
 
 import com.y3s1.we15.skillsharingplatform.Models.Comment;
 import com.y3s1.we15.skillsharingplatform.Service.CommentService;
