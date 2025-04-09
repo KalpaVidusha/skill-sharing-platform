@@ -2,13 +2,11 @@ package com.y3s1.we15.skillsharingplatform.Models;
 
 import java.util.List;
 import java.util.Set;
-
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "users")
 public class UserModel {
-
     @Id
     private String id;
     private String username;
@@ -140,4 +138,3 @@ public class UserModel {
                 + ", skills=" + skills + ", socialLinks=" + socialLinks + ", username=" + username + "]";
     }
 }
-

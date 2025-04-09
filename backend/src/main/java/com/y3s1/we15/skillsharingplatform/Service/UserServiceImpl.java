@@ -4,13 +4,11 @@ import com.y3s1.we15.skillsharingplatform.Models.UserModel;
 import com.y3s1.we15.skillsharingplatform.Repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService {
-
     @Autowired
     private UserRepository userRepository;
 
@@ -19,12 +17,9 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
-
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
-
-        // In a real application, you would hash the password here
         return userRepository.save(user);
     }
 
@@ -68,7 +63,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmail(email).orElse(null);
     }
 
-    // Legacy login method - will use either username+password or email+password
     @Override
     public UserModel login(String username, String email, String password) {
         if (username != null && !username.isEmpty()) {
@@ -78,8 +72,7 @@ public class UserServiceImpl implements UserService {
         }
         return null;
     }
-    
-    // New method to login with username
+
     @Override
     public UserModel loginByUsername(String username, String password) {
         Optional<UserModel> optionalUser = userRepository.findByUsername(username);
@@ -91,8 +84,7 @@ public class UserServiceImpl implements UserService {
         }
         return null;
     }
-    
-    // New method to login with email
+
     @Override
     public UserModel loginByEmail(String email, String password) {
         Optional<UserModel> optionalUser = userRepository.findByEmail(email);

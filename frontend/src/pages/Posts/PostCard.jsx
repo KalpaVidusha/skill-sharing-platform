@@ -105,7 +105,7 @@ const PostCard = ({ post }) => {
 
   const hasImage = post.mediaUrls?.length > 0;
   const defaultImageUrl = 'https://via.placeholder.com/400x200?text=Skill+Post';
-  const instructor = post.instructor || 'Instructor Name';
+  const tutor = post.user ? `${post.user.firstName} ${post.user.lastName}` : 'Instructor Name';
 
   const getBadgeStyle = () => {
     const category = post.category?.toLowerCase() || '';
@@ -159,7 +159,7 @@ const PostCard = ({ post }) => {
 
         <div style={{ marginBottom: '15px' }}>
           <span style={{ fontWeight: '500' }}>Tutor: </span>
-          <span>{instructor}</span>
+          <span>{tutor}</span>
         </div>
 
         <div style={styles.iconRow}>
