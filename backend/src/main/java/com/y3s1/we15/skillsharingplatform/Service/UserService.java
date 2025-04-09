@@ -14,4 +14,7 @@ public interface UserService {
     boolean existsByEmail(String email);
     UserModel findByUsername(String username);
     UserModel findByEmail(String email);
+    UserModel login(String username, String email, String password);
+    UserModel loginByUsername(String username, String password);
+    UserModel loginByEmail(String email, String password);
 }

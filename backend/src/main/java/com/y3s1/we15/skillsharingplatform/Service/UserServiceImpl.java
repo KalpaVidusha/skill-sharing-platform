@@ -4,30 +4,22 @@ import com.y3s1.we15.skillsharingplatform.Models.UserModel;
 import com.y3s1.we15.skillsharingplatform.Repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService {
-
     @Autowired
     private UserRepository userRepository;
 
     @Override
     public UserModel createUser(UserModel user) {
-        // Check if username or email already exists
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
-
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
-
-        // In a real application, you would hash the password here
-        // user.setPassword(passwordEncoder.encode(user.getPassword()));
-        
         return userRepository.save(user);
     }
 
@@ -63,11 +55,45 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserModel findByUsername(String username) {
-        return userRepository.findByUsername(username);
+        return userRepository.findByUsername(username).orElse(null);
     }
 
     @Override
     public UserModel findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        return userRepository.findByEmail(email).orElse(null);
+    }
+
+    @Override
+    public UserModel login(String username, String email, String password) {
+        if (username != null && !username.isEmpty()) {
+            return loginByUsername(username, password);
+        } else if (email != null && !email.isEmpty()) {
+            return loginByEmail(email, password);
+        }
+        return null;
+    }
+
+    @Override
+    public UserModel loginByUsername(String username, String password) {
+        Optional<UserModel> optionalUser = userRepository.findByUsername(username);
+        if (optionalUser.isPresent()) {
+            UserModel user = optionalUser.get();
+            if (user.getPassword().equals(password)) {
+                return user;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public UserModel loginByEmail(String email, String password) {
+        Optional<UserModel> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isPresent()) {
+            UserModel user = optionalUser.get();
+            if (user.getPassword().equals(password)) {
+                return user;
+            }
+        }
+        return null;
     }
 }
