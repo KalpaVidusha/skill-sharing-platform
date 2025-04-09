@@ -51,7 +51,10 @@ const Home = () => {
         </div>
       </section>
 
-     
+      {/* Footer */}
+      <footer style={footerStyle}>
+        <p>© 2025 SkillSphere. Built with ❤️ at SLIIT</p>
+      </footer>
     </div>
   );
 };
@@ -59,8 +62,7 @@ const Home = () => {
 // 🌌 Styles
 const containerStyle = {
   minHeight: "100vh",
-  backgroundImage: 'url("https://images.unsplash.com/photo-1526045612212-70caf35c14df")',
-
+  backgroundImage: `url("https://images.unsplash.com/photo-1526045612212-70caf35c14df")`,
   backgroundSize: "cover",
   backgroundPosition: "center",
   position: "relative",
