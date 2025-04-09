@@ -1,16 +1,18 @@
-// src/pages/Posts/PostCard.jsx
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const PostCard = ({ post }) => {
-  const [isHovered, setIsHovered] = React.useState(false);
+  const navigate = useNavigate();
+  const [isHovered, setIsHovered] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(post.likeCount || 0);
 
   const styles = {
     card: {
       backgroundColor: '#fff',
       borderRadius: '12px',
-      boxShadow: isHovered 
-        ? '0 10px 20px rgba(0, 0, 0, 0.12)' 
+      boxShadow: isHovered
+        ? '0 10px 20px rgba(0, 0, 0, 0.12)'
         : '0 4px 15px rgba(0, 0, 0, 0.08)',
       overflow: 'hidden',
       transition: 'transform 0.3s ease, box-shadow 0.3s ease',
@@ -72,6 +74,20 @@ const PostCard = ({ post }) => {
       alignItems: 'center',
       marginTop: 'auto'
     },
+    iconRow: {
+      display: 'flex',
+      gap: '10px',
+      alignItems: 'center'
+    },
+    actionButton: {
+      padding: '6px 16px',
+      fontSize: '13px',
+      fontWeight: '500',
+      borderRadius: '20px',
+      border: 'none',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s ease'
+    },
     viewButton: {
       backgroundColor: isHovered ? '#0d8aee' : '#2196f3',
       color: 'white',
@@ -101,7 +117,7 @@ const PostCard = ({ post }) => {
       fontWeight: '500'
     };
 
-    switch(category) {
+    switch (category) {
       case 'programming':
         return { ...style, backgroundColor: '#e3f9e5', color: '#00875a' };
       case 'design':
@@ -113,15 +129,20 @@ const PostCard = ({ post }) => {
     }
   };
 
+  const handleLikeToggle = () => {
+    setLiked((prev) => !prev);
+    setLikeCount((prev) => (liked ? Math.max(prev - 1, 0) : prev + 1));
+  };
+
   return (
-    <div 
+    <div
       style={styles.card}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div style={styles.imageContainer}>
-        <img 
-          src={hasImage ? post.mediaUrls[0] : defaultImageUrl} 
+        <img
+          src={hasImage ? post.mediaUrls[0] : defaultImageUrl}
           alt={post.title}
           style={styles.image}
         />
@@ -131,26 +152,41 @@ const PostCard = ({ post }) => {
           </svg>
         </div>
       </div>
-      
+
       <div style={styles.content}>
         <h3 style={styles.title}>{post.title}</h3>
         <p style={styles.description}>{post.description}</p>
-        
+
         <div style={{ marginBottom: '15px' }}>
           <span style={{ fontWeight: '500' }}>Tutor: </span>
           <span>{instructor}</span>
         </div>
-        
-        <div style={styles.footer}>
-          <span style={getBadgeStyle()}>
-            {post.category}
-          </span>
+
+        <div style={styles.iconRow}>
+          <button
+            onClick={handleLikeToggle}
+            style={{
+              ...styles.actionButton,
+              backgroundColor: liked ? '#1976d2' : '#e0e0e0',
+              color: liked ? 'white' : '#333'
+            }}
+          >
+            {liked ? 'Liked' : 'Like'} ({likeCount})
+          </button>
+
+          <button
+            onClick={() => navigate(`/posts/${post.id}#comments`)}
+            style={{
+              ...styles.actionButton,
+              backgroundColor: '#f1f1f1',
+              color: '#333'
+            }}
+          >
+            Comment ({post.commentCount || 0})
+          </button>
         </div>
-        
-        <Link 
-          to={`/posts/${post.id}`}
-          style={styles.viewButton}
-        >
+
+        <Link to={`/posts/${post.id}`} style={styles.viewButton}>
           View Course
         </Link>
       </div>
