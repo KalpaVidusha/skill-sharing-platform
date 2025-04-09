@@ -10,7 +10,7 @@ const Home = () => {
 
       {/* Header */}
       <header style={headerStyle}>
-        <h2>No one can handle me </h2>
+        
         <h1 style={logoStyle}>SkillSphere</h1>
         <nav style={navStyle}>
           <Link to="/" style={navLink}>Home</Link>
