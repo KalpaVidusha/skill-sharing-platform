@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
 const Login = () => {
-  const [identifier, setIdentifier] = useState(""); // Single field for username or email
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     setLoaded(true);
@@ -14,38 +16,36 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
+
     try {
-      // Determine if the identifier is an email or username
-      const isEmail = identifier.includes('@');
-      
       const payload = {
         password
       };
-      
-      // Set either email or username based on the input
-      if (isEmail) {
+
+      if (identifier.includes('@')) {
         payload.email = identifier;
-        payload.username = "";
       } else {
         payload.username = identifier;
-        payload.email = "";
       }
 
-      const response = await axios.post("http://localhost:8081/api/users/login", payload);
+      const response = await axios.post("http://localhost:8081/api/users/login", payload, {
+        withCredentials: true
+      });
 
-      const { userId, username: loggedInUsername, email: loggedInEmail } = response.data;
-
-      alert("Login successful!");
+      const { userId, username, email } = response.data;
 
       // Store user info in localStorage
       localStorage.setItem("userId", userId);
-      localStorage.setItem("username", loggedInUsername);
-      localStorage.setItem("email", loggedInEmail);
+      localStorage.setItem("username", username);
+      localStorage.setItem("email", email);
+      localStorage.setItem("isLoggedIn", "true");
 
+      // Always redirect to dashboard after login
       navigate("/userdashboard");
     } catch (err) {
       console.error(err);
-      alert("Login failed. Please check your username/email or password.");
+      setError("Login failed. Please check your credentials and try again.");
     }
   };
 
@@ -54,6 +54,8 @@ const Login = () => {
       <div style={{ ...cardStyle, ...(loaded ? fadeIn : hiddenStyle) }}>
         <h2 style={titleStyle}>Welcome Back</h2>
         <p style={subtitleStyle}>Login to continue to SkillSphere</p>
+
+        {error && <p style={errorStyle}>{error}</p>}
 
         <form onSubmit={handleLogin} style={formStyle}>
           <input
@@ -136,21 +138,30 @@ const formStyle = {
 const inputStyle = {
   padding: "12px",
   borderRadius: "8px",
-  border: "none",
-  backgroundColor: "#1e293b",
-  color: "#fff",
-  fontSize: "14px",
+  border: "1px solid #4a5568",
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
+  color: "#ffffff",
+  fontSize: "16px",
 };
 
 const loginBtn = {
-  backgroundColor: "#3b82f6",
-  color: "#fff",
   padding: "12px",
-  fontWeight: "bold",
-  fontSize: "16px",
   borderRadius: "8px",
   border: "none",
+  backgroundColor: "#4CAF50",
+  color: "#ffffff",
+  fontSize: "16px",
+  fontWeight: "bold",
   cursor: "pointer",
+  transition: "background-color 0.3s ease",
+};
+
+const errorStyle = {
+  color: "#ff6b6b",
+  backgroundColor: "rgba(255, 107, 107, 0.1)",
+  padding: "10px",
+  borderRadius: "8px",
+  marginBottom: "16px",
 };
 
 export default Login;
