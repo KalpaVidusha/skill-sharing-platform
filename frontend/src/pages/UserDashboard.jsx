@@ -2,17 +2,18 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaPlus,
-  FaSignOutAlt,
   FaUser,
+  FaSignOutAlt,
   FaChartLine,
   FaFileAlt,
   FaComments,
+  FaCompass,
 } from "react-icons/fa";
 
 const UserDashboard = () => {
-  const navigate = useNavigate();
   const [animate, setAnimate] = useState(false);
   const [hovered, setHovered] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setTimeout(() => setAnimate(true), 100);
@@ -98,6 +99,7 @@ const UserDashboard = () => {
         <h2 style={styles.logo}>SkillSphere</h2>
         {[
           { id: "profile", icon: <FaUser />, label: "Profile" },
+          { id: "explore", icon: <FaCompass />, label: "Explore", onClick: () => navigate("/") },
           { id: "addpost", icon: <FaPlus />, label: "Add Post", onClick: handleAddPost },
           { id: "progress", icon: <FaChartLine />, label: "Progress" },
           { id: "docs", icon: <FaFileAlt />, label: "Documents" },
@@ -117,7 +119,8 @@ const UserDashboard = () => {
         <button
           style={getButtonStyle(styles.logoutButton, "logout")}
           onClick={() => {
-            localStorage.removeItem("userId"); // Clear the user ID
+            localStorage.removeItem("userId");
+            localStorage.removeItem("isLoggedIn");
             alert("Logged out successfully.");
             navigate("/login");
           }}

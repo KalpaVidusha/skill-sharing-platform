@@ -21,7 +21,6 @@ public class PostService {
     }
 
     public Post createPost(Post post) {
-        // Ensure created and updated timestamps are set
         if (post.getCreatedAt() == null) {
             post.setCreatedAt(java.time.LocalDateTime.now());
         }
@@ -55,5 +54,15 @@ public class PostService {
 
     public void deletePost(String id) {
         postRepository.deleteById(id);
+    }
+
+    public boolean isPostOwner(String postId, String userId) {
+        Optional<Post> post = postRepository.findById(postId);
+        return post.isPresent() && post.get().getUser().getId().equals(userId);
+    }
+
+    //  NEW: Add save method to support post update (e.g. for like toggle)
+    public Post save(Post post) {
+        return postRepository.save(post);
     }
 }

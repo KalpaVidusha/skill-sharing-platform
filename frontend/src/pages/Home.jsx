@@ -1,7 +1,7 @@
 // src/pages/Home.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaSignInAlt, FaUserPlus } from 'react-icons/fa'; // 🔥 Icons added
+import { FaSignInAlt, FaUserPlus } from 'react-icons/fa';
 
 const Home = () => {
   return (

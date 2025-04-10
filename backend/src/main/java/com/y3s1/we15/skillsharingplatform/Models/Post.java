@@ -2,8 +2,10 @@ package com.y3s1.we15.skillsharingplatform.Models;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.DBRef; // Import this for referencing another document
+import org.springframework.data.mongodb.core.mapping.DBRef;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Document(collection = "posts")
@@ -15,11 +17,16 @@ public class Post {
     private String category;
     private List<String> mediaUrls;
 
-    @DBRef // This annotation indicates a reference to another document
-    private UserModel user; // Change from userId to UserModel
+    @DBRef
+    private UserModel user;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // ✅ New fields for like system
+    private List<String> likedUserIds = new ArrayList<>();
+private int likeCount;
+
 
     // Constructors
     public Post() {
@@ -33,7 +40,7 @@ public class Post {
         this.description = description;
         this.category = category;
         this.mediaUrls = mediaUrls;
-        this.user = user; // Set the user directly
+        this.user = user;
     }
 
     // Getters and Setters
@@ -77,11 +84,11 @@ public class Post {
         this.mediaUrls = mediaUrls;
     }
 
-    public UserModel getUser () {
+    public UserModel getUser() {
         return user;
     }
 
-    public void setUser (UserModel user) {
+    public void setUser(UserModel user) {
         this.user = user;
     }
 
@@ -99,5 +106,22 @@ public class Post {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // ✅ Likes
+    public List<String> getLikedUserIds() {
+        return likedUserIds;
+    }
+
+    public void setLikedUserIds(List<String> likedUserIds) {
+        this.likedUserIds = likedUserIds;
+    }
+
+    public int getLikeCount() {
+        return likeCount;
+    }
+
+    public void setLikeCount(int likeCount) {
+        this.likeCount = likeCount;
     }
 }
