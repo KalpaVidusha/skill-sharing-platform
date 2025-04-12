@@ -7,6 +7,7 @@ import Posts from './pages/Posts/Posts';
 import PostDetail from './pages/Posts/PostDetail';
 import CreatePost from "./pages/Posts/CreatePost";
 import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
+import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         {/*Monetization and reward management */}
 
         <Route path="/monetization/form" element={<MonetizationRequest />} />
+        <Route path="/monetize" element={<MonetizationForm />} />
         
         {/* Optional: Category Filter */}
         <Route path="/category/:categoryName" element={<Home />} />
