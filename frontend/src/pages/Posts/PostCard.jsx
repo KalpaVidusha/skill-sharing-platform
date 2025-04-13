@@ -66,28 +66,28 @@ const PostCard = ({ post }) => {
 
   const styles = {
     card: {
-      backgroundColor: '#fff',
-      borderRadius: '12px',
+      backgroundColor: '#ffffff',
+      borderRadius: '16px',
       boxShadow: isHovered
-        ? '0 10px 20px rgba(0, 0, 0, 0.12)'
-        : '0 4px 15px rgba(0, 0, 0, 0.08)',
+        ? '0 12px 24px rgba(0, 102, 204, 0.15)'
+        : '0 6px 18px rgba(0, 0, 0, 0.08)',
+      transition: 'all 0.3s ease',
+      transform: isHovered ? 'translateY(-8px)' : 'none',
       overflow: 'hidden',
-      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-      height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      position: 'relative',
-      transform: isHovered ? 'translateY(-5px)' : 'none'
+      border: '1px solid #e0eaff'
     },
     imageContainer: {
-      position: 'relative',
       height: '200px',
       overflow: 'hidden'
     },
     image: {
       width: '100%',
       height: '100%',
-      objectFit: 'cover'
+      objectFit: 'cover',
+      transition: 'transform 0.3s ease',
+      transform: isHovered ? 'scale(1.03)' : 'scale(1)'
     },
     content: {
       padding: '20px',
@@ -96,25 +96,30 @@ const PostCard = ({ post }) => {
       flexGrow: 1
     },
     title: {
-      fontSize: '20px',
-      fontWeight: '600',
-      color: '#333',
-      marginBottom: '10px',
-      lineHeight: 1.3
+      fontSize: '22px',
+      fontWeight: '700',
+      color: '#1e3a8a',
+      marginBottom: '10px'
     },
     description: {
-      color: '#666',
-      marginBottom: '15px',
-      flexGrow: 1
+      fontSize: '14px',
+      color: '#555',
+      flexGrow: 1,
+      marginBottom: '10px'
+    },
+    tutor: {
+      marginBottom: '8px',
+      color: '#0369a1',
+      fontSize: '13px'
     },
     iconRow: {
       display: 'flex',
       alignItems: 'center',
       gap: '15px',
-      marginTop: 'auto',
+      marginTop: '10px',
       fontSize: '14px',
       fontWeight: '500',
-      color: '#444'
+      color: '#3b82f6'
     },
     likeButton: {
       border: 'none',
@@ -123,17 +128,22 @@ const PostCard = ({ post }) => {
       display: 'flex',
       alignItems: 'center',
       gap: '6px',
-      color: likedByCurrentUser ? '#e91e63' : '#555'
+      color: likedByCurrentUser ? '#ef4444' : '#64748b',
+      transition: 'color 0.2s ease',
+      fontSize: '14px'
     },
     viewButton: {
       display: 'inline-block',
-      padding: '8px 16px',
-      backgroundColor: '#4CAF50',
+      padding: '10px 20px',
+      backgroundColor: '#3b82f6',
       color: 'white',
       textDecoration: 'none',
-      borderRadius: '4px',
-      marginTop: '10px',
-      textAlign: 'center'
+      borderRadius: '8px',
+      marginTop: '15px',
+      textAlign: 'center',
+      fontWeight: '500',
+      transition: 'background-color 0.3s ease',
+      boxShadow: '0 4px 10px rgba(0, 102, 204, 0.15)'
     }
   };
 
@@ -154,11 +164,7 @@ const PostCard = ({ post }) => {
       <div style={styles.content}>
         <h3 style={styles.title}>{post.title}</h3>
         <p style={styles.description}>{post.description}</p>
-
-        <div style={{ marginBottom: '15px' }}>
-          <span style={{ fontWeight: '500' }}>Tutor: </span>
-          <span>{instructor}</span>
-        </div>
+        <div style={styles.tutor}><strong>Instructor:</strong> {instructor}</div>
 
         <div style={styles.iconRow}>
           <button onClick={toggleLike} style={styles.likeButton}>
