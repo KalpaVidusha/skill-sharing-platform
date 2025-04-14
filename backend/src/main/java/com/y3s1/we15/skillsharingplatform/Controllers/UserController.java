@@ -6,6 +6,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
 import com.y3s1.we15.skillsharingplatform.Service.UserService;
+
+import jakarta.servlet.http.HttpSession;
+
 import java.util.*;
 
 @RestController
@@ -117,6 +120,12 @@ public class UserController {
         }
         return ResponseEntity.notFound().build();
     }
+    @GetMapping("/current")
+public ResponseEntity<?> getCurrentUser(HttpSession session) {
+    UserModel user = (UserModel) session.getAttribute("user");
+    return user != null ? ResponseEntity.ok(user) : ResponseEntity.status(401).body("Not logged in");
+}
+
 
     @GetMapping("/email/{email}")
     public ResponseEntity<UserModel> getUserByEmail(@PathVariable String email) {
@@ -127,8 +136,10 @@ public class UserController {
         return ResponseEntity.notFound().build();
     }
 
+
+
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginData) {
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginData, HttpSession session) {
         String username = loginData.get("username");
         String email = loginData.get("email");
         String password = loginData.get("password");
@@ -144,6 +155,9 @@ public class UserController {
         }
 
         if (user != null) {
+            // Set user in session
+            session.setAttribute("user", user);
+            
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful");
             response.put("userId", user.getId());

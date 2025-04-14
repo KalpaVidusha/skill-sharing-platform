@@ -17,53 +17,36 @@ const CreatePost = () => {
   const [previewUrls, setPreviewUrls] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
 
-  // Categories for dropdown
-  const categories = ['Programming', 'Design', 'Business', 'Marketing', 'Photography', 'Music', 'Cooking', 'Fitness', 'Language', 'Other'];
+  const categories = ['Programming', 'Design', 'Business', 'Photography', 'Music', 'Cooking', 'Fitness', 'Language', 'Other'];
 
   useEffect(() => {
-    // Get current user information from localStorage
     const userId = localStorage.getItem('userId');
     if (userId) {
       apiService.getUserProfile(userId)
-        .then(user => {
-          setCurrentUser(user);
-        })
-        .catch(error => {
-          console.error('Failed to fetch user data:', error);
-          setError('Unable to retrieve user information. Please log in again.');
-        });
+        .then(user => setCurrentUser(user))
+        .catch(() => setError("Failed to load user profile."));
     } else {
-      navigate('/login', { state: { message: 'Please log in to create a post' } });
+      navigate('/login', { state: { message: 'Please log in to continue' } });
     }
   }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     setUploadedFiles(files);
-    
-    // Create preview URLs for images
-    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
-    setPreviewUrls(newPreviewUrls);
+    setPreviewUrls(files.map(file => URL.createObjectURL(file)));
   };
 
   const handleRemovePreview = (index) => {
     const newFiles = [...uploadedFiles];
     const newPreviews = [...previewUrls];
-    
-    // Release the object URL to prevent memory leaks
-    URL.revokeObjectURL(previewUrls[index]);
-    
+    URL.revokeObjectURL(newPreviews[index]);
     newFiles.splice(index, 1);
     newPreviews.splice(index, 1);
-    
     setUploadedFiles(newFiles);
     setPreviewUrls(newPreviews);
   };
@@ -72,36 +55,26 @@ const CreatePost = () => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-
     try {
       let mediaUrls = [];
-      
-      // Upload files if any
       if (uploadedFiles.length > 0) {
         const uploadResponse = await apiService.uploadFiles(uploadedFiles);
         mediaUrls = uploadResponse.fileUrls || [];
       }
-      
-      // Create the post with user reference
       const postData = {
         ...formData,
         mediaUrls,
-        user: { id: currentUser.id } // Just need the ID for reference
+        user: { id: currentUser.id }
       };
-      
       const createdPost = await apiService.createPost(postData);
-      
-      // Redirect to the post detail page
       navigate(`/posts/${createdPost.id}`);
     } catch (err) {
-      setError('Failed to create post: ' + (err.message || 'Unknown error'));
-      console.error('Post creation error:', err);
+      setError("Failed to create post. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Clean up preview URLs when component unmounts
   useEffect(() => {
     return () => {
       previewUrls.forEach(url => URL.revokeObjectURL(url));
@@ -109,100 +82,116 @@ const CreatePost = () => {
   }, [previewUrls]);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.content}>
-        <div style={styles.headerRow}>
-          <button style={styles.backButton} onClick={() => navigate(-1)}>
-            ← Back
-          </button>
-          <h1 style={styles.title}>Create New Post</h1>
-        </div>
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(to right, #e3f2fd, #fefefe)",
+      padding: "50px 20px",
+      fontFamily: "'Poppins', sans-serif"
+    }}>
+      <div style={{
+        maxWidth: "900px",
+        margin: "0 auto",
+        backgroundColor: "#ffffff",
+        borderRadius: "16px",
+        padding: "40px",
+        boxShadow: "0 12px 30px rgba(0,0,0,0.1)"
+      }}>
+        <button onClick={() => navigate(-1)} style={{
+          background: "none",
+          border: "none",
+          color: "#1976d2",
+          fontWeight: 500,
+          fontSize: "16px",
+          cursor: "pointer",
+          marginBottom: "20px"
+        }}>← Back</button>
 
-        {error && (
-          <div style={styles.errorMessage}>
-            {error}
+        <h2 style={{ color: "#0d47a1", marginBottom: "20px" }}>Create New Post</h2>
+
+        {error && <div style={{
+          backgroundColor: "#ffebee",
+          color: "#c62828",
+          padding: "12px",
+          borderRadius: "6px",
+          marginBottom: "20px"
+        }}>{error}</div>}
+
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div>
+            <label style={label}>Title</label>
+            <input name="title" value={formData.title} onChange={handleChange} style={input} required />
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Title</label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              style={styles.input}
-              placeholder="Enter a descriptive title"
-              required
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Category</label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              style={styles.select}
-              required
-            >
-              <option value="">Select a category</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
+          <div>
+            <label style={label}>Category</label>
+            <select name="category" value={formData.category} onChange={handleChange} required style={input}>
+              <option value="">Select Category</option>
+              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
             </select>
           </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              style={styles.textarea}
-              placeholder="Describe your post in detail"
-              rows="8"
-              required
-            />
+          <div>
+            <label style={label}>Description</label>
+            <textarea name="description" value={formData.description} onChange={handleChange} style={{ ...input, height: "120px" }} required />
           </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Media (Optional)</label>
-            <input
-              type="file"
-              onChange={handleFileChange}
-              style={styles.fileInput}
-              multiple
-              accept="image/*"
-            />
-            
+          <div>
+            <label style={label}>Upload Media</label>
+            <input type="file" onChange={handleFileChange} multiple style={{ ...input, padding: "6px" }} />
             {previewUrls.length > 0 && (
-              <div style={styles.previewContainer}>
+              <div style={{
+                display: "flex",
+                gap: "15px",
+                flexWrap: "wrap",
+                marginTop: "15px"
+              }}>
                 {previewUrls.map((url, index) => (
-                  <div key={index} style={styles.previewItem}>
-                    <img src={url} alt="Preview" style={styles.previewImage} />
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePreview(index)}
-                      style={styles.removeButton}
-                    >
-                      ×
-                    </button>
+                  <div key={index} style={{
+                    position: "relative",
+                    width: "120px",
+                    height: "120px",
+                    borderRadius: "10px",
+                    overflow: "hidden",
+                    boxShadow: "0 4px 10px rgba(0,0,0,0.1)"
+                  }}>
+                    <img src={url} alt="Preview" style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover"
+                    }} />
+                    <button type="button" onClick={() => handleRemovePreview(index)} style={{
+                      position: "absolute",
+                      top: "5px",
+                      right: "5px",
+                      backgroundColor: "#fff",
+                      borderRadius: "50%",
+                      width: "24px",
+                      height: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: "bold",
+                      border: "1px solid #ddd",
+                      cursor: "pointer"
+                    }}>×</button>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <button 
-            type="submit" 
-            style={isLoading ? {...styles.submitButton, ...styles.buttonDisabled} : styles.submitButton}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Creating...' : 'Create Post'}
+          <button type="submit" disabled={isLoading} style={{
+            backgroundColor: isLoading ? "#90caf9" : "#2196f3",
+            color: "#fff",
+            padding: "14px",
+            fontSize: "16px",
+            border: "none",
+            borderRadius: "8px",
+            fontWeight: "600",
+            cursor: isLoading ? "not-allowed" : "pointer",
+            transition: "background-color 0.3s ease"
+          }}>
+            {isLoading ? "Creating..." : "Create Post"}
           </button>
         </form>
       </div>
@@ -210,153 +199,22 @@ const CreatePost = () => {
   );
 };
 
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#f5f7fa',
-    padding: '40px 20px'
-  },
-  content: {
-    maxWidth: '900px',
-    margin: '0 auto',
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)',
-    padding: '30px'
-  },
-  headerRow: {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: '30px'
-  },
-  backButton: {
-    background: 'none',
-    border: 'none',
-    color: '#2684ff',
-    cursor: 'pointer',
-    fontSize: '16px',
-    marginRight: '15px'
-  },
-  title: {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    color: '#333',
-    margin: 0
-  },
-  errorMessage: {
-    padding: '12px',
-    backgroundColor: '#ffebee',
-    color: '#c62828',
-    borderRadius: '6px',
-    marginBottom: '20px',
-    fontSize: '14px'
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px'
-  },
-  formGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px'
-  },
-  label: {
-    fontSize: '16px',
-    fontWeight: '500',
-    color: '#4b5563'
-  },
-  input: {
-    padding: '12px 16px',
-    fontSize: '16px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    outline: 'none',
-    transition: 'border-color 0.3s ease',
-    ':focus': {
-      borderColor: '#3b82f6'
-    }
-  },
-  select: {
-    padding: '12px 16px',
-    fontSize: '16px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    outline: 'none',
-    backgroundColor: '#fff',
-    transition: 'border-color 0.3s ease',
-    ':focus': {
-      borderColor: '#3b82f6'
-    }
-  },
-  textarea: {
-    padding: '12px 16px',
-    fontSize: '16px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    outline: 'none',
-    resize: 'vertical',
-    minHeight: '150px',
-    transition: 'border-color 0.3s ease',
-    ':focus': {
-      borderColor: '#3b82f6'
-    }
-  },
-  fileInput: {
-    padding: '12px 0',
-    fontSize: '14px'
-  },
-  previewContainer: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '15px',
-    marginTop: '15px'
-  },
-  previewItem: {
-    position: 'relative',
-    width: '120px',
-    height: '120px',
-    borderRadius: '8px',
-    overflow: 'hidden'
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover'
-  },
-  removeButton: {
-    position: 'absolute',
-    top: '5px',
-    right: '5px',
-    width: '24px',
-    height: '24px',
-    borderRadius: '50%',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    border: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '18px',
-    cursor: 'pointer'
-  },
-  submitButton: {
-    padding: '14px 24px',
-    backgroundColor: '#2196f3',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '16px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    transition: 'background-color 0.3s ease',
-    ':hover': {
-      backgroundColor: '#1976d2'
-    }
-  },
-  buttonDisabled: {
-    backgroundColor: '#90caf9',
-    cursor: 'not-allowed'
-  }
+const label = {
+  display: "block",
+  marginBottom: "6px",
+  fontWeight: 500,
+  color: "#0d47a1"
+};
+
+const input = {
+  width: "100%",
+  padding: "12px 16px",
+  borderRadius: "8px",
+  border: "1px solid #bbdefb",
+  backgroundColor: "#f0f7ff",
+  fontSize: "15px",
+  outline: "none",
+  transition: "border 0.3s ease"
 };
 
 export default CreatePost;

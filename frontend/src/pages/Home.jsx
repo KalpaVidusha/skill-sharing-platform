@@ -1,187 +1,177 @@
-// src/pages/Home.jsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaSignInAlt, FaUserPlus } from 'react-icons/fa'; // 🔥 Icons added
+import { FaSignInAlt, FaUserPlus } from 'react-icons/fa';
 
 const Home = () => {
+  const [fadeIn, setFadeIn] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setFadeIn(true), 100);
+  }, []);
+
   return (
-    <div style={containerStyle}>
-      <div style={overlayStyle}></div>
+    <div style={styles.container}>
+      <div style={styles.overlay}></div>
 
       {/* Header */}
-      <header style={headerStyle}>
-        <h2>No one can handle me </h2>
-        <h1 style={logoStyle}>SkillSphere</h1>
-        <nav style={navStyle}>
-          <Link to="/" style={navLink}>Home</Link>
-          <Link to="/login" style={navLink}>
-            <FaSignInAlt style={iconStyle} /> Login
-          </Link>
-          <Link to="/signup" style={navLink}>
-            <FaUserPlus style={iconStyle} /> Register
-          </Link>
+      <header style={{ ...styles.header, ...(fadeIn ? styles.fadeIn : styles.hidden) }}>
+        <h1 style={styles.logo}>SkillSphere</h1>
+        <nav style={styles.nav}>
+          <Link to="/" style={styles.navLink}>Home</Link>
+          <Link to="/login" style={styles.navLink}><FaSignInAlt style={styles.icon} /> Login</Link>
+          <Link to="/signup" style={styles.navLink}><FaUserPlus style={styles.icon} /> Register</Link>
         </nav>
       </header>
 
-      {/* Hero Section */}
-      <section style={heroSection}>
-        <h2 style={heroTitle}>Welcome to SkillSphere</h2>
-        <p style={heroText}>
-          A dark, modern space to share and track skills — from coding to cooking, photography to DIY.
+      {/* Hero */}
+      <section style={{ ...styles.hero, ...(fadeIn ? styles.fadeIn : styles.hidden) }}>
+        <h2 style={styles.heroTitle}>Unleash Your Skills</h2>
+        <p style={styles.heroText}>
+          A sleek, modern space to share knowledge, track growth, and connect with creators like you.
         </p>
-        <Link to="/posts" style={buttonStyle}>
-          Explore Posts
-        </Link>
+        <Link to="/posts" style={styles.button}>Explore Posts</Link>
       </section>
 
-      {/* Features Section */}
-      <section style={featuresSection}>
-        <div style={featuresGrid}>
-          <div style={featureBox}>
-            <h3 style={featureTitle}>Share Skills</h3>
-            <p style={featureText}>Upload media and descriptions to showcase your talents.</p>
+      {/* Features */}
+      <section style={{ ...styles.features, ...(fadeIn ? styles.fadeIn : styles.hidden) }}>
+        <div style={styles.grid}>
+          <div style={styles.card}>
+            <h3 style={styles.cardTitle}>📤 Share Skills</h3>
+            <p style={styles.cardText}>Upload content and show the world what you know.</p>
           </div>
-          <div style={featureBox}>
-            <h3 style={featureTitle}>Track Progress</h3>
-            <p style={featureText}>Log your learning milestones and stay consistent.</p>
+          <div style={styles.card}>
+            <h3 style={styles.cardTitle}>📈 Track Progress</h3>
+            <p style={styles.cardText}>Log milestones, review achievements, and stay motivated.</p>
           </div>
-          <div style={featureBox}>
-            <h3 style={featureTitle}>Connect & Learn</h3>
-            <p style={featureText}>Engage with others, give feedback, and grow together.</p>
+          <div style={styles.card}>
+            <h3 style={styles.cardTitle}>🤝 Connect & Grow</h3>
+            <p style={styles.cardText}>Collaborate with learners and mentors from all around the world.</p>
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer style={footerStyle}>
-        <p>© 2025 SkillSphere. Built with ❤️ at SLIIT</p>
-      </footer>
     </div>
   );
 };
 
-// 🌌 Styles
-const containerStyle = {
-  minHeight: "100vh",
-  backgroundImage: `url("https://images.unsplash.com/photo-1526045612212-70caf35c14df")`,
-  backgroundSize: "cover",
-  backgroundPosition: "center",
-  position: "relative",
-  color: "#f3f4f6",
-};
-
-const overlayStyle = {
-  position: "absolute",
-  inset: 0,
-  backgroundColor: "rgba(0, 0, 0, 0.7)",
-  zIndex: 0,
-};
-
-const headerStyle = {
-  position: "relative",
-  zIndex: 1,
-  padding: "16px 32px",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  backgroundColor: "rgba(0,0,0,0.6)",
-  borderBottom: "1px solid #333",
-};
-
-const navStyle = {
-  display: "flex",
-  alignItems: "center",
-};
-
-const logoStyle = {
-  fontSize: "24px",
-  fontWeight: "bold",
-  color: "#60a5fa",
-};
-
-const navLink = {
-  marginLeft: "16px",
-  color: "#d1d5db",
-  textDecoration: "none",
-  fontWeight: "500",
-  display: "flex",
-  alignItems: "center",
-};
-
-const iconStyle = {
-  marginRight: "6px",
-};
-
-const heroSection = {
-  position: "relative",
-  zIndex: 1,
-  textAlign: "center",
-  padding: "100px 20px",
-};
-
-const heroTitle = {
-  fontSize: "40px",
-  fontWeight: "800",
-  marginBottom: "16px",
-  color: "#93c5fd",
-};
-
-const heroText = {
-  fontSize: "18px",
-  maxWidth: "600px",
-  margin: "0 auto 32px",
-  color: "#e5e7eb",
-};
-
-const buttonStyle = {
-  backgroundColor: "#3b82f6",
-  color: "#fff",
-  padding: "12px 24px",
-  borderRadius: "8px",
-  textDecoration: "none",
-  fontWeight: "600",
-  fontSize: "16px",
-  border: "none",
-  cursor: "pointer",
-};
-
-const featuresSection = {
-  backgroundColor: "rgba(17, 24, 39, 0.9)",
-  padding: "64px 20px",
-  position: "relative",
-  zIndex: 1,
-};
-
-const featuresGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-  gap: "40px",
-  textAlign: "center",
-};
-
-const featureBox = {
-  padding: "20px",
-};
-
-const featureTitle = {
-  fontSize: "20px",
-  fontWeight: "600",
-  color: "#60a5fa",
-  marginBottom: "8px",
-};
-
-const featureText = {
-  color: "#d1d5db",
-};
-
-const footerStyle = {
-  position: "relative",
-  zIndex: 1,
-  backgroundColor: "#1f2937",
-  color: "#9ca3af",
-  textAlign: "center",
-  padding: "24px",
-  borderTop: "1px solid #374151",
+// Inline CSS
+const styles = {
+  container: {
+    minHeight: '100vh',
+    backgroundImage: `url("https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1500&q=80")`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    position: 'relative',
+    color: '#1e3a8a',
+    fontFamily: 'Poppins, sans-serif',
+    transition: 'all 0.8s ease'
+  },
+  overlay: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    zIndex: 0
+  },
+  header: {
+    position: 'relative',
+    zIndex: 1,
+    padding: '20px 40px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  logo: {
+    fontSize: '26px',
+    fontWeight: 'bold',
+    color: '#2563eb'
+  },
+  nav: {
+    display: 'flex',
+    gap: '16px'
+  },
+  navLink: {
+    color: '#1e3a8a',
+    fontWeight: '500',
+    textDecoration: 'none',
+    fontSize: '15px',
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'color 0.3s ease',
+  },
+  icon: {
+    marginRight: '6px'
+  },
+  hero: {
+    position: 'relative',
+    zIndex: 1,
+    padding: '120px 20px 60px',
+    textAlign: 'center',
+  },
+  heroTitle: {
+    fontSize: '44px',
+    fontWeight: '800',
+    color: '#1e3a8a',
+    marginBottom: '20px'
+  },
+  heroText: {
+    fontSize: '18px',
+    color: '#334155',
+    maxWidth: '600px',
+    margin: '0 auto 30px',
+    lineHeight: '1.6'
+  },
+  button: {
+    backgroundColor: '#2563eb',
+    color: 'white',
+    padding: '14px 28px',
+    borderRadius: '10px',
+    fontWeight: '600',
+    fontSize: '16px',
+    textDecoration: 'none',
+    boxShadow: '0 8px 20px rgba(37,99,235,0.2)',
+    transition: 'background 0.3s ease',
+  },
+  features: {
+    position: 'relative',
+    zIndex: 1,
+    padding: '80px 20px 60px',
+    background: 'linear-gradient(to bottom, #eff6ff, #ffffff)',
+    color: '#1e3a8a',
+    textAlign: 'center'
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    gap: '32px',
+    maxWidth: '1100px',
+    margin: '0 auto'
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: '12px',
+    padding: '30px',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+    transition: 'transform 0.3s ease',
+  },
+  cardTitle: {
+    fontSize: '20px',
+    fontWeight: '600',
+    color: '#2563eb',
+    marginBottom: '10px'
+  },
+  cardText: {
+    color: '#475569',
+    fontSize: '15px',
+    lineHeight: '1.6'
+  },
+  fadeIn: {
+    opacity: 1,
+    transform: 'translateY(0)',
+    transition: 'all 0.8s ease'
+  },
+  hidden: {
+    opacity: 0,
+    transform: 'translateY(30px)'
+  }
 };
 
 export default Home;

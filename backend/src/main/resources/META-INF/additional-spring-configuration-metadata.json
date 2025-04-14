@@ -1,0 +1,32 @@
+{"properties": [
+  {
+    "name": "spring.data.mongodb.connection-pool-max-idle-time",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.data.mongodb.connection-pool-max-idle-time'"
+  },
+  {
+    "name": "spring.data.mongodb.connection-pool-size",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.data.mongodb.connection-pool-size'"
+  },
+  {
+    "name": "spring.data.mongodb.connection-pool-min-size",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.data.mongodb.connection-pool-min-size'"
+  },
+  {
+    "name": "spring.data.mongodb.connect-timeout",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.data.mongodb.connect-timeout'"
+  },
+  {
+    "name": "spring.data.mongodb.socket-timeout",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.data.mongodb.socket-timeout'"
+  },
+  {
+    "name": "spring.data.mongodb.max-wait-time",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.data.mongodb.max-wait-time'"
+  }
+]}
