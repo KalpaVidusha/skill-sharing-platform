@@ -1,0 +1,60 @@
+.form-container {
+  padding: 40px;
+  max-width: 500px;
+  margin: auto;
+  background-color: #1e293b;
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  color: #fff;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.form-title {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #3b82f6;
+}
+
+.monetization-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.monetization-form input,
+.monetization-form textarea {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: #334155;
+  color: #fff;
+  outline: none;
+  transition: background-color 0.3s;
+}
+
+.monetization-form input:focus,
+.monetization-form textarea:focus {
+  background-color: #475569;
+}
+
+.monetization-form textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.monetization-form button {
+  padding: 12px;
+  background-color: #3b82f6;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.monetization-form button:hover {
+  background-color: #06a443;
+}

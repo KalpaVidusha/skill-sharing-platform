@@ -1,8 +1,9 @@
 package com.y3s1.we15.skillsharingplatform.Service;
 
-import com.y3s1.we15.skillsharingplatform.Models.PostModel;
+import com.y3s1.we15.skillsharingplatform.Models.Post;
+import com.y3s1.we15.skillsharingplatform.Models.UserModel;
 import com.y3s1.we15.skillsharingplatform.Repositories.PostRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.y3s1.we15.skillsharingplatform.Repositories.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,26 +12,57 @@ import java.util.Optional;
 @Service
 public class PostService {
 
-    @Autowired
-    private PostRepository postRepository;
+    private final PostRepository postRepository;
+    private final UserRepository userRepository;
 
-    public PostModel createPost(PostModel post) {
+    public PostService(PostRepository postRepository, UserRepository userRepository) {
+        this.postRepository = postRepository;
+        this.userRepository = userRepository;
+    }
+
+    public Post createPost(Post post) {
+        if (post.getCreatedAt() == null) {
+            post.setCreatedAt(java.time.LocalDateTime.now());
+        }
+        post.setUpdatedAt(java.time.LocalDateTime.now());
         return postRepository.save(post);
     }
 
-    public List<PostModel> getAllPosts() {
+    public List<Post> getAllPosts() {
         return postRepository.findAll();
     }
 
-    public List<PostModel> getPostsByUserId(String userId) {
-        return postRepository.findByUserId(userId);
+    public Optional<Post> getPostById(String id) {
+        return postRepository.findById(id);
     }
 
-    public Optional<PostModel> getPostById(String id) {
-        return postRepository.findById(id);
+    public List<Post> getPostsByCategory(String category) {
+        return postRepository.findByCategory(category);
+    }
+
+    public List<Post> searchPosts(String title) {
+        return postRepository.findByTitleContainingIgnoreCase(title);
+    }
+
+    public List<Post> getPostsByUserId(String userId) {
+        Optional<UserModel> user = userRepository.findById(userId);
+        if (user.isPresent()) {
+            return postRepository.findByUser(user.get());
+        }
+        return List.of(); // Return empty list if user not found
     }
 
     public void deletePost(String id) {
         postRepository.deleteById(id);
+    }
+
+    public boolean isPostOwner(String postId, String userId) {
+        Optional<Post> post = postRepository.findById(postId);
+        return post.isPresent() && post.get().getUser().getId().equals(userId);
+    }
+
+    //  NEW: Add save method to support post update (e.g. for like toggle)
+    public Post save(Post post) {
+        return postRepository.save(post);
     }
 }
