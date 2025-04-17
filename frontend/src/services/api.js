@@ -7,6 +7,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 // Request interceptor for authentication
@@ -56,9 +57,12 @@ const apiService = {
   uploadFiles: (files) => {
     const formData = new FormData();
     files.forEach(file => formData.append("files", file));
-    return api.post("/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" }
-    });
+    
+    // Use a different axios instance for file uploads
+    return axios.post(`${API_BASE_URL}/upload`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      withCredentials: true
+    }).then(response => response.data);
   }
 };
 

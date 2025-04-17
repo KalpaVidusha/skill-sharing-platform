@@ -7,10 +7,50 @@ const PostCard = ({ post }) => {
   const [commentCount, setCommentCount] = useState(0);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const [likedByCurrentUser, setLikedByCurrentUser] = useState(false);
+  const [mediaLoaded, setMediaLoaded] = useState(false);
 
   const hasImage = post.mediaUrls && post.mediaUrls.length > 0;
   const defaultImageUrl = 'https://via.placeholder.com/400x200?text=No+Image';
   const instructor = post.user ? `${post.user.firstName} ${post.user.lastName}` : 'Unknown';
+  
+  // Function to determine if a URL is a video
+  const isVideoUrl = (url) => {
+    return url && (url.includes('/video/') || url.endsWith('.mp4') || url.endsWith('.mov'));
+  };
+
+  // Function to get optimized image URL from Cloudinary
+  const getOptimizedImageUrl = (url, width = 400) => {
+    if (!url || !url.includes('cloudinary.com')) return url;
+    
+    // Transform cloudinary URL to get resized, optimized version
+    // Example: https://res.cloudinary.com/xyz/image/upload/v1234/folder/image.jpg
+    // Becomes: https://res.cloudinary.com/xyz/image/upload/c_scale,w_400,q_auto,f_auto/v1234/folder/image.jpg
+    
+    const parts = url.split('/upload/');
+    if (parts.length !== 2) return url;
+    
+    return `${parts[0]}/upload/c_scale,w_${width},q_auto,f_auto/${parts[1]}`;
+  };
+
+  // Get the first media URL that's optimized
+  const getMediaUrl = () => {
+    if (!hasImage) return defaultImageUrl;
+    
+    const firstMedia = post.mediaUrls[0];
+    if (isVideoUrl(firstMedia)) {
+      // For videos, get a thumbnail
+      if (firstMedia.includes('cloudinary.com')) {
+        const parts = firstMedia.split('/video/');
+        if (parts.length === 2) {
+          return `${parts[0]}/video/upload/c_scale,w_400,q_auto,f_auto/e_preview:duration_2/${parts[1].split('/').pop()}`;
+        }
+      }
+      return defaultImageUrl;
+    }
+    
+    // For images, get optimized version
+    return getOptimizedImageUrl(firstMedia);
+  };
 
   useEffect(() => {
     const fetchCommentCount = async () => {
@@ -80,14 +120,28 @@ const PostCard = ({ post }) => {
     },
     imageContainer: {
       height: '200px',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      position: 'relative',
+      backgroundColor: '#f0f7ff'
+    },
+    imagePlaceholder: {
+      display: !mediaLoaded ? 'flex' : 'none',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#e3f2fd'
     },
     image: {
       width: '100%',
       height: '100%',
       objectFit: 'cover',
       transition: 'transform 0.3s ease',
-      transform: isHovered ? 'scale(1.03)' : 'scale(1)'
+      transform: isHovered ? 'scale(1.03)' : 'scale(1)',
+      opacity: mediaLoaded ? 1 : 0
     },
     content: {
       padding: '20px',
@@ -154,10 +208,15 @@ const PostCard = ({ post }) => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div style={styles.imageContainer}>
+        <div style={styles.imagePlaceholder}>
+          <div style={{ color: '#1976d2' }}>Loading...</div>
+        </div>
         <img
-          src={hasImage ? post.mediaUrls[0] : defaultImageUrl}
+          src={getMediaUrl()}
           alt={post.title}
           style={styles.image}
+          loading="lazy"
+          onLoad={() => setMediaLoaded(true)}
         />
       </div>
 
