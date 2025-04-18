@@ -1,6 +1,7 @@
 package com.y3s1.we15.skillsharingplatform.Service;
 
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +15,8 @@ public interface UserService {
     boolean existsByEmail(String email);
     UserModel findByUsername(String username);
     UserModel findByEmail(String email);
+    
+    // Modified to support logging in by username OR email
     UserModel login(String username, String email, String password);
     UserModel loginByUsername(String username, String password);
     UserModel loginByEmail(String email, String password);
