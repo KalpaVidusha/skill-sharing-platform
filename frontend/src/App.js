@@ -9,7 +9,6 @@ import CreatePost from "./pages/Posts/CreatePost";
 import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 
-
 function App() {
   return (
     <Router>
@@ -27,9 +26,8 @@ function App() {
         {/* User Management */}
         <Route path="/userdashboard" element={<UserDashboard />} />
 
-        
-
         {/*Monetization and reward management */}
+
         <Route path="/monetization/form" element={<MonetizationRequest />} />
         <Route path="/monetize" element={<MonetizationForm />} />
         
