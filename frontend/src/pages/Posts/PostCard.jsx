@@ -132,6 +132,12 @@ const PostCard = ({ post }) => {
       transition: 'color 0.2s ease',
       fontSize: '14px'
     },
+    commentContainer: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '2px',
+      color: '#64748b'
+    },
     viewButton: {
       display: 'inline-block',
       padding: '10px 20px',
@@ -170,7 +176,10 @@ const PostCard = ({ post }) => {
           <button onClick={toggleLike} style={styles.likeButton}>
             {likedByCurrentUser ? <FaHeart /> : <FaRegHeart />} {likeCount}
           </button>
-          <span><FaComment /> {commentCount}</span>
+          <div style={styles.commentContainer}>
+            <FaComment style={{display: 'inline', marginRight: '4px', verticalAlign: 'middle'}} />
+            <span style={{display: 'inline', verticalAlign: 'middle'}}>{commentCount}</span>
+          </div>
         </div>
 
         <Link to={`/posts/${post.id}`} style={styles.viewButton}>
