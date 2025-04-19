@@ -8,6 +8,8 @@ import PostDetail from './pages/Posts/PostDetail';
 import CreatePost from "./pages/Posts/CreatePost";
 import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
+import Feed from "./pages/Feed";
+import Courses from "./pages/Courses";
 
 function App() {
   return (
@@ -26,8 +28,11 @@ function App() {
         {/* User Management */}
         <Route path="/userdashboard" element={<UserDashboard />} />
 
-        {/*Monetization and reward management */}
+        {/* New Routes */}
+        <Route path="/feed" element={<Feed />} />
+        <Route path="/courses" element={<Courses />} />
 
+        {/*Monetization and reward management */}
         <Route path="/monetization/form" element={<MonetizationRequest />} />
         <Route path="/monetize" element={<MonetizationForm />} />
         
