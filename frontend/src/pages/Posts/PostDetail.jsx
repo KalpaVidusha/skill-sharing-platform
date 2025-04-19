@@ -128,15 +128,16 @@ const PostDetail = () => {
       <p style={{ backgroundColor: '#f0f7ff', padding: '12px', borderRadius: '6px' }}>{post?.description}</p>
 
       {post?.mediaUrls?.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', margin: '20px 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px', margin: '20px 0' }}>
           {post.mediaUrls.map((url, index) => (
-            <div key={index} style={{ background: '#fff', borderRadius: '8px', overflow: 'hidden' }}>
-              {url.endsWith('.mp4') ? (
-                <video controls style={{ width: '100%' }}>
-                  <source src={url} type="video/mp4" />
+            <div key={index} style={{ background: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+              {url.match(/\.(mp4|webm|ogg)(\?.*)?$/i) ? (
+                <video controls style={{ width: '100%', display: 'block' }}>
+                  <source src={url} type={`video/${url.split('.').pop().split('?')[0]}`} />
+                  Your browser does not support the video tag.
                 </video>
               ) : (
-                <img src={url} alt={`Media ${index}`} style={{ width: '100%', height: 'auto' }} />
+                <img src={url} alt={`Media ${index}`} style={{ width: '100%', height: 'auto', display: 'block' }} />
               )}
             </div>
           ))}
@@ -162,26 +163,14 @@ const PostDetail = () => {
           placeholder={isLoggedIn ? "Write a comment..." : "Log in to comment"}
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          style={{
-            width: '100%', height: '90px', padding: '12px',
-            borderRadius: '10px', border: '1px solid #90caf9', background: '#f1f9ff'
-          }}
+          style={{ width: '100%', height: '90px', padding: '12px', borderRadius: '10px', border: '1px solid #90caf9', background: '#f1f9ff' }}
           disabled={!isLoggedIn}
         />
         {error && <p style={{ color: '#e53935' }}>{error}</p>}
         <button
           onClick={handleAddComment}
           disabled={!isLoggedIn}
-          style={{
-            marginTop: '10px',
-            padding: '10px 24px',
-            backgroundColor: isLoggedIn ? '#1976d2' : '#ccc',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontWeight: '500',
-            cursor: isLoggedIn ? 'pointer' : 'not-allowed'
-          }}
+          style={{ marginTop: '10px', padding: '10px 24px', backgroundColor: isLoggedIn ? '#1976d2' : '#ccc', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '500', cursor: isLoggedIn ? 'pointer' : 'not-allowed' }}
         >
           Add Comment
         </button>

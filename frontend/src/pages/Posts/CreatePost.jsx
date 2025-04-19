@@ -1,4 +1,3 @@
-// src/pages/Posts/CreatePost.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../../services/api';
@@ -15,6 +14,7 @@ const CreatePost = () => {
   const [error, setError] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
 
   const categories = ['Programming', 'Design', 'Business', 'Photography', 'Music', 'Cooking', 'Fitness', 'Language', 'Other'];
@@ -37,8 +37,34 @@ const CreatePost = () => {
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    setUploadedFiles(files);
-    setPreviewUrls(files.map(file => URL.createObjectURL(file)));
+    
+    // Validate file types and sizes
+    const validFiles = files.filter(file => {
+      const isValidType = /^(image\/|video\/)/.test(file.type);
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+      
+      if (!isValidType) {
+        setError("Only images and videos are allowed");
+        return false;
+      }
+      
+      if (!isValidSize) {
+        setError("Files must be less than 10MB");
+        return false;
+      }
+      
+      return true;
+    });
+    
+    if (validFiles.length === 0) return;
+    if (validFiles.length > 3) {
+      setError("Maximum 3 files allowed");
+      return;
+    }
+    
+    setError(null);
+    setUploadedFiles(validFiles);
+    setPreviewUrls(validFiles.map(file => URL.createObjectURL(file)));
   };
 
   const handleRemovePreview = (index) => {
@@ -55,21 +81,26 @@ const CreatePost = () => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setUploadProgress(0);
+    
     try {
       let mediaUrls = [];
       if (uploadedFiles.length > 0) {
         const uploadResponse = await apiService.uploadFiles(uploadedFiles);
-        mediaUrls = uploadResponse.fileUrls || [];
+        mediaUrls = uploadResponse.urls || [];
       }
+      
       const postData = {
         ...formData,
         mediaUrls,
         user: { id: currentUser.id }
       };
+      
       const createdPost = await apiService.createPost(postData);
       navigate(`/posts/${createdPost.id}`);
     } catch (err) {
       setError("Failed to create post. Please try again.");
+      console.error("Error creating post:", err);
     } finally {
       setIsLoading(false);
     }
@@ -80,6 +111,58 @@ const CreatePost = () => {
       previewUrls.forEach(url => URL.revokeObjectURL(url));
     };
   }, [previewUrls]);
+
+  const renderPreview = (file, url, index) => {
+    const isVideo = file.type.startsWith('video/');
+    
+    return (
+      <div key={index} style={{
+        position: "relative",
+        width: "120px",
+        height: "120px",
+        borderRadius: "10px",
+        overflow: "hidden",
+        boxShadow: "0 4px 10px rgba(0,0,0,0.1)"
+      }}>
+        {isVideo ? (
+          <video 
+            src={url} 
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover"
+            }}
+            controls
+          />
+        ) : (
+          <img 
+            src={url} 
+            alt="Preview" 
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover"
+            }} 
+          />
+        )}
+        <button type="button" onClick={() => handleRemovePreview(index)} style={{
+          position: "absolute",
+          top: "5px",
+          right: "5px",
+          backgroundColor: "#fff",
+          borderRadius: "50%",
+          width: "24px",
+          height: "24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontWeight: "bold",
+          border: "1px solid #ddd",
+          cursor: "pointer"
+        }}>×</button>
+      </div>
+    );
+  };
 
   return (
     <div style={{
@@ -136,8 +219,36 @@ const CreatePost = () => {
           </div>
 
           <div>
-            <label style={label}>Upload Media</label>
-            <input type="file" onChange={handleFileChange} multiple style={{ ...input, padding: "6px" }} />
+            <label style={label}>Upload Media (Images or Videos - Max 3 files, 10MB each)</label>
+            <input 
+              type="file" 
+              onChange={handleFileChange} 
+              multiple 
+              accept="image/*,video/*"
+              style={{ ...input, padding: "6px" }} 
+            />
+            
+            {uploadProgress > 0 && uploadProgress < 100 && (
+              <div style={{ marginTop: "10px" }}>
+                <div style={{
+                  width: "100%",
+                  backgroundColor: "#e0e0e0",
+                  borderRadius: "4px",
+                  height: "8px",
+                  overflow: "hidden"
+                }}>
+                  <div style={{
+                    width: `${uploadProgress}%`,
+                    backgroundColor: "#2196f3",
+                    height: "100%"
+                  }}></div>
+                </div>
+                <p style={{ textAlign: "center", fontSize: "12px", marginTop: "5px" }}>
+                  Uploading: {uploadProgress}%
+                </p>
+              </div>
+            )}
+            
             {previewUrls.length > 0 && (
               <div style={{
                 display: "flex",
@@ -145,37 +256,7 @@ const CreatePost = () => {
                 flexWrap: "wrap",
                 marginTop: "15px"
               }}>
-                {previewUrls.map((url, index) => (
-                  <div key={index} style={{
-                    position: "relative",
-                    width: "120px",
-                    height: "120px",
-                    borderRadius: "10px",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 10px rgba(0,0,0,0.1)"
-                  }}>
-                    <img src={url} alt="Preview" style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover"
-                    }} />
-                    <button type="button" onClick={() => handleRemovePreview(index)} style={{
-                      position: "absolute",
-                      top: "5px",
-                      right: "5px",
-                      backgroundColor: "#fff",
-                      borderRadius: "50%",
-                      width: "24px",
-                      height: "24px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: "bold",
-                      border: "1px solid #ddd",
-                      cursor: "pointer"
-                    }}>×</button>
-                  </div>
-                ))}
+                {previewUrls.map((url, index) => renderPreview(uploadedFiles[index], url, index))}
               </div>
             )}
           </div>
