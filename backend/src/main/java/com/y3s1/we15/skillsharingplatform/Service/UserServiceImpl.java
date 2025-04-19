@@ -65,35 +65,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserModel login(String username, String email, String password) {
-        if (username != null && !username.isEmpty()) {
-            return loginByUsername(username, password);
-        } else if (email != null && !email.isEmpty()) {
-            return loginByEmail(email, password);
-        }
+        // Deprecated - now handled by Spring Security
         return null;
     }
 
     @Override
     public UserModel loginByUsername(String username, String password) {
-        Optional<UserModel> optionalUser = userRepository.findByUsername(username);
-        if (optionalUser.isPresent()) {
-            UserModel user = optionalUser.get();
-            if (user.getPassword().equals(password)) {
-                return user;
-            }
-        }
+        // Deprecated - now handled by Spring Security
         return null;
     }
 
     @Override
     public UserModel loginByEmail(String email, String password) {
-        Optional<UserModel> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isPresent()) {
-            UserModel user = optionalUser.get();
-            if (user.getPassword().equals(password)) {
-                return user;
-            }
-        }
+        // Deprecated - now handled by Spring Security
         return null;
     }
 }

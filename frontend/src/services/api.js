@@ -37,11 +37,12 @@ const apiService = {
     return api.post("/users/login", payload);
   },
 
-  signup: (userData) => api.post("/users", userData),
+  signup: (userData) => api.post("/users/signup", userData),
 
   // Users
   getUserProfile: (userId) => api.get(`/users/${userId}`),
   updateUserProfile: (userId, userData) => api.put(`/users/${userId}`, userData),
+  getCurrentUser: () => api.get("/users/current"),
 
   // Posts
   createPost: (postData) => api.post("/posts", postData),
@@ -60,7 +61,10 @@ const apiService = {
     
     // Use a different axios instance for file uploads
     return axios.post(`${API_BASE_URL}/upload`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+      headers: { 
+        "Content-Type": "multipart/form-data",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      },
       withCredentials: true
     }).then(response => response.data);
   }
