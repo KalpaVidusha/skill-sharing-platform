@@ -8,6 +8,8 @@ import com.y3s1.we15.skillsharingplatform.Service.UserService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -71,12 +73,19 @@ public class PostController {
         return ResponseEntity.noContent().build();
     }
 
-    // ✅ Like toggle endpoint
+    // Updated like toggle endpoint to use JWT authentication
     @PostMapping("/{postId}/like")
-    public ResponseEntity<?> toggleLike(@PathVariable String postId, HttpSession session) {
-        UserModel user = (UserModel) session.getAttribute("user");
-        if (user == null) {
+    public ResponseEntity<?> toggleLike(@PathVariable String postId) {
+        // Get authenticated user from SecurityContext (JWT)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(401).body("Login required");
+        }
+        
+        String username = authentication.getName();
+        UserModel user = userService.findByUsername(username);
+        if (user == null) {
+            return ResponseEntity.status(401).body("User not found");
         }
 
         Optional<Post> optionalPost = postService.getPostById(postId);

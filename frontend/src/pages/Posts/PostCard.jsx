@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaComment, FaHeart, FaRegHeart } from 'react-icons/fa';
+import apiService from '../../services/api';
 
 const PostCard = ({ post }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -55,11 +56,8 @@ const PostCard = ({ post }) => {
   useEffect(() => {
     const fetchCommentCount = async () => {
       try {
-        const res = await fetch(`http://localhost:8081/api/comments/post/${post.id}`, {
-          credentials: 'include'
-        });
-        const data = await res.json();
-        setCommentCount(data.length);
+        const comments = await apiService.getCommentsByPost(post.id);
+        setCommentCount(comments.length);
       } catch (err) {
         console.error('Failed to fetch comment count:', err);
       }
@@ -67,12 +65,14 @@ const PostCard = ({ post }) => {
 
     const fetchLikeStatus = async () => {
       try {
-        const res = await fetch(`http://localhost:8081/api/users/current`, {
-          credentials: 'include'
-        });
-        if (res.ok) {
-          const user = await res.json();
-          setLikedByCurrentUser(post.likedUserIds?.includes(user.id));
+        // First check if user is logged in
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        if (!isLoggedIn) return;
+        
+        // Get user ID from localStorage
+        const userId = localStorage.getItem('userId');
+        if (userId) {
+          setLikedByCurrentUser(post.likedUserIds?.includes(userId));
         }
       } catch (err) {
         console.error('Failed to check like status:', err);
@@ -87,20 +87,22 @@ const PostCard = ({ post }) => {
 
   const toggleLike = async () => {
     try {
-      const res = await fetch(`http://localhost:8081/api/posts/${post.id}/like`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-
-      if (res.ok) {
-        const result = await res.json();
-        setLikeCount(result.likeCount);
-        setLikedByCurrentUser(result.likedByCurrentUser);
-      } else if (res.status === 401) {
+      // Check if user is logged in first
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      if (!isLoggedIn) {
         window.location.href = `/login?redirect=/posts/${post.id}`;
+        return;
       }
+      
+      const result = await apiService.toggleLike(post.id);
+      setLikeCount(result.likeCount);
+      setLikedByCurrentUser(result.likedByCurrentUser);
     } catch (err) {
       console.error('Error toggling like:', err);
+      // If we get a 401 error, redirect to login
+      if (err.status === 401) {
+        window.location.href = `/login?redirect=/posts/${post.id}`;
+      }
     }
   };
 

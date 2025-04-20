@@ -6,10 +6,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
 import com.y3s1.we15.skillsharingplatform.Service.UserService;
+import com.y3s1.we15.skillsharingplatform.Security.JwtUtils;
+import com.y3s1.we15.skillsharingplatform.Security.payload.JwtResponse;
+import com.y3s1.we15.skillsharingplatform.Security.payload.LoginRequest;
+import com.y3s1.we15.skillsharingplatform.Security.payload.MessageResponse;
+import com.y3s1.we15.skillsharingplatform.Security.payload.SignupRequest;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -17,6 +31,115 @@ import java.util.*;
 public class UserController {
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private AuthenticationManager authenticationManager;
+    
+    @Autowired
+    private JwtUtils jwtUtils;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @PostMapping("/signup")
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
+        if (userService.existsByUsername(signUpRequest.getUsername())) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Username is already taken!"));
+        }
+
+        if (userService.existsByEmail(signUpRequest.getEmail())) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Email is already in use!"));
+        }
+
+        // Create new user's account with encoded password
+        UserModel user = new UserModel(
+                signUpRequest.getUsername(),
+                signUpRequest.getEmail(),
+                passwordEncoder.encode(signUpRequest.getPassword()), // Encode password
+                signUpRequest.getFirstName(),
+                signUpRequest.getLastName(),
+                signUpRequest.getSkills());
+
+        Set<String> strRoles = signUpRequest.getRole();
+        Set<String> roles = new HashSet<>();
+
+        if (strRoles == null || strRoles.isEmpty()) {
+            roles.add("USER");
+        } else {
+            strRoles.forEach(role -> {
+                switch (role) {
+                    case "admin":
+                        roles.add("ROLE_ADMIN");
+                        break;
+                    case "mod":
+                        roles.add("ROLE_MODERATOR");
+                        break;
+                    default:
+                        roles.add("USER");
+                }
+            });
+        }
+
+        user.setRole(roles);
+        userService.createUser(user);
+
+        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    }
+
+    @PostMapping("/signin")
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        try {
+            Authentication authentication;
+            
+            if (loginRequest.getUsername() != null && !loginRequest.getUsername().isEmpty()) {
+                // Login by username
+                authentication = authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                loginRequest.getUsername(), 
+                                loginRequest.getPassword()));
+            } else if (loginRequest.getEmail() != null && !loginRequest.getEmail().isEmpty()) {
+                // For email login, first get the username from email
+                UserModel user = userService.findByEmail(loginRequest.getEmail());
+                if (user == null) {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(new MessageResponse("User not found with email: " + loginRequest.getEmail()));
+                }
+                
+                authentication = authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                user.getUsername(), 
+                                loginRequest.getPassword()));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new MessageResponse("Either username or email must be provided"));
+            }
+            
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = jwtUtils.generateJwtToken(authentication);
+            
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            UserModel user = userService.findByUsername(userDetails.getUsername());
+            
+            List<String> roles = user.getRole() != null ? 
+                    new ArrayList<>(user.getRole()) : 
+                    Collections.singletonList("USER");
+            
+            return ResponseEntity.ok(new JwtResponse(
+                    jwt,
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    roles));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new MessageResponse("Authentication failed: " + e.getMessage()));
+        }
+    }
 
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody UserModel user) {
@@ -28,6 +151,10 @@ public class UserController {
                 errorResponse.put("error", "Username, email, and password are required fields");
                 return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
             }
+            
+            // Encode the password before storing
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            
             UserModel createdUser = userService.createUser(user);
             return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
         } catch (Exception e) {
@@ -68,7 +195,12 @@ public class UserController {
                 UserModel user = userOptional.get();
                 if (userDetails.getUsername() != null) user.setUsername(userDetails.getUsername());
                 if (userDetails.getEmail() != null) user.setEmail(userDetails.getEmail());
-                if (userDetails.getPassword() != null) user.setPassword(userDetails.getPassword());
+                
+                // If password is being updated, encode it
+                if (userDetails.getPassword() != null) {
+                    user.setPassword(passwordEncoder.encode(userDetails.getPassword()));
+                }
+                
                 if (userDetails.getFirstName() != null) user.setFirstName(userDetails.getFirstName());
                 if (userDetails.getLastName() != null) user.setLastName(userDetails.getLastName());
                 if (userDetails.getContactNumber() != null) user.setContactNumber(userDetails.getContactNumber());
@@ -120,12 +252,30 @@ public class UserController {
         }
         return ResponseEntity.notFound().build();
     }
+    
     @GetMapping("/current")
-public ResponseEntity<?> getCurrentUser(HttpSession session) {
-    UserModel user = (UserModel) session.getAttribute("user");
-    return user != null ? ResponseEntity.ok(user) : ResponseEntity.status(401).body("Not logged in");
-}
-
+    public ResponseEntity<?> getCurrentUser() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            Object principal = authentication.getPrincipal();
+            
+            String username;
+            if (principal instanceof UserDetails) {
+                username = ((UserDetails) principal).getUsername();
+            } else {
+                username = principal.toString();
+            }
+            
+            UserModel user = userService.findByUsername(username);
+            if (user != null) {
+                return ResponseEntity.ok(user);
+            } else {
+                return ResponseEntity.status(401).body("User not found");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body("Authentication error: " + e.getMessage());
+        }
+    }
 
     @GetMapping("/email/{email}")
     public ResponseEntity<UserModel> getUserByEmail(@PathVariable String email) {
@@ -136,26 +286,42 @@ public ResponseEntity<?> getCurrentUser(HttpSession session) {
         return ResponseEntity.notFound().build();
     }
 
-
-
+    // This method is kept for backward compatibility but is now deprecated
+    // Use /api/auth/signin instead
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginData, HttpSession session) {
         String username = loginData.get("username");
         String email = loginData.get("email");
         String password = loginData.get("password");
-        UserModel user = null;
-
-        // Check if login is by username
-        if (username != null && !username.isEmpty()) {
-            user = userService.loginByUsername(username, password);
-        } 
-        // Otherwise, check if login is by email
-        else if (email != null && !email.isEmpty()) {
-            user = userService.loginByEmail(email, password);
-        }
-
-        if (user != null) {
-            // Set user in session
+        
+        try { 
+            Authentication authentication;
+            if (username != null && !username.isEmpty()) {
+                authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password));
+            } else if (email != null && !email.isEmpty()) {
+                UserModel user = userService.findByEmail(email);
+                if (user != null) {
+                    authentication = authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(user.getUsername(), password));
+                } else {
+                    Map<String, String> error = new HashMap<>();
+                    error.put("error", "Invalid credentials");
+                    return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+                }
+            } else {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Username or email is required");
+                return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+            }
+            
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = jwtUtils.generateJwtToken(authentication);
+            
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            UserModel user = userService.findByUsername(userDetails.getUsername());
+            
+            // Set user in session for backward compatibility
             session.setAttribute("user", user);
             
             Map<String, Object> response = new HashMap<>();
@@ -163,8 +329,10 @@ public ResponseEntity<?> getCurrentUser(HttpSession session) {
             response.put("userId", user.getId());
             response.put("username", user.getUsername());
             response.put("email", user.getEmail());
+            response.put("token", jwt);
             return new ResponseEntity<>(response, HttpStatus.OK);
-        } else {
+            
+        } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Invalid credentials");
             return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);

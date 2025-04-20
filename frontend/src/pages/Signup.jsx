@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import apiService from "../services/api";
+import 'react-toastify/dist/ReactToastify.css';
 
 const Signup = () => {
   const [username, setUsername] = useState("");
@@ -10,6 +13,7 @@ const Signup = () => {
   const [skills, setSkills] = useState("");
   const [agree, setAgree] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setLoaded(true);
@@ -18,29 +22,51 @@ const Signup = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
     if (!agree) {
-      alert("Please agree to the Terms & Conditions.");
+      toast.warning("Please agree to the Terms & Conditions.");
+      return;
+    }
+
+    // Validate password length before sending to server
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters long");
       return;
     }
 
     try {
-      const response = await axios.post("http://localhost:8081/api/users", {
+      const userData = {
         username,
         email,
         password,
         firstName,
         lastName,
         skills: skills.split(",").map((skill) => skill.trim()),
-      });
-      alert("Account created successfully!");
-      console.log(response.data);
+        role: ["user"]
+      };
+      
+      const response = await apiService.signup(userData);
+      
+      toast.success("Account created successfully! You can now log in.");
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
-      console.error(err);
-      alert("Signup failed. Try again.");
+      console.error("Signup error:", err);
+      if (err.message && (
+          err.message.includes("Username is already taken") || 
+          err.message.includes("Email is already in use")
+      )) {
+        toast.error(err.message);
+      } else if (err.data && err.data.message) {
+        toast.error(err.data.message);
+      } else if (err.status === 405) {
+        toast.error("The signup endpoint is not properly configured. Please check your API routes.");
+      } else {
+        toast.error("Signup failed. Please ensure your password is 6-40 characters long and all fields are valid.");
+      }
     }
   };
 
   return (
     <div style={containerStyle}>
+      <ToastContainer position="top-center" />
       <div style={{ ...cardStyle, ...(loaded ? fadeIn : hiddenStyle) }}>
         <h2 style={titleStyle}>Create Your Account</h2>
         <p style={subtitleStyle}>Join <span style={{ color: "#1976d2", fontWeight: 600 }}>SkillSphere</span> today!</p>

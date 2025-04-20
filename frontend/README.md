@@ -1,6 +1,20 @@
-# Getting Started with Create React App
+# SkillSphere Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+The React frontend for the SkillSphere platform.
+
+## Environment Setup
+
+Before running the application, you need to set up your environment variables:
+
+1. Copy the example environment file:
+```
+cp .env.example .env
+```
+
+2. Edit the `.env` file and add your Google OAuth credentials:
+```
+REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id-here
+```
 
 ## Available Scripts
 
@@ -68,3 +82,7 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Security Note
+
+The `.env` file containing sensitive API keys should never be committed to version control. It is already added to `.gitignore` for this purpose.

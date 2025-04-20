@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaSignInAlt, FaUserPlus } from 'react-icons/fa';
+import Navbar from '../components/Navbar';
 
 const Home = () => {
   const [fadeIn, setFadeIn] = useState(false);
@@ -13,15 +14,10 @@ const Home = () => {
     <div style={styles.container}>
       <div style={styles.overlay}></div>
 
-      {/* Header */}
-      <header style={{ ...styles.header, ...(fadeIn ? styles.fadeIn : styles.hidden) }}>
-        <h1 style={styles.logo}>SkillSphere</h1>
-        <nav style={styles.nav}>
-          <Link to="/" style={styles.navLink}>Home</Link>
-          <Link to="/login" style={styles.navLink}><FaSignInAlt style={styles.icon} /> Login</Link>
-          <Link to="/signup" style={styles.navLink}><FaUserPlus style={styles.icon} /> Register</Link>
-        </nav>
-      </header>
+      {/* Navbar with higher z-index to ensure it's above the overlay */}
+      <div style={styles.navWrapper}>
+        <Navbar />
+      </div>
 
       {/* Hero */}
       <section style={{ ...styles.hero, ...(fadeIn ? styles.fadeIn : styles.hidden) }}>
@@ -71,34 +67,9 @@ const styles = {
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
     zIndex: 0
   },
-  header: {
+  navWrapper: {
     position: 'relative',
-    zIndex: 1,
-    padding: '20px 40px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  logo: {
-    fontSize: '26px',
-    fontWeight: 'bold',
-    color: '#2563eb'
-  },
-  nav: {
-    display: 'flex',
-    gap: '16px'
-  },
-  navLink: {
-    color: '#1e3a8a',
-    fontWeight: '500',
-    textDecoration: 'none',
-    fontSize: '15px',
-    display: 'flex',
-    alignItems: 'center',
-    transition: 'color 0.3s ease',
-  },
-  icon: {
-    marginRight: '6px'
+    zIndex: 10 // Higher z-index to ensure it's above the overlay
   },
   hero: {
     position: 'relative',
