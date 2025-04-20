@@ -114,6 +114,7 @@ public class WebSecurityConfig {
                     .requestMatchers("/api/auth/**").permitAll() 
                     .requestMatchers("/api/public/**").permitAll()
                     .requestMatchers("/api/comments").permitAll()
+                    .requestMatchers("/api/comments/post/**").permitAll()  // Allow access to get comments by post
                     .requestMatchers("/api/posts/**").permitAll() 
                     .anyRequest().authenticated()
             );
