@@ -118,3 +118,7 @@ src/main/resources/application.properties
 /test-output/
 jacoco.exec
 *.jfr
+
+# Application properties with secrets
+src/main/resources/application.properties
+src/main/resources/application-*.properties
