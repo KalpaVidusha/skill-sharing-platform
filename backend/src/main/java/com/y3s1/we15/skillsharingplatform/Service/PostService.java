@@ -58,7 +58,19 @@ public class PostService {
 
     public boolean isPostOwner(String postId, String userId) {
         Optional<Post> post = postRepository.findById(postId);
-        return post.isPresent() && post.get().getUser().getId().equals(userId);
+        if (!post.isPresent()) {
+            return false;
+        }
+        
+        Post postObj = post.get();
+        UserModel user = postObj.getUser();
+        
+        // Check if the post has a valid user
+        if (user == null) {
+            return false;
+        }
+        
+        return user.getId().equals(userId);
     }
 
     //  NEW: Add save method to support post update (e.g. for like toggle)

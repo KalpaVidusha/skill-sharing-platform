@@ -8,12 +8,10 @@ import com.y3s1.we15.skillsharingplatform.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.view.RedirectView;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -57,7 +55,7 @@ public class OAuthController {
 
     @PostMapping("/oauth/google")
     public ResponseEntity<?> handleGoogleAuth(@RequestBody Map<String, String> authData) {
-        String idToken = authData.get("idToken");
+        //String idToken = authData.get("idToken");
         
         // Verify the ID token with Google
         // In a real implementation, you'd use Google's API client library for validation

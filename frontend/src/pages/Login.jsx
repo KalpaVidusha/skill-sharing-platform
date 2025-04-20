@@ -7,10 +7,6 @@ import apiService from "../services/api";
 import 'react-toastify/dist/ReactToastify.css';
 import Navbar from "../components/Navbar";
 
-// Google OAuth library
-import { GoogleLogin } from '@react-oauth/google';
-import { GoogleOAuthProvider } from '@react-oauth/google';
-
 const Login = () => {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");

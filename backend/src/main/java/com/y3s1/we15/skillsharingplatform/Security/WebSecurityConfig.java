@@ -15,7 +15,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -110,12 +109,13 @@ public class WebSecurityConfig {
                 // Enable JWT security
                 auth.requestMatchers("/api/users/signin").permitAll()
                     .requestMatchers("/api/users/signup").permitAll()
-                    .requestMatchers("/api/users/login").permitAll() // For backward compatibility
+                    .requestMatchers("/api/users/login").permitAll() 
                     .requestMatchers("/api/oauth/**").permitAll()
-                    .requestMatchers("/api/auth/**").permitAll() // For Google OAuth
+                    .requestMatchers("/api/auth/**").permitAll() 
                     .requestMatchers("/api/public/**").permitAll()
                     .requestMatchers("/api/comments").permitAll()
-                    .requestMatchers("/api/posts/**").permitAll() // Add posts endpoints
+                    .requestMatchers("/api/comments/post/**").permitAll()  // Allow access to get comments by post
+                    .requestMatchers("/api/posts/**").permitAll() 
                     .anyRequest().authenticated()
             );
         

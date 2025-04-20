@@ -9,17 +9,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.util.Date;
 import javax.crypto.SecretKey;
 
 @Component
 public class JwtUtils {
 
-    @Value("${jwt.secret:X8CjAJsli47GbNMjI6AlDtGgBkuwZIyZ8DcKzlG2o9JaBTDnfn5AuKQdmYGTGc6L}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwt.expirationMs:86400000}") // Default: 24 hours
+    @Value("${jwt.expirationMs}") // Default: 24 hours
     private int jwtExpirationMs;
     
     private SecretKey cachedSigningKey;

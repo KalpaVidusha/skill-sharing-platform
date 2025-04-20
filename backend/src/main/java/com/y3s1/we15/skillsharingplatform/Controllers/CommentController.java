@@ -4,8 +4,12 @@ import com.y3s1.we15.skillsharingplatform.Models.Comment;
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
 import com.y3s1.we15.skillsharingplatform.Service.CommentService;
 import com.y3s1.we15.skillsharingplatform.Service.PostService;
+import com.y3s1.we15.skillsharingplatform.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
@@ -22,40 +26,87 @@ public class CommentController {
 
     @Autowired
     private PostService postService;
+    
+    @Autowired
+    private UserService userService;
 
     @PostMapping
     public ResponseEntity<?> addComment(@RequestBody Comment comment, HttpSession session) {
-        UserModel user = (UserModel) session.getAttribute("user");
-        if (user == null) {
+        // Get user from security context instead of session
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated() || 
+            authentication.getPrincipal().equals("anonymousUser")) {
             return ResponseEntity.status(401).body("User must be logged in to add comments");
         }
+        
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        UserModel user = userService.findByUsername(userDetails.getUsername());
+        
+        if (user == null) {
+            return ResponseEntity.status(401).body("User not found");
+        }
+        
         comment.setUserId(user.getId());
         return ResponseEntity.ok(commentService.addComment(comment));
     }
 
     @GetMapping("/post/{postId}")
     public ResponseEntity<?> getCommentsByPost(@PathVariable String postId, HttpSession session) {
-        UserModel user = (UserModel) session.getAttribute("user");
         List<Comment> comments = commentService.getCommentsByPost(postId);
         
-        // If user is logged in and is the post owner, return all comments
-        if (user != null) {
-            Optional<Comment> firstComment = comments.stream().findFirst();
-            if (firstComment.isPresent()) {
-                String postUserId = firstComment.get().getPostId();
-                if (postService.isPostOwner(postUserId, user.getId())) {
-                    return ResponseEntity.ok(comments);
-                }
-            }
+        // If there are no comments, just return an empty list
+        if (comments.isEmpty()) {
+            return ResponseEntity.ok(comments);
         }
         
-        // For non-owners, return comments with limited information
+        try {
+            // Get user from security context
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated() && 
+                !authentication.getPrincipal().equals("anonymousUser")) {
+                
+                UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+                UserModel user = userService.findByUsername(userDetails.getUsername());
+                
+                if (user != null) {
+                    // If user is logged in and is the post owner, return all comments with full details
+                    Optional<Comment> firstComment = comments.stream().findFirst();
+                    if (firstComment.isPresent()) {
+                        try {
+                            String postUserId = firstComment.get().getPostId();
+                            if (postService.isPostOwner(postUserId, user.getId())) {
+                                return ResponseEntity.ok(comments);
+                            }
+                        } catch (Exception e) {
+                            // If there's any error checking post ownership, just continue
+                            // and return the comments as a regular user
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // If there's any error in authentication check, log it but still return comments
+            System.err.println("Error checking authentication for comments: " + e.getMessage());
+        }
+        
+        // For anonymous users or non-post owners, still return the comments
         return ResponseEntity.ok(comments);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getCommentById(@PathVariable String id, HttpSession session) {
-        UserModel user = (UserModel) session.getAttribute("user");
+        // Get user from security context
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserModel user = null;
+        
+        if (authentication != null && authentication.isAuthenticated() && 
+            !authentication.getPrincipal().equals("anonymousUser")) {
+            
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            user = userService.findByUsername(userDetails.getUsername());
+        }
+        
         Optional<Comment> comment = commentService.getCommentById(id);
         
         if (comment.isPresent()) {
@@ -70,9 +121,19 @@ public class CommentController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateComment(@PathVariable String id, @RequestBody Comment updatedComment, HttpSession session) {
-        UserModel user = (UserModel) session.getAttribute("user");
-        if (user == null) {
+        // Get user from security context
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated() || 
+            authentication.getPrincipal().equals("anonymousUser")) {
             return ResponseEntity.status(401).body("User must be logged in to update comments");
+        }
+        
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        UserModel user = userService.findByUsername(userDetails.getUsername());
+        
+        if (user == null) {
+            return ResponseEntity.status(401).body("User not found");
         }
 
         Optional<Comment> existingComment = commentService.getCommentById(id);
@@ -90,9 +151,19 @@ public class CommentController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteComment(@PathVariable String id, HttpSession session) {
-        UserModel user = (UserModel) session.getAttribute("user");
-        if (user == null) {
+        // Get user from security context
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated() || 
+            authentication.getPrincipal().equals("anonymousUser")) {
             return ResponseEntity.status(401).body("User must be logged in to delete comments");
+        }
+        
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        UserModel user = userService.findByUsername(userDetails.getUsername());
+        
+        if (user == null) {
+            return ResponseEntity.status(401).body("User not found");
         }
 
         Optional<Comment> comment = commentService.getCommentById(id);
@@ -108,3 +179,4 @@ public class CommentController {
         return ResponseEntity.notFound().build();
     }
 }
+

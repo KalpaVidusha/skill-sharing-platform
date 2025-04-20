@@ -22,3 +22,8 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+
+# Application properties with secrets
+src/main/resources/application.properties
+src/main/resources/application-*.properties
