@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaSearch, FaSignInAlt, FaUserPlus, FaUser, FaBars, FaTimes } from 'react-icons/fa';
+import Swal from 'sweetalert2';
+
+// Create a custom event for auth state changes
+export const authStateChanged = new Event('authStateChanged');
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -9,21 +13,72 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check if user is logged in from localStorage or your auth system
-    const user = localStorage.getItem('user');
-    if (user) {
-      const userData = JSON.parse(user);
+  // Function to check auth status
+  const checkAuthStatus = () => {
+    const isLoggedInFlag = localStorage.getItem('isLoggedIn');
+    const storedUsername = localStorage.getItem('username');
+    
+    if (isLoggedInFlag === 'true' && storedUsername) {
       setIsLoggedIn(true);
-      setUsername(userData.name || userData.username || 'User');
+      setUsername(storedUsername);
+    } else {
+      setIsLoggedIn(false);
+      setUsername('');
     }
+  };
+
+  useEffect(() => {
+    // Initial check
+    checkAuthStatus();
+    
+    // Listen for auth state changes
+    window.addEventListener('authStateChanged', checkAuthStatus);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('authStateChanged', checkAuthStatus);
+    };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.clear();
-    setIsLoggedIn(false);
-    setUsername('');
-    navigate('/login');
+  const showLogoutConfirmation = () => {
+    Swal.fire({
+      title: 'Logout Confirmation',
+      text: 'Are you sure you want to logout?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, logout!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        performLogout();
+      }
+    });
+  };
+
+  const performLogout = () => {
+    // Call the API service logout method
+    import('../services/api').then(module => {
+      const apiService = module.default;
+      apiService.logout().then(() => {
+        setIsLoggedIn(false);
+        setUsername('');
+        
+        // Show success message
+        Swal.fire({
+          title: 'Logged Out!',
+          text: 'You have been successfully logged out.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          navigate('/login');
+          
+          // Dispatch auth state change event
+          window.dispatchEvent(new Event('authStateChanged'));
+        });
+      });
+    });
   };
 
   const handleSearch = (e) => {
@@ -79,7 +134,7 @@ const Navbar = () => {
                   <span className="text-sm font-medium">{username}</span>
                 </div>
                 <button
-                  onClick={handleLogout}
+                  onClick={showLogoutConfirmation}
                   className="px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-150"
                 >
                   Logout
@@ -157,7 +212,7 @@ const Navbar = () => {
                 </div>
                 <button
                   onClick={() => {
-                    handleLogout();
+                    showLogoutConfirmation();
                     setIsMenuOpen(false);
                   }}
                   className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700"

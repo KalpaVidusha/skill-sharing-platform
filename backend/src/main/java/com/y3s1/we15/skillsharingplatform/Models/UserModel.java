@@ -1,6 +1,7 @@
 package com.y3s1.we15.skillsharingplatform.Models;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -20,11 +21,10 @@ public class UserModel {
     private String profilePicture;
     private String location;
     private String socialLinks;
+    private Map<String, String> oauthIds;
 
-    // Default constructor required for MongoDB
     public UserModel() {}
 
-    // Constructor with fields
     public UserModel(String username, String email, String password, String firstName, String lastName, List<String> skills) {
         this.username = username;
         this.email = email;
@@ -34,7 +34,6 @@ public class UserModel {
         this.skills = skills;
     }
 
-    // Getters and Setters
     public String getId() {
         return id;
     }
@@ -130,11 +129,19 @@ public class UserModel {
     public void setSocialLinks(String socialLinks) {
         this.socialLinks = socialLinks;
     }
+    
+    public Map<String, String> getOauthIds() {
+        return oauthIds;
+    }
+    
+    public void setOauthIds(Map<String, String> oauthIds) {
+        this.oauthIds = oauthIds;
+    }
 
     @Override
     public String toString() {
         return "UserModel [contactNumber=" + contactNumber + ", email=" + email + ", id=" + id + ", location=" + location
                 + ", firstName=" + firstName + ", lastName=" + lastName + ", password=" + password + ", profilePicture=" + profilePicture + ", role=" + role
-                + ", skills=" + skills + ", socialLinks=" + socialLinks + ", username=" + username + "]";
+                + ", skills=" + skills + ", socialLinks=" + socialLinks + ", username=" + username + ", oauthIds=" + oauthIds + "]";
     }
 }

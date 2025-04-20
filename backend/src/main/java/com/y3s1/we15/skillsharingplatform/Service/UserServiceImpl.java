@@ -20,6 +20,7 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
+        // Password encoding is now handled at the controller level
         return userRepository.save(user);
     }
 
@@ -65,35 +66,29 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserModel login(String username, String email, String password) {
+        // This method is deprecated and should not be used directly.
+        // Authentication is now handled by the Spring Security AuthenticationManager
         if (username != null && !username.isEmpty()) {
-            return loginByUsername(username, password);
+            UserModel user = findByUsername(username);
+            return user; // Password verification is now handled by AuthenticationProvider
         } else if (email != null && !email.isEmpty()) {
-            return loginByEmail(email, password);
+            UserModel user = findByEmail(email);
+            return user; // Password verification is now handled by AuthenticationProvider
         }
         return null;
     }
 
     @Override
     public UserModel loginByUsername(String username, String password) {
-        Optional<UserModel> optionalUser = userRepository.findByUsername(username);
-        if (optionalUser.isPresent()) {
-            UserModel user = optionalUser.get();
-            if (user.getPassword().equals(password)) {
-                return user;
-            }
-        }
-        return null;
+        // This method is deprecated and should not be used directly.
+        // Authentication is now handled by the Spring Security AuthenticationManager
+        return findByUsername(username);
     }
 
     @Override
     public UserModel loginByEmail(String email, String password) {
-        Optional<UserModel> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isPresent()) {
-            UserModel user = optionalUser.get();
-            if (user.getPassword().equals(password)) {
-                return user;
-            }
-        }
-        return null;
+        // This method is deprecated and should not be used directly.
+        // Authentication is now handled by the Spring Security AuthenticationManager
+        return findByEmail(email);
     }
 }

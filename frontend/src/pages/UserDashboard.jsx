@@ -5,6 +5,7 @@ import {
   FaPlus, FaUser, FaSignOutAlt, FaChartLine,
   FaFileAlt, FaComments, FaCompass
 } from "react-icons/fa";
+import Navbar from "../components/Navbar";
 
 const UserDashboard = () => {
   const [animate, setAnimate] = useState(false);
@@ -112,9 +113,11 @@ const UserDashboard = () => {
   }
 
   return (
-    <div style={styles.wrapper}>
-      <aside style={styles.sidebar}>
-        <h2 style={styles.logo}>SkillSphere</h2>
+    <div>
+      <Navbar />
+      <div style={styles.wrapper}>
+        <aside style={styles.sidebar}>
+          <h2 style={styles.logo}>SkillSphere</h2>
         {[
           { id: "profile", icon: <FaUser />, label: "Profile" },
           { id: "explore", icon: <FaCompass />, label: "Explore", onClick: () => navigate("/") },
@@ -220,11 +223,16 @@ const UserDashboard = () => {
         </section>
       </main>
     </div>
+    </div>
   );
 };
 
 // 🔵 Blue & White Theme with Animations
 const styles = {
+  navWrapper: {
+    position: 'relative',
+    zIndex: 10 // Higher z-index to ensure it's above the overlay
+  },
   wrapper: {
     display: "flex",
     minHeight: "100vh",

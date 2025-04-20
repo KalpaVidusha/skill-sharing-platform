@@ -27,9 +27,12 @@ const PostDetail = () => {
     };
 
     const fetchComments = async () => {
-      const res = await fetch(`http://localhost:8081/api/comments/post/${id}`, { credentials: 'include' });
-      const data = await res.json();
-      setComments(data);
+      try {
+        const data = await apiService.getCommentsByPost(id);
+        setComments(data);
+      } catch (err) {
+        console.error('Error fetching comments:', err);
+      }
     };
 
     setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
@@ -41,53 +44,42 @@ const PostDetail = () => {
     if (!isLoggedIn) return navigate('/login', { state: { returnTo: `/posts/${id}` } });
     if (!newComment.trim()) return setError('Comment cannot be empty');
     try {
-      await fetch(`http://localhost:8081/api/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          postId: id,
-          userId: localStorage.getItem('userId'),
-          content: newComment
-        })
+      await apiService.addComment({
+        postId: id,
+        content: newComment
       });
       setNewComment('');
       setError('');
-      const res = await fetch(`http://localhost:8081/api/comments/post/${id}`, { credentials: 'include' });
-      const data = await res.json();
+      // Refresh comments after adding
+      const data = await apiService.getCommentsByPost(id);
       setComments(data);
-    } catch {
+    } catch (err) {
+      console.error('Error adding comment:', err);
       setError('Failed to add comment.');
     }
   };
 
   const handleUpdateComment = async (commentId, content) => {
     try {
-      await fetch(`http://localhost:8081/api/comments/${commentId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ content })
-      });
-      const res = await fetch(`http://localhost:8081/api/comments/post/${id}`, { credentials: 'include' });
-      const data = await res.json();
+      await apiService.updateComment(commentId, { content });
+      // Refresh comments after updating
+      const data = await apiService.getCommentsByPost(id);
       setComments(data);
       setEditingComment(null);
-    } catch {
+    } catch (err) {
+      console.error('Error updating comment:', err);
       setError('Failed to update comment.');
     }
   };
 
   const handleDeleteComment = async (commentId) => {
     try {
-      await fetch(`http://localhost:8081/api/comments/${commentId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      const res = await fetch(`http://localhost:8081/api/comments/post/${id}`, { credentials: 'include' });
-      const data = await res.json();
+      await apiService.deleteComment(commentId);
+      // Refresh comments after deleting
+      const data = await apiService.getCommentsByPost(id);
       setComments(data);
-    } catch {
+    } catch (err) {
+      console.error('Error deleting comment:', err);
       setError('Failed to delete comment.');
     }
   };
@@ -95,11 +87,7 @@ const PostDetail = () => {
   const handleToggleLike = async () => {
     if (!isLoggedIn) return navigate('/login', { state: { returnTo: `/posts/${id}` } });
     try {
-      const res = await fetch(`http://localhost:8081/api/posts/${id}/like`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-      const data = await res.json();
+      const data = await apiService.toggleLike(id);
       setLikeCount(data.likeCount);
       setLiked(data.likedByCurrentUser);
     } catch (err) {

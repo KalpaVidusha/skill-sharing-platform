@@ -10,6 +10,7 @@ import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetiz
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
+import OAuthSuccess from "./pages/OAuthSuccess";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         {/* New Routes */}
         <Route path="/feed" element={<Feed />} />
         <Route path="/courses" element={<Courses />} />
+        <Route path="/oauth-success" element={<OAuthSuccess />} />
 
         {/*Monetization and reward management */}
         <Route path="/monetization/form" element={<MonetizationRequest />} />
