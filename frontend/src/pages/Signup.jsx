@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import apiService from "../services/api";
+import Navbar from "../components/Navbar";
 
 const Signup = () => {
   const [username, setUsername] = useState("");
@@ -64,109 +65,112 @@ const Signup = () => {
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={{ ...cardStyle, ...(loaded ? fadeIn : hiddenStyle) }}>
-        <h2 style={titleStyle}>Create Your Account</h2>
-        <p style={subtitleStyle}>Join <span style={{ color: "#1976d2", fontWeight: 600 }}>SkillSphere</span> today!</p>
+    <div>
+      <Navbar />
+      <div style={{...containerStyle, paddingTop: "20px"}}>
+        <div style={{ ...cardStyle, ...(loaded ? fadeIn : hiddenStyle) }}>
+          <h2 style={titleStyle}>Create Your Account</h2>
+          <p style={subtitleStyle}>Join <span style={{ color: "#1976d2", fontWeight: 600 }}>SkillSphere</span> today!</p>
 
-        <form onSubmit={handleSignup} style={formStyle}>
-          <div style={{ display: "flex", gap: "16px" }}>
+          <form onSubmit={handleSignup} style={formStyle}>
+            <div style={{ display: "flex", gap: "16px" }}>
+              <input 
+                type="text" 
+                placeholder="First Name" 
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                style={inputStyle}
+                required
+              />
+              <input 
+                type="text" 
+                placeholder="Last Name" 
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                style={inputStyle}
+                required
+              />
+            </div>
             <input 
               type="text" 
-              placeholder="First Name" 
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Username" 
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              style={inputStyle}
+              required
+            />
+            <input 
+              type="email" 
+              placeholder="Email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
+              required
+            />
+            <input 
+              type="password" 
+              placeholder="Password (min 6 characters)" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               style={inputStyle}
               required
             />
             <input 
               type="text" 
-              placeholder="Last Name" 
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Skills (comma-separated)" 
+              value={skills}
+              onChange={(e) => setSkills(e.target.value)}
               style={inputStyle}
               required
             />
-          </div>
-          <input 
-            type="text" 
-            placeholder="Username" 
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            style={inputStyle}
-            required
-          />
-          <input 
-            type="email" 
-            placeholder="Email" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={inputStyle}
-            required
-          />
-          <input 
-            type="password" 
-            placeholder="Password (min 6 characters)" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={inputStyle}
-            required
-          />
-          <input 
-            type="text" 
-            placeholder="Skills (comma-separated)" 
-            value={skills}
-            onChange={(e) => setSkills(e.target.value)}
-            style={inputStyle}
-            required
-          />
+            
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px" }}>
+              <input 
+                type="checkbox" 
+                checked={agree}
+                onChange={(e) => setAgree(e.target.checked)}
+                id="terms"
+                style={{ width: "16px", height: "16px" }}
+              />
+              <label htmlFor="terms" style={{ color: "#607d8b", fontSize: "14px" }}>
+                I agree to the Terms & Conditions
+              </label>
+            </div>
+            
+            <button 
+              type="submit"
+              style={{
+                ...loginBtn,
+                backgroundColor: agree ? "#2196f3" : "#b0bec5",
+                cursor: agree ? "pointer" : "not-allowed",
+              }}
+              disabled={!agree}
+            >
+              Create Account
+            </button>
+          </form>
           
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px" }}>
-            <input 
-              type="checkbox" 
-              checked={agree}
-              onChange={(e) => setAgree(e.target.checked)}
-              id="terms"
-              style={{ width: "16px", height: "16px" }}
-            />
-            <label htmlFor="terms" style={{ color: "#607d8b", fontSize: "14px" }}>
-              I agree to the Terms & Conditions
-            </label>
+          <div style={{ marginTop: "25px", textAlign: "center" }}>
+            <p style={{ color: "#607d8b", marginBottom: "15px", fontSize: "14px" }}>
+              Already have an account?
+            </p>
+            <button
+              onClick={() => navigate("/login")}
+              style={{ 
+                backgroundColor: "transparent",
+                border: "1px solid #2196f3",
+                padding: "10px 20px",
+                borderRadius: "10px",
+                color: "#2196f3",
+                fontSize: "15px",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+              }}
+            >
+              Log In
+            </button>
           </div>
-          
-          <button 
-            type="submit"
-            style={{
-              ...loginBtn,
-              backgroundColor: agree ? "#2196f3" : "#b0bec5",
-              cursor: agree ? "pointer" : "not-allowed",
-            }}
-            disabled={!agree}
-          >
-            Create Account
-          </button>
-        </form>
-        
-        <div style={{ marginTop: "25px", textAlign: "center" }}>
-          <p style={{ color: "#607d8b", marginBottom: "15px", fontSize: "14px" }}>
-            Already have an account?
-          </p>
-          <button
-            onClick={() => navigate("/login")}
-            style={{ 
-              backgroundColor: "transparent",
-              border: "1px solid #2196f3",
-              padding: "10px 20px",
-              borderRadius: "10px",
-              color: "#2196f3",
-              fontSize: "15px",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-            }}
-          >
-            Log In
-          </button>
         </div>
       </div>
     </div>

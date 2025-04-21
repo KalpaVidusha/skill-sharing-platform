@@ -74,7 +74,7 @@ const styles = {
   hero: {
     position: 'relative',
     zIndex: 1,
-    padding: '120px 20px 60px',
+    padding: '160px 20px 60px',
     textAlign: 'center',
   },
   heroTitle: {

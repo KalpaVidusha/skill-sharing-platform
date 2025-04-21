@@ -165,6 +165,7 @@ const containerStyle = {
   justifyContent: "center",
   alignItems: "center",
   fontFamily: "'Poppins', sans-serif",
+  paddingTop: "20px",
 };
 
 const cardStyle = {

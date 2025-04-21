@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import apiService from '../../services/api';
 import PostCard from './PostCard';
 import SearchFilter from '../../components/SearchFilter';
+import Navbar from '../../components/Navbar';
 
 const Posts = () => {
   const [posts, setPosts] = useState([]);
@@ -15,7 +16,7 @@ const Posts = () => {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(to right, #e3f2fd, #f8fbff)',
-      padding: '40px 20px',
+      padding: '80px 20px 40px',
       fontFamily: "'Poppins', sans-serif",
       animation: 'fadeSlideIn 0.8s ease-in-out'
     },
@@ -134,53 +135,56 @@ const Posts = () => {
   }
 
   return (
-    <div style={styles.container}>
-      <style>{`
-        @keyframes fadeSlideIn {
-          0% {
-            opacity: 0;
-            transform: translateY(40px);
+    <div>
+      <Navbar />
+      <div style={styles.container}>
+        <style>{`
+          @keyframes fadeSlideIn {
+            0% {
+              opacity: 0;
+              transform: translateY(40px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
           }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
+
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
           }
-        }
+        `}</style>
 
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+        <div style={styles.content}>
+          <h1 style={styles.header}>Explore Shared Skills</h1>
 
-      <div style={styles.content}>
-        <h1 style={styles.header}>Explore Shared Skills</h1>
+          <SearchFilter
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+          />
 
-        <SearchFilter
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          categories={categories}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-        />
+          {error && <div style={styles.errorMessage}>{error}</div>}
 
-        {error && <div style={styles.errorMessage}>{error}</div>}
-
-        {loading ? (
-          <div style={styles.loader}>
-            <div style={styles.spinner}></div>
-          </div>
-        ) : (
-          <div style={styles.grid}>
-            {posts.length > 0 ? (
-              posts.map(post => <PostCard key={post.id} post={post} />)
-            ) : (
-              <div style={styles.emptyState}>
-                No posts found based on your filters.
-              </div>
-            )}
-          </div>
-        )}
+          {loading ? (
+            <div style={styles.loader}>
+              <div style={styles.spinner}></div>
+            </div>
+          ) : (
+            <div style={styles.grid}>
+              {posts.length > 0 ? (
+                posts.map(post => <PostCard key={post.id} post={post} />)
+              ) : (
+                <div style={styles.emptyState}>
+                  No posts found based on your filters.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

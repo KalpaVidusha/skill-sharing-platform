@@ -8,10 +8,13 @@ import Navbar from "../components/Navbar";
 import FollowList from "../components/FollowList";
 import UserSearch from "../components/UserSearch";
 import apiService from "../services/api";
+import Swal from 'sweetalert2';
 
 const UserDashboard = () => {
   const [animate, setAnimate] = useState(false);
   const [hovered, setHovered] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState("");
   const [userData, setUserData] = useState({
     name: "",
     email: "",
@@ -34,10 +37,54 @@ const UserDashboard = () => {
       const userId = localStorage.getItem('userId');
       
       if (!isLoggedIn || !userId) {
-        // Redirect to login if not logged in
-        navigate('/login');
+        Swal.fire({
+          title: 'Access Required',
+          html: `
+            <div class="text-center">
+              <div class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+              </div>
+              <h3 class="text-lg font-bold text-gray-900 mb-2">
+                Welcome to <span class="text-indigo-600 font-extrabold">SkillSphere</span>
+              </h3>
+              <p class="text-base text-gray-700 font-medium tracking-wide mb-2">
+                Please sign in to continue your learning journey
+              </p>
+              <p class="text-sm text-gray-500 font-medium tracking-tight">
+                Don't have an account? Join us today!
+              </p>
+            </div>
+          `,
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdrop: `
+            rgba(0, 0, 0, 0.15)
+            left top
+            no-repeat
+          `,
+          showCancelButton: true,
+          confirmButtonText: 'Sign In',
+          cancelButtonText: 'Register',
+          focusConfirm: false,
+          customClass: {
+            popup: 'rounded-xl shadow-lg border border-gray-200 backdrop-blur-md',
+            htmlContainer: 'text-center mx-4',
+            actions: 'mt-4 flex justify-center gap-4',
+            confirmButton: 'bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium transition',
+            cancelButton: 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 px-5 py-2 rounded-lg font-medium transition'
+          },
+          buttonsStyling: false,
+          allowOutsideClick: false
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate('/login');
+          } else if (result.dismiss === Swal.DismissReason.cancel) {
+            navigate('/signup');
+          }
+        });
         return;
-      }
+      }           
       
       // Get basic user info from localStorage
       const username = localStorage.getItem('username');
@@ -165,17 +212,44 @@ const UserDashboard = () => {
 
   const handleAddPost = () => navigate("/add-post");
 
-  const handleLogout = () => {
-    apiService.logout()
-      .then(() => {
-        navigate("/login");
-      })
-      .catch(error => {
-        console.error("Logout failed:", error);
-        // Still clear localStorage and redirect even if API call fails
-        localStorage.clear();
-        navigate("/login");
+  const showLogoutConfirmation = () => {
+    Swal.fire({
+      title: 'Logout Confirmation',
+      text: 'Are you sure you want to logout?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, logout!',
+      background: '#ffffff',
+      backdrop: 'rgba(79, 70, 229, 0.1)'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        performLogout();
+      }
+    });
+  };
+
+  const performLogout = () => {
+    import('../services/api').then(module => {
+      const apiService = module.default;
+      apiService.logout().then(() => {
+        setIsLoggedIn(false);
+        setUsername('');
+        
+        Swal.fire({
+          title: 'Logged Out!',
+          text: 'You have been successfully logged out.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false,
+          background: '#ffffff'
+        }).then(() => {
+          navigate('/login');
+          window.dispatchEvent(new Event('authStateChanged'));
+        });
       });
+    });
   };
 
   // Show loading indicator while fetching data
@@ -318,7 +392,7 @@ const UserDashboard = () => {
   return (
     <div>
       <Navbar />
-      <div className="flex min-h-[calc(100vh-64px)] font-sans bg-gradient-to-r from-blue-100 to-white text-blue-900">
+      <div className="flex min-h-screen font-sans bg-gradient-to-r from-blue-100 to-white text-blue-900 pt-20">
         <aside className="w-64 bg-blue-600 text-white p-6 flex flex-col gap-4">
           <h2 className="text-2xl font-bold mb-8">SkillSphere</h2>
           
@@ -350,7 +424,7 @@ const UserDashboard = () => {
           </div>
           
           <button
-            onClick={handleLogout}
+            onClick={showLogoutConfirmation}
             className="mt-auto bg-red-600 hover:bg-red-700 text-white flex items-center gap-3 py-2.5 px-3 rounded-lg transition"
             onMouseEnter={() => setHovered("logout")}
             onMouseLeave={() => setHovered(null)}
