@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaSearch, FaSignInAlt, FaUserPlus, FaUser, FaBars, FaTimes } from 'react-icons/fa';
+import { FiBook, FiHome, FiLogOut } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 
-// Create a custom event for auth state changes
 export const authStateChanged = new Event('authStateChanged');
 
 const Navbar = () => {
@@ -11,9 +11,17 @@ const Navbar = () => {
   const [username, setUsername] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
 
-  // Function to check auth status
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const checkAuthStatus = () => {
     const isLoggedInFlag = localStorage.getItem('isLoggedIn');
     const storedUsername = localStorage.getItem('username');
@@ -28,13 +36,8 @@ const Navbar = () => {
   };
 
   useEffect(() => {
-    // Initial check
     checkAuthStatus();
-    
-    // Listen for auth state changes
     window.addEventListener('authStateChanged', checkAuthStatus);
-    
-    // Clean up
     return () => {
       window.removeEventListener('authStateChanged', checkAuthStatus);
     };
@@ -46,9 +49,11 @@ const Navbar = () => {
       text: 'Are you sure you want to logout?',
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
+      confirmButtonColor: '#4f46e5',
       cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, logout!'
+      confirmButtonText: 'Yes, logout!',
+      background: '#ffffff',
+      backdrop: 'rgba(79, 70, 229, 0.1)'
     }).then((result) => {
       if (result.isConfirmed) {
         performLogout();
@@ -57,24 +62,21 @@ const Navbar = () => {
   };
 
   const performLogout = () => {
-    // Call the API service logout method
     import('../services/api').then(module => {
       const apiService = module.default;
       apiService.logout().then(() => {
         setIsLoggedIn(false);
         setUsername('');
         
-        // Show success message
         Swal.fire({
           title: 'Logged Out!',
           text: 'You have been successfully logged out.',
           icon: 'success',
           timer: 1500,
-          showConfirmButton: false
+          showConfirmButton: false,
+          background: '#ffffff'
         }).then(() => {
           navigate('/login');
-          
-          // Dispatch auth state change event
           window.dispatchEvent(new Event('authStateChanged'));
         });
       });
@@ -85,30 +87,45 @@ const Navbar = () => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setIsMenuOpen(false);
     }
   };
 
   return (
-    <nav className="bg-white shadow-lg relative z-50">
+    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white shadow-md py-2' : 'bg-gradient-to-r from-indigo-50 to-blue-50 py-3'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between items-center h-16">
           {/* Logo and primary navigation */}
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="text-2xl font-bold text-blue-600">SkillSphere</Link>
-            </div>
-            <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
-              <Link to="/feed" className="px-3 py-2 rounded-md text-sm font-medium text-blue-900 hover:bg-blue-50 hover:text-blue-700 transition duration-150">
-                Feed
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center space-x-2">
+              <div className="relative">
+                <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-indigo-800 rounded-full shadow-md">
+                  <div className="absolute inset-1 bg-white/30 rounded-full"></div>
+                </div>
+              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text text-transparent">
+                SkillSphere
+              </span>
+            </Link>
+            
+            <div className="hidden md:ml-10 md:flex md:items-center md:space-x-6">
+              <Link 
+                to="/feed" 
+                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50 transition-all duration-200 flex items-center"
+              >
+                <FiHome className="mr-2" /> Feed
               </Link>
-              <Link to="/courses" className="px-3 py-2 rounded-md text-sm font-medium text-blue-900 hover:bg-blue-50 hover:text-blue-700 transition duration-150">
-                Courses
+              <Link 
+                to="/courses" 
+                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50 transition-all duration-200 flex items-center"
+              >
+                <FiBook className="mr-2" /> Courses
               </Link>
             </div>
           </div>
 
-          {/* Search bar - hidden on mobile, visible on medium screens and up */}
-          <div className="hidden md:flex items-center flex-grow max-w-md mx-4">
+          {/* Search bar */}
+          <div className="hidden md:flex items-center flex-grow max-w-md mx-6">
             <form onSubmit={handleSearch} className="w-full">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -118,8 +135,8 @@ const Navbar = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Search for skills, courses..."
+                  className="block w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl leading-5 bg-white/80 backdrop-blur-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm transition-all duration-200"
+                  placeholder="Search skills, courses..."
                 />
               </div>
             </form>
@@ -129,26 +146,34 @@ const Navbar = () => {
           <div className="hidden md:flex md:items-center md:space-x-4">
             {isLoggedIn ? (
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-blue-900">
-                  <FaUser className="h-4 w-4" />
+                <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium">
+                    {username.charAt(0).toUpperCase()}
+                  </div>
                   <span className="text-sm font-medium">{username}</span>
                 </div>
                 <button
                   onClick={showLogoutConfirmation}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-150"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 transition-all duration-200 shadow-sm hover:shadow-md flex items-center"
                 >
-                  Logout
+                  <FiLogOut className="mr-2" /> Logout
                 </button>
               </div>
             ) : (
-              <>
-                <Link to="/login" className="px-3 py-2 flex items-center rounded-md text-sm font-medium text-blue-900 hover:bg-blue-50 hover:text-blue-700 transition duration-150">
+              <div className="flex items-center space-x-3">
+                <Link 
+                  to="/login" 
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-indigo-700 hover:bg-indigo-50 transition-all duration-200 flex items-center"
+                >
                   <FaSignInAlt className="mr-2" /> Login
                 </Link>
-                <Link to="/signup" className="px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-150 flex items-center">
+                <Link 
+                  to="/signup" 
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 transition-all duration-200 shadow-sm hover:shadow-md flex items-center"
+                >
                   <FaUserPlus className="mr-2" /> Register
                 </Link>
-              </>
+              </div>
             )}
           </div>
 
@@ -156,37 +181,23 @@ const Navbar = () => {
           <div className="flex md:hidden items-center">
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-blue-700 hover:text-blue-900 hover:bg-blue-50 focus:outline-none"
+              className="inline-flex items-center justify-center p-2 rounded-lg text-indigo-700 hover:text-white hover:bg-indigo-600 focus:outline-none transition-all duration-200"
             >
-              {isMenuOpen ? <FaTimes className="h-6 w-6" /> : <FaBars className="h-6 w-6" />}
+              {isMenuOpen ? (
+                <FaTimes className="h-6 w-6" />
+              ) : (
+                <FaBars className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu, show/hide based on menu state */}
+      {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link 
-              to="/feed" 
-              className="block px-3 py-2 rounded-md text-base font-medium text-blue-900 hover:bg-blue-50 hover:text-blue-700"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Feed
-            </Link>
-            <Link 
-              to="/courses" 
-              className="block px-3 py-2 rounded-md text-base font-medium text-blue-900 hover:bg-blue-50 hover:text-blue-700"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Courses
-            </Link>
-          </div>
-          
-          {/* Mobile search */}
-          <div className="px-2 py-3">
-            <form onSubmit={handleSearch} className="w-full">
+        <div className="md:hidden bg-white shadow-xl rounded-b-lg">
+          <div className="px-4 pt-3 pb-4 space-y-2">
+            <form onSubmit={handleSearch} className="mb-3">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FaSearch className="h-4 w-4 text-gray-400" />
@@ -195,46 +206,63 @@ const Navbar = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   placeholder="Search..."
+                  autoFocus
                 />
               </div>
             </form>
+            
+            <Link 
+              to="/feed" 
+              className="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <FiHome className="mr-3" /> Feed
+            </Link>
+            <Link 
+              to="/courses" 
+              className="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <FiBook className="mr-3" /> Courses
+            </Link>
           </div>
           
-          {/* Mobile auth */}
-          <div className="pt-4 pb-3 border-t border-gray-200">
+          <div className="pt-2 pb-4 border-t border-gray-100 px-4">
             {isLoggedIn ? (
-              <div className="px-2 space-y-1">
-                <div className="block px-3 py-2 rounded-md text-base font-medium text-blue-900">
-                  <FaUser className="inline mr-2 h-4 w-4" />
-                  <span>{username}</span>
+              <div className="space-y-2">
+                <div className="flex items-center px-3 py-3 rounded-lg bg-indigo-50 text-indigo-700">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium mr-3">
+                    {username.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-base font-medium">{username}</span>
                 </div>
                 <button
                   onClick={() => {
                     showLogoutConfirmation();
                     setIsMenuOpen(false);
                   }}
-                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  className="block w-full text-left px-3 py-3 rounded-lg text-base font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 flex items-center"
                 >
-                  Logout
+                  <FiLogOut className="mr-3" /> Logout
                 </button>
               </div>
             ) : (
-              <div className="px-2 space-y-1">
+              <div className="space-y-2">
                 <Link 
                   to="/login" 
-                  className="block px-3 py-2 rounded-md text-base font-medium text-blue-900 hover:bg-blue-50 hover:text-blue-700"
+                  className="block px-3 py-3 rounded-lg text-base font-medium text-indigo-700 hover:bg-indigo-50 flex items-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <FaSignInAlt className="inline mr-2" /> Login
+                  <FaSignInAlt className="mr-3" /> Login
                 </Link>
                 <Link 
                   to="/signup" 
-                  className="block px-3 py-2 rounded-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  className="block px-3 py-3 rounded-lg text-base font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 flex items-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <FaUserPlus className="inline mr-2" /> Register
+                  <FaUserPlus className="mr-3" /> Register
                 </Link>
               </div>
             )}
