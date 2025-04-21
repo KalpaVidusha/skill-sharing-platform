@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import apiService from "../services/api";
-import 'react-toastify/dist/ReactToastify.css';
 
 const Signup = () => {
   const [username, setUsername] = useState("");
@@ -66,39 +65,107 @@ const Signup = () => {
 
   return (
     <div style={containerStyle}>
-      <ToastContainer position="top-center" />
       <div style={{ ...cardStyle, ...(loaded ? fadeIn : hiddenStyle) }}>
         <h2 style={titleStyle}>Create Your Account</h2>
         <p style={subtitleStyle}>Join <span style={{ color: "#1976d2", fontWeight: 600 }}>SkillSphere</span> today!</p>
 
         <form onSubmit={handleSignup} style={formStyle}>
-          <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required style={inputStyle} />
-          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} />
-          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required style={inputStyle} />
-          <input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={inputStyle} />
-          <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={inputStyle} />
-          <input type="text" placeholder="Skills (comma separated)" value={skills} onChange={(e) => setSkills(e.target.value)} style={inputStyle} />
-
-          <div style={checkboxRow}>
-            <input type="checkbox" checked={agree} onChange={() => setAgree(!agree)} style={{ marginRight: "8px" }} />
-            <span style={{ fontSize: "14px", color: "#444" }}>
-              I agree to the <span style={linkStyle}>Terms & Conditions</span>
-            </span>
+          <div style={{ display: "flex", gap: "16px" }}>
+            <input 
+              type="text" 
+              placeholder="First Name" 
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              style={inputStyle}
+              required
+            />
+            <input 
+              type="text" 
+              placeholder="Last Name" 
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              style={inputStyle}
+              required
+            />
           </div>
-
-          <button type="submit" style={signupBtn}>Sign Up</button>
-        </form>
-
-        <p style={dividerStyle}>or sign up with</p>
-
-        <div style={socialRow}>
-          <button style={socialBtn}>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" style={iconStyle} />
-            Google
+          <input 
+            type="text" 
+            placeholder="Username" 
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            style={inputStyle}
+            required
+          />
+          <input 
+            type="email" 
+            placeholder="Email" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={inputStyle}
+            required
+          />
+          <input 
+            type="password" 
+            placeholder="Password (min 6 characters)" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={inputStyle}
+            required
+          />
+          <input 
+            type="text" 
+            placeholder="Skills (comma-separated)" 
+            value={skills}
+            onChange={(e) => setSkills(e.target.value)}
+            style={inputStyle}
+            required
+          />
+          
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px" }}>
+            <input 
+              type="checkbox" 
+              checked={agree}
+              onChange={(e) => setAgree(e.target.checked)}
+              id="terms"
+              style={{ width: "16px", height: "16px" }}
+            />
+            <label htmlFor="terms" style={{ color: "#607d8b", fontSize: "14px" }}>
+              I agree to the Terms & Conditions
+            </label>
+          </div>
+          
+          <button 
+            type="submit"
+            style={{
+              ...loginBtn,
+              backgroundColor: agree ? "#2196f3" : "#b0bec5",
+              cursor: agree ? "pointer" : "not-allowed",
+            }}
+            disabled={!agree}
+          >
+            Create Account
           </button>
-          <button style={socialBtn}>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" alt="Apple" style={iconStyle} />
-            Apple
+        </form>
+        
+        <div style={{ marginTop: "25px", textAlign: "center" }}>
+          <p style={{ color: "#607d8b", marginBottom: "15px", fontSize: "14px" }}>
+            Already have an account?
+          </p>
+          <button
+            onClick={() => navigate("/login")}
+            style={{ 
+              backgroundColor: "transparent",
+              border: "1px solid #2196f3",
+              padding: "10px 20px",
+              borderRadius: "10px",
+              color: "#2196f3",
+              fontSize: "15px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+            }}
+          >
+            Log In
           </button>
         </div>
       </div>
@@ -106,30 +173,31 @@ const Signup = () => {
   );
 };
 
-// 🎨 Inline Styling
+// Styles
 const containerStyle = {
   height: "100vh",
   width: "100vw",
-  backgroundImage: `url("https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1470&q=80")`,
+  backgroundImage: `url("https://images.unsplash.com/photo-1508780709619-79562169bc64?auto=format&fit=crop&w=1500&q=80")`,
   backgroundSize: "cover",
   backgroundPosition: "center",
+  backgroundRepeat: "no-repeat",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  fontFamily: "'Segoe UI', sans-serif",
+  fontFamily: "'Poppins', sans-serif",
 };
 
 const cardStyle = {
-  backgroundColor: "rgba(255, 255, 255, 0.94)",
-  borderRadius: "20px",
+  background: "rgba(255, 255, 255, 0.92)",
+  borderRadius: "16px",
   padding: "40px",
-  maxWidth: "420px",
   width: "90%",
-  color: "#0f172a",
-  boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+  maxWidth: "500px",
+  color: "#0d47a1",
+  boxShadow: "0 20px 50px rgba(33, 150, 243, 0.25)",
   textAlign: "center",
   backdropFilter: "blur(10px)",
-  transition: "opacity 1s ease, transform 1s ease",
+  transition: "opacity 0.8s ease, transform 0.8s ease",
 };
 
 const hiddenStyle = {
@@ -143,15 +211,15 @@ const fadeIn = {
 };
 
 const titleStyle = {
-  fontSize: "28px",
-  fontWeight: "bold",
-  marginBottom: "8px",
-  color: "#1976d2"
+  fontSize: "30px",
+  fontWeight: "700",
+  marginBottom: "10px",
+  color: "#1565c0"
 };
 
 const subtitleStyle = {
-  color: "#374151",
-  marginBottom: "24px",
+  color: "#607d8b",
+  marginBottom: "25px",
   fontSize: "14px"
 };
 
@@ -162,68 +230,27 @@ const formStyle = {
 };
 
 const inputStyle = {
-  padding: "12px",
-  borderRadius: "8px",
-  border: "1px solid #cbd5e1",
-  backgroundColor: "#f0f9ff",
-  color: "#0f172a",
-  fontSize: "14px",
+  width: "100%",
+  padding: "14px 18px",
+  borderRadius: "10px",
+  border: "1px solid #bbdefb",
+  backgroundColor: "#e3f2fd",
+  color: "#0d47a1",
+  fontSize: "15px",
   outline: "none",
+  transition: "border 0.3s ease",
 };
 
-const checkboxRow = {
-  display: "flex",
-  alignItems: "center",
-  fontSize: "14px",
-  marginTop: "4px",
-};
-
-const signupBtn = {
-  backgroundColor: "#1d4ed8",
-  color: "#fff",
-  padding: "12px",
-  fontWeight: "bold",
-  fontSize: "16px",
-  borderRadius: "8px",
+const loginBtn = {
+  padding: "14px",
+  borderRadius: "10px",
   border: "none",
+  backgroundColor: "#2196f3",
+  color: "#ffffff",
+  fontSize: "16px",
+  fontWeight: "600",
   cursor: "pointer",
-  transition: "background 0.3s ease"
-};
-
-const dividerStyle = {
-  margin: "20px 0 10px",
-  fontSize: "13px",
-  color: "#6b7280",
-};
-
-const socialRow = {
-  display: "flex",
-  justifyContent: "center",
-  gap: "12px",
-};
-
-const socialBtn = {
-  backgroundColor: "#f1f5f9",
-  color: "#1f2937",
-  border: "1px solid #d1d5db",
-  padding: "10px 20px",
-  borderRadius: "6px",
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
-  fontSize: "14px",
-  cursor: "pointer",
-};
-
-const iconStyle = {
-  width: "20px",
-  height: "20px",
-};
-
-const linkStyle = {
-  color: "#2563eb",
-  textDecoration: "underline",
-  cursor: "pointer",
+  transition: "background-color 0.3s ease",
 };
 
 export default Signup;

@@ -17,4 +17,11 @@ public interface UserService {
     UserModel login(String username, String email, String password);
     UserModel loginByUsername(String username, String password);
     UserModel loginByEmail(String email, String password);
+    
+    // Follow/Unfollow methods
+    UserModel followUser(String userId, String userToFollowId);
+    UserModel unfollowUser(String userId, String userToUnfollowId);
+    List<UserModel> getFollowers(String userId);
+    List<UserModel> getFollowing(String userId);
+    List<UserModel> searchUsers(String query, int page, int size);
 }

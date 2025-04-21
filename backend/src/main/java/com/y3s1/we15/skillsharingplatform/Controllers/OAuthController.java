@@ -171,8 +171,12 @@ public class OAuthController {
                 new org.springframework.http.HttpEntity<>(tokenRequestParams, headers);
             
             // Exchange code for token
-            Map<String, Object> tokenResponse = restTemplate.postForObject(
-                    tokenUrl, tokenRequest, Map.class);
+            Map<String, Object> tokenResponse = restTemplate.exchange(
+                    tokenUrl, 
+                    org.springframework.http.HttpMethod.POST,
+                    tokenRequest,
+                    new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                    .getBody();
             
             if (tokenResponse == null || !tokenResponse.containsKey("access_token")) {
                 throw new RuntimeException("Failed to obtain access token");
@@ -189,7 +193,11 @@ public class OAuthController {
                 new org.springframework.http.HttpEntity<>(headers);
             
             Map<String, Object> userInfo = restTemplate.exchange(
-                    userInfoUrl, org.springframework.http.HttpMethod.GET, userInfoRequest, Map.class).getBody();
+                    userInfoUrl, 
+                    org.springframework.http.HttpMethod.GET, 
+                    userInfoRequest, 
+                    new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
+                    .getBody();
             
             if (userInfo == null) {
                 throw new RuntimeException("Failed to retrieve user information");

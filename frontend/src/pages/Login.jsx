@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { FaEye, FaEyeSlash, FaGoogle } from "react-icons/fa";
 import apiService from "../services/api";
-import 'react-toastify/dist/ReactToastify.css';
 import Navbar from "../components/Navbar";
 
 const Login = () => {
@@ -71,7 +70,6 @@ const Login = () => {
       <div>
         <Navbar />
           <div style={containerStyle}>
-            <ToastContainer position="top-center" />
             <div style={{ ...cardStyle, ...(loaded ? fadeIn : hiddenStyle) }}>
             <h2 style={titleStyle}>👋 Welcome Back</h2>
             <p style={subtitleStyle}>

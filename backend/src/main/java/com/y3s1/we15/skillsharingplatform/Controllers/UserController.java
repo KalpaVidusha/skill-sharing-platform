@@ -248,8 +248,9 @@ public class UserController {
         UserModel user = userService.findByUsername(username);
         if (user != null) {
             return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
     }
     
     @GetMapping("/current")
@@ -335,6 +336,80 @@ public class UserController {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Invalid credentials");
             return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    @PostMapping("/{userId}/follow/{userToFollowId}")
+    public ResponseEntity<?> followUser(@PathVariable String userId, @PathVariable String userToFollowId) {
+        try {
+            UserModel user = userService.followUser(userId, userToFollowId);
+            return new ResponseEntity<>(user, HttpStatus.OK);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+    
+    @PostMapping("/{userId}/unfollow/{userToUnfollowId}")
+    public ResponseEntity<?> unfollowUser(@PathVariable String userId, @PathVariable String userToUnfollowId) {
+        try {
+            UserModel user = userService.unfollowUser(userId, userToUnfollowId);
+            return new ResponseEntity<>(user, HttpStatus.OK);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+    
+    @GetMapping("/{userId}/followers")
+    public ResponseEntity<?> getFollowers(@PathVariable String userId) {
+        try {
+            List<UserModel> followers = userService.getFollowers(userId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("followers", followers);
+            response.put("count", followers.size());
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+    
+    @GetMapping("/{userId}/following")
+    public ResponseEntity<?> getFollowing(@PathVariable String userId) {
+        try {
+            List<UserModel> following = userService.getFollowing(userId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("following", following);
+            response.put("count", following.size());
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+    
+    @GetMapping("/search")
+    public ResponseEntity<?> searchUsers(
+            @RequestParam(defaultValue = "") String query,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            List<UserModel> users = userService.searchUsers(query, page, size);
+            Map<String, Object> response = new HashMap<>();
+            response.put("users", users);
+            response.put("currentPage", page);
+            response.put("pageSize", size);
+            response.put("totalItems", users.size());
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

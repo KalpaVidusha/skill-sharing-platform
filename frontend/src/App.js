@@ -11,10 +11,23 @@ import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizati
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
 import OAuthSuccess from "./pages/OAuthSuccess";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
     <Router>
+      <ToastContainer 
+        position="top-center" 
+        autoClose={3000} 
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       <Routes>
         {/* Core Pages */}
         <Route path="/" element={<Home />} />
