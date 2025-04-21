@@ -3,6 +3,7 @@ package com.y3s1.we15.skillsharingplatform.Models;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.ArrayList;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -22,6 +23,8 @@ public class UserModel {
     private String location;
     private String socialLinks;
     private Map<String, String> oauthIds;
+    private List<String> followers = new ArrayList<>();
+    private List<String> following = new ArrayList<>();
 
     public UserModel() {}
 
@@ -32,6 +35,8 @@ public class UserModel {
         this.firstName = firstName;
         this.lastName = lastName;
         this.skills = skills;
+        this.followers = new ArrayList<>();
+        this.following = new ArrayList<>();
     }
 
     public String getId() {
@@ -138,10 +143,47 @@ public class UserModel {
         this.oauthIds = oauthIds;
     }
 
+    public List<String> getFollowers() {
+        return followers;
+    }
+
+    public void setFollowers(List<String> followers) {
+        this.followers = followers;
+    }
+
+    public List<String> getFollowing() {
+        return following;
+    }
+
+    public void setFollowing(List<String> following) {
+        this.following = following;
+    }
+
+    public void addFollower(String userId) {
+        if (!this.followers.contains(userId)) {
+            this.followers.add(userId);
+        }
+    }
+
+    public void removeFollower(String userId) {
+        this.followers.remove(userId);
+    }
+
+    public void addFollowing(String userId) {
+        if (!this.following.contains(userId)) {
+            this.following.add(userId);
+        }
+    }
+
+    public void removeFollowing(String userId) {
+        this.following.remove(userId);
+    }
+
     @Override
     public String toString() {
         return "UserModel [contactNumber=" + contactNumber + ", email=" + email + ", id=" + id + ", location=" + location
                 + ", firstName=" + firstName + ", lastName=" + lastName + ", password=" + password + ", profilePicture=" + profilePicture + ", role=" + role
-                + ", skills=" + skills + ", socialLinks=" + socialLinks + ", username=" + username + ", oauthIds=" + oauthIds + "]";
+                + ", skills=" + skills + ", socialLinks=" + socialLinks + ", username=" + username + ", oauthIds=" + oauthIds 
+                + ", followers=" + followers + ", following=" + following + "]";
     }
 }

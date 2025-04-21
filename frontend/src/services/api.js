@@ -116,6 +116,22 @@ const apiService = {
   // Users
   getUserProfile: (userId) => api.get(`/users/${userId}`),
   updateUserProfile: (userId, userData) => api.put(`/users/${userId}`, userData),
+  
+  // Follow/Unfollow functionality
+  followUser: (userId, userToFollowId) => 
+    api.post(`/users/${userId}/follow/${userToFollowId}`),
+  
+  unfollowUser: (userId, userToUnfollowId) => 
+    api.post(`/users/${userId}/unfollow/${userToUnfollowId}`),
+  
+  getFollowers: (userId) => 
+    api.get(`/users/${userId}/followers`),
+  
+  getFollowing: (userId) => 
+    api.get(`/users/${userId}/following`),
+  
+  searchUsers: (query, page = 0, size = 10) => 
+    api.get(`/users/search`, { params: { query, page, size } }),
 
   // Posts
   createPost: (postData) => api.post("/posts", postData),

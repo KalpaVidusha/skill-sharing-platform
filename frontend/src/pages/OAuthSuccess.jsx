@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 const OAuthSuccess = () => {
   const navigate = useNavigate();
@@ -50,7 +49,6 @@ const OAuthSuccess = () => {
 
   return (
     <div style={containerStyle}>
-      <ToastContainer position="top-center" />
       <div style={cardStyle}>
         <h1 style={titleStyle}>Authentication Successful! 🎉</h1>
         <p style={subtitleStyle}>
