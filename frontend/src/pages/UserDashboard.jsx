@@ -154,8 +154,7 @@ const UserDashboard = () => {
       case 'photography': return '📷';
       case 'programming': return '💻';
       case 'design': return '🎨';
-      case 'cooking': 
-      case 'coocking': return '🍳'; // Handle both spellings
+      case 'cooking': return '🍳';
       case 'music': return '🎵';
       case 'writing': return '📚';
       default: 
@@ -182,8 +181,37 @@ const UserDashboard = () => {
   // Show loading indicator while fetching data
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gradient-to-r from-blue-100 to-white">
-        <h2 className="text-2xl text-blue-800">Loading user data...</h2>
+      <div className="flex flex-col justify-center items-center h-screen bg-gradient-to-br from-indigo-50 to-blue-100">
+        <div className="relative">
+          {/* Animated sphere logo */}
+          <div className="w-24 h-24 bg-gradient-to-tr from-blue-600 to-indigo-800 rounded-full shadow-lg animate-pulse">
+            <div className="absolute inset-4 bg-white/30 rounded-full"></div>
+          </div>
+          
+          {/* SkillSphere text with animation */}
+          <div className="mt-6 text-center">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text text-transparent">
+              SkillSphere
+            </h1>
+            <p className="mt-2 text-blue-700/80 animate-pulse">Crafting your learning universe...</p>
+          </div>
+        </div>
+        
+        {/* Animated loading dots */}
+        <div className="flex space-x-2 mt-8">
+          {[...Array(3)].map((_, i) => (
+            <div 
+              key={i}
+              className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"
+              style={{ animationDelay: `${i * 0.1}s` }}
+            ></div>
+          ))}
+        </div>
+        
+        {/* Subtle footer */}
+        <p className="absolute bottom-6 text-sm text-blue-900/50">
+          Loading your personalized dashboard...
+        </p>
       </div>
     );
   }
