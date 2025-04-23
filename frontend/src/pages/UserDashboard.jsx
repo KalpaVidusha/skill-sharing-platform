@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaPlus, FaUser, FaSignOutAlt, FaChartLine,
-  FaFileAlt, FaComments, FaCompass, FaSearch, FaUsers
+  FaFileAlt, FaComments, FaCompass, FaSearch, FaUsers,
+  FaEdit, FaTrashAlt, FaSort, FaCalendarAlt, FaSave, FaSyncAlt,
+  FaChevronLeft, FaChevronRight
 } from "react-icons/fa";
 import Navbar from "../components/Navbar";
 import FollowList from "../components/FollowList";
 import UserSearch from "../components/UserSearch";
+import ProgressForm from "./Progress/ProgressForm";
 import apiService from "../services/api";
 import Swal from 'sweetalert2';
 
@@ -28,6 +31,11 @@ const UserDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
+  const [userProgress, setUserProgress] = useState([]);
+  const [editingProgress, setEditingProgress] = useState(null);
+  const [sortOrder, setSortOrder] = useState('newest'); // 'newest' or 'oldest'
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
   const navigate = useNavigate();
 
   // Function to fetch user data - extracted so it can be called to refresh
@@ -170,11 +178,63 @@ const UserDashboard = () => {
     }
   };
 
+  // Function to fetch user progress data
+  const fetchUserProgressData = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      if (!userId) return;
+      
+      const progressResponse = await apiService.getAllProgress(userId);
+      
+      if (progressResponse && Array.isArray(progressResponse)) {
+        // Sort progress based on current sort order
+        const sortedProgress = sortProgressByDate(progressResponse, sortOrder);
+        setUserProgress(sortedProgress);
+      }
+    } catch (error) {
+      console.error('Error fetching user progress data:', error);
+    }
+  };
+
+  // Helper function to sort progress by date
+  const sortProgressByDate = (progress, order) => {
+    return [...progress].sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return order === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+  };
+
+  // Function to handle sort order change
+  const handleSortOrderChange = (order) => {
+    setSortOrder(order);
+    setUserProgress(sortProgressByDate(userProgress, order));
+    setCurrentPage(1); // Reset to first page when sort order changes
+  };
+
+  // Function to fetch progress templates for formatting
+  const fetchProgressTemplates = async () => {
+    try {
+      const templatesData = await apiService.getProgressTemplates();
+      if (templatesData) {
+        localStorage.setItem('progressTemplates', JSON.stringify(templatesData));
+      }
+    } catch (error) {
+      console.error('Error fetching progress templates:', error);
+    }
+  };
+
   useEffect(() => {
     setTimeout(() => setAnimate(true), 100);
     
     // Initial fetch of user data
     fetchUserData();
+    
+    // Fetch user progress data
+    fetchUserProgressData();
+    
+    // Fetch progress templates for formatting
+    fetchProgressTemplates();
     
     // Add event listener for follow/unfollow events
     const handleFollowStatusChange = () => {
@@ -207,6 +267,56 @@ const UserDashboard = () => {
       default: 
         console.log("Using default icon for category:", category);
         return '📝';
+    }
+  };
+
+  // Helper function to format progress content
+  const formatProgressContent = (progress, customFields = null) => {
+    if (!progress || (!progress.content && !customFields)) return '';
+    
+    try {
+      // Use custom fields if provided (for preview), otherwise use progress.content
+      const contentToFormat = customFields || progress.content;
+      
+      // If content is already a string, return it
+      if (typeof contentToFormat === 'string') {
+        return contentToFormat;
+      }
+      
+      // If content has a customContent field, use that
+      if (contentToFormat.customContent) {
+        return contentToFormat.customContent;
+      }
+      
+      // If content is an object with field values
+      if (typeof contentToFormat === 'object') {
+        // Get template from localStorage
+        const templates = JSON.parse(localStorage.getItem('progressTemplates') || '{}');
+        const template = progress.templateType && templates[progress.templateType];
+        
+        if (template && template.format) {
+          let formattedContent = template.format;
+          
+          // Replace placeholders with values
+          Object.keys(contentToFormat).forEach(field => {
+            const placeholder = `{${field}}`;
+            const value = contentToFormat[field] || '';
+            formattedContent = formattedContent.replace(placeholder, value);
+          });
+          
+          return formattedContent;
+        }
+        
+        // Fallback if template not found - create a basic formatted string
+        return Object.entries(contentToFormat)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(', ');
+      }
+      
+      return JSON.stringify(contentToFormat);
+    } catch (error) {
+      console.error('Error formatting progress content:', error);
+      return 'Progress update';
     }
   };
 
@@ -250,6 +360,402 @@ const UserDashboard = () => {
         });
       });
     });
+  };
+
+  const handleEditProgress = (progressId) => {
+    const progressToEdit = userProgress.find(p => p.id === progressId);
+    if (!progressToEdit) return;
+    
+    setEditingProgress(progressToEdit);
+    
+    // Check if this is a templated progress entry
+    if (progressToEdit.templateType && typeof progressToEdit.content === 'object') {
+      // Get the template from localStorage
+      const templates = JSON.parse(localStorage.getItem('progressTemplates') || '{}');
+      const template = templates[progressToEdit.templateType];
+      
+      if (template && template.fields) {
+        // Create form HTML for each template field
+        const fieldsHtml = template.fields.map(field => {
+          const fieldValue = progressToEdit.content[field] || '';
+          const isDateField = field.toLowerCase().includes('date');
+          
+          if (isDateField) {
+            // Use date input for date fields with Flatpickr
+            return `
+              <div class="mb-3">
+                <label class="block text-sm font-medium text-gray-700 mb-1">${field.charAt(0).toUpperCase() + field.slice(1)}</label>
+                <input 
+                  id="progress-field-${field}" 
+                  class="flatpickr w-full p-2 border border-gray-300 rounded-md"
+                  data-default-date="${fieldValue}"
+                  placeholder="Select a date..."
+                />
+              </div>
+            `;
+          } else {
+            // Use text input for non-date fields
+            return `
+              <div class="mb-3">
+                <label class="block text-sm font-medium text-gray-700 mb-1">${field.charAt(0).toUpperCase() + field.slice(1)}</label>
+                <input 
+                  id="progress-field-${field}" 
+                  class="w-full p-2 border border-gray-300 rounded-md"
+                  value="${fieldValue.replace(/"/g, '&quot;')}"
+                  onkeyup="updatePreview()"
+                  onchange="updatePreview()"
+                />
+              </div>
+            `;
+          }
+        }).join('');
+        
+        Swal.fire({
+          title: `Edit ${progressToEdit.templateType.charAt(0).toUpperCase() + progressToEdit.templateType.slice(1)}`,
+          html: `
+            <!-- Flatpickr CSS -->
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+            <style>
+              /* Custom Calendar Styles */
+              .flatpickr-calendar {
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                border-radius: 8px;
+                padding: 8px;
+              }
+              .flatpickr-day.selected {
+                background: #4f46e5;
+                border-color: #4f46e5;
+              }
+              .flatpickr-day.selected:hover {
+                background: #3730a3;
+                border-color: #3730a3;
+              }
+              .flatpickr-day:hover {
+                background: #f3f4f6;
+              }
+              .flatpickr-day.today {
+                border-color: #4f46e5;
+              }
+            </style>
+
+            <div class="p-4">
+              ${fieldsHtml}
+              <div class="mt-4 p-3 bg-gray-50 rounded text-sm">
+                <p class="font-medium">Preview:</p>
+                <p id="preview-content" class="text-gray-600">${formatProgressContent(progressToEdit)}</p>
+              </div>
+            </div>
+
+            <!-- Flatpickr JavaScript -->
+            <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+            <script>
+              // Initialize Flatpickr date pickers
+              document.querySelectorAll('.flatpickr').forEach(input => {
+                flatpickr(input, {
+                  dateFormat: "Y-m-d",
+                  defaultDate: input.dataset.defaultDate || new Date(),
+                  onChange: function(selectedDates, dateStr) {
+                    // Update the value and trigger preview
+                    input.value = dateStr;
+                    updatePreview();
+                  }
+                });
+              });
+
+              function updatePreview() {
+                const fields = {};
+                ${template.fields.map(field => `
+                  fields['${field}'] = document.getElementById('progress-field-${field}').value;
+                `).join('')}
+                
+                let format = "${template.format.replace(/"/g, '\\"')}";
+                ${template.fields.map(field => `
+                  format = format.replace('{${field}}', fields['${field}'] || '');
+                `).join('')}
+                
+                document.getElementById('preview-content').textContent = format;
+              }
+
+              // Trigger initial preview update
+              setTimeout(updatePreview, 100);
+            </script>
+          `,
+          showCancelButton: true,
+          confirmButtonText: 'Save Changes',
+          confirmButtonColor: '#4f46e5',
+          cancelButtonText: 'Cancel',
+          didOpen: () => {
+            // Let the script initialize everything properly
+            setTimeout(() => {
+              // Trigger update to refresh preview after Flatpickr initialization
+              if (typeof window.updatePreview === 'function') {
+                window.updatePreview();
+              }
+            }, 200);
+          },
+          preConfirm: () => {
+            // Collect updated values for each field
+            const updatedFields = {};
+            template.fields.forEach(field => {
+              updatedFields[field] = document.getElementById(`progress-field-${field}`).value;
+            });
+            
+            return { fields: updatedFields };
+          }
+        }).then((result) => {
+          if (result.isConfirmed) {
+            updateProgressContent(progressId, result.value.fields, true);
+          }
+          setEditingProgress(null);
+        });
+      } else {
+        // Fallback for missing template
+        showSimpleEditForm(progressToEdit);
+      }
+    } else {
+      // For non-templated progress, use simple edit form
+      showSimpleEditForm(progressToEdit);
+    }
+  };
+  
+  const showSimpleEditForm = (progressToEdit) => {
+    const progressType = progressToEdit.templateType 
+      ? `${progressToEdit.templateType.charAt(0).toUpperCase() + progressToEdit.templateType.slice(1)}`
+      : 'Progress';
+    
+    // Check if content has date patterns to offer date selection
+    const contentStr = progressToEdit.formattedContent || formatProgressContent(progressToEdit);
+    const hasDatePatterns = contentStr.toLowerCase().includes('date') || 
+                            contentStr.match(/\d{4}-\d{2}-\d{2}/) || 
+                            contentStr.match(/\d{2}\/\d{2}\/\d{4}/);
+    
+    Swal.fire({
+      title: `Edit ${progressType}`,
+      html: `
+        <!-- Flatpickr CSS -->
+        ${hasDatePatterns ? `
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+        <style>
+          .flatpickr-calendar {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 8px;
+          }
+          .flatpickr-day.selected {
+            background: #4f46e5;
+            border-color: #4f46e5;
+          }
+          .flatpickr-day.selected:hover {
+            background: #3730a3;
+            border-color: #3730a3;
+          }
+        </style>
+        ` : ''}
+
+        <div class="p-4">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Progress Content</label>
+            <textarea 
+              id="progress-content" 
+              class="w-full p-2 border border-gray-300 rounded-md" 
+              rows="4"
+            >${contentStr}</textarea>
+          </div>
+          
+          ${hasDatePatterns ? `
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Date Selection</label>
+            <input 
+              id="date-picker" 
+              class="flatpickr w-full p-2 border border-gray-300 rounded-md"
+              placeholder="Select a date..."
+            />
+            <p class="mt-1 text-sm text-gray-500">
+              Select a date and click "Insert Date" to add it to your progress content.
+            </p>
+            <button 
+              type="button"
+              onclick="insertDate()"
+              class="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 flex items-center justify-center"
+            >
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+              </svg>
+              Insert Date
+            </button>
+          </div>
+          ` : ''}
+          
+          ${progressToEdit.templateType ? `
+          <div class="p-3 bg-yellow-50 rounded-md mb-3 text-sm text-yellow-700">
+            <p class="font-medium">Note:</p>
+            <p>This is a formatted progress entry. Editing as plain text will convert it to a custom format.</p>
+          </div>
+          ` : ''}
+        </div>
+        
+        ${hasDatePatterns ? `
+        <!-- Flatpickr JavaScript -->
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script>
+          // Initialize date picker
+          flatpickr("#date-picker", {
+            dateFormat: "Y-m-d",
+            defaultDate: new Date()
+          });
+          
+          // Function to insert selected date at cursor position in textarea
+          function insertDate() {
+            const textarea = document.getElementById('progress-content');
+            const dateValue = document.getElementById('date-picker').value;
+            const cursorPos = textarea.selectionStart;
+            
+            const textBefore = textarea.value.substring(0, cursorPos);
+            const textAfter = textarea.value.substring(cursorPos);
+            
+            textarea.value = textBefore + dateValue + textAfter;
+            
+            // Reset cursor position after the inserted date
+            textarea.selectionStart = cursorPos + dateValue.length;
+            textarea.selectionEnd = cursorPos + dateValue.length;
+            textarea.focus();
+          }
+        </script>
+        ` : ''}
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Save Changes',
+      confirmButtonColor: '#4f46e5',
+      cancelButtonText: 'Cancel',
+      preConfirm: () => {
+        const content = document.getElementById('progress-content').value;
+        if (!content) {
+          Swal.showValidationMessage('Progress content cannot be empty');
+          return false;
+        }
+        return { content };
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        updateProgressContent(progressToEdit.id, result.value.content, false);
+      }
+    });
+  };
+
+  const updateProgressContent = async (progressId, content, isTemplated) => {
+    try {
+      // Get the progress to update
+      const progressToUpdate = userProgress.find(p => p.id === progressId);
+      if (!progressToUpdate) return;
+      
+      // Create the updated progress data
+      let updatedProgressData = { ...progressToUpdate };
+      
+      if (isTemplated) {
+        // If it's templated, update the field values
+        updatedProgressData.content = content;
+      } else if (typeof progressToUpdate.content === 'object') {
+        // If content is an object but we're using simple edit, convert to custom content
+        updatedProgressData.content = { 
+          customContent: content 
+        };
+      } else {
+        // If content is a string, simply update it
+        updatedProgressData.content = content;
+      }
+      
+      // Update the progress in the backend
+      await apiService.updateProgress(progressId, updatedProgressData);
+      
+      // Refresh the progress data
+      fetchUserProgressData();
+      
+      // Show success message
+      Swal.fire({
+        title: 'Success!',
+        text: 'Progress updated successfully',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to update progress',
+        icon: 'error'
+      });
+    }
+  };
+
+  const handleDeleteProgress = (progressId) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'This progress update will be permanently deleted.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      confirmButtonColor: '#ef4444',
+      cancelButtonText: 'Cancel',
+      cancelButtonColor: '#6b7280'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteProgress(progressId);
+      }
+    });
+  };
+
+  const deleteProgress = async (progressId) => {
+    try {
+      await apiService.deleteProgress(progressId);
+      
+      // Update the userProgress state by filtering out the deleted progress
+      setUserProgress(prevProgress => prevProgress.filter(p => p.id !== progressId));
+      
+      // Show success message
+      Swal.fire({
+        title: 'Deleted!',
+        text: 'Your progress has been deleted.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error deleting progress:', error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to delete progress',
+        icon: 'error'
+      });
+    }
+  };
+
+  // Get current progress items for pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentProgressItems = userProgress.slice(indexOfFirstItem, indexOfLastItem);
+  
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  
+  // Go to next page
+  const nextPage = () => {
+    if (currentPage < Math.ceil(userProgress.length / itemsPerPage)) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  
+  // Go to previous page
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Set active tab and reset pagination when tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
   };
 
   // Show loading indicator while fetching data
@@ -321,6 +827,14 @@ const UserDashboard = () => {
                 <p>Posts: {userData.posts}</p>
                 <p>Likes Received: {userData.likesReceived}</p>
                 <p>Comments: {userData.comments}</p>
+                <button
+                  className="mt-3 bg-blue-100 py-2 px-3 border-none rounded-lg font-medium cursor-pointer text-blue-800 hover:bg-blue-200 transition duration-300 flex items-center gap-2"
+                  onMouseEnter={() => setHovered("viewProgress")}
+                  onMouseLeave={() => setHovered(null)}
+                  onClick={() => handleTabChange('progress')}
+                >
+                  <FaChartLine /> View Progress
+                </button>
               </div>
               <div className="bg-white p-5 rounded-xl shadow-md">
                 <h3 className="mb-3 text-lg font-semibold text-blue-500">Connections</h3>
@@ -330,7 +844,7 @@ const UserDashboard = () => {
                   className="mt-3 bg-blue-100 py-2 px-3 border-none rounded-lg font-medium cursor-pointer text-blue-800 hover:bg-blue-200 transition duration-300 flex items-center gap-2"
                   onMouseEnter={() => setHovered("viewConnections")}
                   onMouseLeave={() => setHovered(null)}
-                  onClick={() => setActiveTab('followers')}
+                  onClick={() => handleTabChange('followers')}
                 >
                   <FaUsers /> View Connections
                 </button>
@@ -372,6 +886,55 @@ const UserDashboard = () => {
                 </div>
               )}
             </section>
+
+            <section className="mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Recent Progress</h2>
+                <button
+                  onClick={() => handleTabChange('progress')}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                >
+                  View All <FaChartLine />
+                </button>
+              </div>
+              
+              {userProgress.length === 0 ? (
+                <div className="p-5 bg-gray-50 rounded-lg text-center text-gray-500">
+                  You haven't shared any progress updates yet.
+                  <div className="mt-2">
+                    <button
+                      onClick={() => handleTabChange('progress')}
+                      className="bg-blue-600 text-white border-none py-2 px-4 rounded-lg text-sm flex items-center gap-2 mx-auto hover:bg-blue-700 transition"
+                    >
+                      <FaChartLine /> Track Your Progress
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg shadow-md">
+                  {userProgress.slice(0, 3).map((progress, index) => (
+                    <div
+                      key={progress.id}
+                      className={`p-4 ${index !== userProgress.slice(0, 3).length - 1 ? 'border-b border-gray-200' : ''}`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold text-md mb-1 text-blue-800">
+                            {progress.templateType && progress.templateType.charAt(0).toUpperCase() + progress.templateType.slice(1)}
+                          </h3>
+                          <p className="text-gray-600 text-sm">
+                            {progress.formattedContent || formatProgressContent(progress)}
+                          </p>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(progress.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           </>
         );
         
@@ -383,6 +946,162 @@ const UserDashboard = () => {
         
       case 'findUsers':
         return <UserSearch />;
+        
+      case 'progress':
+        return (
+          <>
+            <header className="flex justify-between items-center mb-8">
+              <h1 className="text-2xl font-semibold text-blue-900">Your Learning Progress</h1>
+              <button
+                onClick={fetchUserProgressData}
+                className="bg-blue-600 text-white border-none py-2 px-4 rounded-lg text-sm flex items-center gap-2 hover:bg-blue-700 transition duration-300"
+              >
+                <FaSyncAlt className="mr-1" /> Refresh Progress
+              </button>
+            </header>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2">
+                <ProgressForm onSubmitSuccess={fetchUserProgressData} />
+              </div>
+              
+              <div className="md:col-span-1">
+                <div className="bg-white p-5 rounded-xl shadow-md mb-6">
+                  <h3 className="mb-3 text-lg font-semibold text-blue-500">Progress Tips</h3>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700">
+                    <li>Regular updates help track your learning journey</li>
+                    <li>Share specific achievements and milestones</li>
+                    <li>Reflect on challenges you've overcome</li>
+                    <li>Set goals for your next learning sprint</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <section className="mt-8">
+              <div className="flex flex-wrap justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">
+                  All Progress Updates 
+                  <span className="text-sm font-normal text-gray-500 ml-2">
+                    ({userProgress.length} {userProgress.length === 1 ? 'entry' : 'entries'})
+                  </span>
+                </h2>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center">
+                    <span className="text-sm text-gray-600 mr-2">Sort by:</span>
+                    <select 
+                      value={sortOrder}
+                      onChange={(e) => handleSortOrderChange(e.target.value)}
+                      className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="newest">Newest First</option>
+                      <option value="oldest">Oldest First</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={fetchUserProgressData}
+                    className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                  >
+                    <FaSyncAlt className="mr-1" /> Refresh
+                  </button>
+                </div>
+              </div>
+              
+              {userProgress.length === 0 ? (
+                <div className="p-5 bg-gray-50 rounded-lg text-center text-gray-500">
+                  You haven't shared any progress updates yet. Use the form above to share your learning journey!
+                </div>
+              ) : (
+                <div>
+                  <div className="grid grid-cols-1 gap-4 mb-6">
+                    {currentProgressItems.map((progress) => (
+                      <div
+                        key={progress.id}
+                        className="bg-white p-5 rounded-lg shadow-md"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-grow">
+                            <h3 className="font-semibold text-lg mb-2 text-blue-800">
+                              {progress.templateType && progress.templateType.charAt(0).toUpperCase() + progress.templateType.slice(1)}
+                            </h3>
+                            <p className="text-gray-600">
+                              {progress.formattedContent || formatProgressContent(progress)}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <div className="text-sm text-gray-500 mb-2">
+                              {new Date(progress.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="flex space-x-2">
+                              <button 
+                                onClick={() => handleEditProgress(progress.id)}
+                                className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-md px-2 py-1 text-sm flex items-center"
+                              >
+                                <FaEdit className="mr-1" /> Edit
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteProgress(progress.id)}
+                                className="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-md px-2 py-1 text-sm flex items-center"
+                              >
+                                <FaTrashAlt className="mr-1" /> Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Pagination Controls */}
+                  {userProgress.length > itemsPerPage && (
+                    <div className="flex justify-center mt-6">
+                      <nav className="flex items-center justify-center">
+                        <button 
+                          onClick={prevPage} 
+                          disabled={currentPage === 1}
+                          className={`mx-1 px-3 py-1 rounded flex items-center ${
+                            currentPage === 1 
+                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
+                              : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                          }`}
+                        >
+                          <FaChevronLeft className="mr-1" /> Previous
+                        </button>
+                        
+                        {/* Page number buttons */}
+                        {[...Array(Math.ceil(userProgress.length / itemsPerPage)).keys()].map(number => (
+                          <button
+                            key={number + 1}
+                            onClick={() => paginate(number + 1)}
+                            className={`mx-1 px-3 py-1 rounded ${
+                              currentPage === number + 1
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            }`}
+                          >
+                            {number + 1}
+                          </button>
+                        ))}
+                        
+                        <button 
+                          onClick={nextPage} 
+                          disabled={currentPage === Math.ceil(userProgress.length / itemsPerPage)}
+                          className={`mx-1 px-3 py-1 rounded flex items-center ${
+                            currentPage === Math.ceil(userProgress.length / itemsPerPage)
+                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                              : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                          }`}
+                        >
+                          Next <FaChevronRight className="ml-1" />
+                        </button>
+                      </nav>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          </>
+        );
         
       default:
         return <div>Select a tab to view content</div>;
@@ -398,13 +1117,13 @@ const UserDashboard = () => {
           
           <div className="flex flex-col gap-4">
             {[
-              { id: "profile", icon: <FaUser />, label: "Profile", onClick: () => setActiveTab('profile') },
-              { id: "followers", icon: <FaUsers />, label: `Followers (${userData.followers})`, onClick: () => setActiveTab('followers') },
-              { id: "following", icon: <FaUsers />, label: `Following (${userData.following})`, onClick: () => setActiveTab('following') },
-              { id: "findUsers", icon: <FaSearch />, label: "Find Users", onClick: () => setActiveTab('findUsers') },
+              { id: "profile", icon: <FaUser />, label: "Profile", onClick: () => handleTabChange('profile') },
+              { id: "followers", icon: <FaUsers />, label: `Followers (${userData.followers})`, onClick: () => handleTabChange('followers') },
+              { id: "following", icon: <FaUsers />, label: `Following (${userData.following})`, onClick: () => handleTabChange('following') },
+              { id: "findUsers", icon: <FaSearch />, label: "Find Users", onClick: () => handleTabChange('findUsers') },
               { id: "explore", icon: <FaCompass />, label: "Explore", onClick: () => navigate("/") },
               { id: "addpost", icon: <FaPlus />, label: "Add Post", onClick: handleAddPost },
-              { id: "progress", icon: <FaChartLine />, label: "Progress", onClick: () => navigate("#") },
+              { id: "progress", icon: <FaChartLine />, label: "Progress", onClick: () => handleTabChange('progress') },
             ].map((item) => (
               <button
                 key={item.id}

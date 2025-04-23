@@ -168,7 +168,15 @@ const apiService = {
       headers,
       withCredentials: true
     }).then(response => response.data);
-  }
+  },
+  
+  // Progress Updates
+  getProgressTemplates: () => api.get("/progress/templates"),
+  getAllProgress: (userId) => userId ? api.get(`/progress?userId=${userId}`) : api.get("/progress"),
+  getProgressById: (progressId) => api.get(`/progress/${progressId}`),
+  createProgress: (progressData) => api.post("/progress", progressData),
+  updateProgress: (progressId, progressData) => api.put(`/progress/${progressId}`, progressData),
+  deleteProgress: (progressId) => api.delete(`/progress/${progressId}`)
 };
 
 export default apiService;

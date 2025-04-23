@@ -10,6 +10,7 @@ import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetiz
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
+import Progress from "./pages/Progress";
 import OAuthSuccess from "./pages/OAuthSuccess";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -45,6 +46,7 @@ function App() {
         {/* New Routes */}
         <Route path="/feed" element={<Feed />} />
         <Route path="/courses" element={<Courses />} />
+        <Route path="/progress" element={<Progress />} />
         <Route path="/oauth-success" element={<OAuthSuccess />} />
 
         {/*Monetization and reward management */}

@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
-import { FaEye, FaEyeSlash, FaGoogle } from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import apiService from "../services/api";
 import Navbar from "../components/Navbar";
 
