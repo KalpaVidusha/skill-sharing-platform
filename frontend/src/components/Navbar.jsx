@@ -25,11 +25,20 @@ const Navbar = () => {
   const checkAuthStatus = () => {
     const isLoggedInFlag = localStorage.getItem('isLoggedIn');
     const storedUsername = localStorage.getItem('username');
+    const token = localStorage.getItem('token');
     
-    if (isLoggedInFlag === 'true' && storedUsername) {
+    if (isLoggedInFlag === 'true' && storedUsername && token) {
       setIsLoggedIn(true);
       setUsername(storedUsername);
     } else {
+      // If any required auth data is missing, clear all auth data
+      if (isLoggedInFlag === 'true' || storedUsername || token) {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('username');
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('email');
+      }
       setIsLoggedIn(false);
       setUsername('');
     }
@@ -76,7 +85,11 @@ const Navbar = () => {
           showConfirmButton: false,
           background: '#ffffff'
         }).then(() => {
-          navigate('/login');
+          // Force a clean navigation to login page instead of just using navigate
+          // This prevents browser back button from showing cached authenticated views
+          window.location.href = '/login';
+          
+          // Dispatch event for other components that might need to react to logout
           window.dispatchEvent(new Event('authStateChanged'));
         });
       });
@@ -152,12 +165,15 @@ const Navbar = () => {
           <div className="hidden md:flex md:items-center md:space-x-4">
             {isLoggedIn ? (
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700">
+                <Link 
+                  to="/userdashboard"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all duration-200 cursor-pointer"
+                >
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium">
                     {username.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-sm font-medium">{username}</span>
-                </div>
+                </Link>
                 <button
                   onClick={showLogoutConfirmation}
                   className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 transition-all duration-200 shadow-sm hover:shadow-md flex items-center"
@@ -181,7 +197,7 @@ const Navbar = () => {
                 </Link>
               </div>
             )}
-          </div>
+          </div>          
         </div>
       </div>
     </nav>

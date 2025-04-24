@@ -225,28 +225,55 @@ const UserDashboard = () => {
   };
 
   useEffect(() => {
-    setTimeout(() => setAnimate(true), 100);
-    
-    // Initial fetch of user data
-    fetchUserData();
-    
-    // Fetch user progress data
-    fetchUserProgressData();
-    
-    // Fetch progress templates for formatting
-    fetchProgressTemplates();
-    
-    // Add event listener for follow/unfollow events
-    const handleFollowStatusChange = () => {
-      console.log("Follow status changed, refreshing dashboard data");
-      fetchUserData();
+    const verifyAuthentication = () => {
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      
+      // Check for all required auth data, not just isLoggedIn flag
+      if (!isLoggedIn || !token || !userId) {
+        // Clear any partial auth data that might exist
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("username");
+        localStorage.removeItem("email");
+        localStorage.removeItem("isLoggedIn");
+        
+        // Redirect to login
+        navigate('/login');
+        return false;
+      }
+      
+      // Set local auth state
+      setIsLoggedIn(true);
+      setUsername(localStorage.getItem('username') || '');
+      return true;
     };
     
-    window.addEventListener('followStatusChanged', handleFollowStatusChange);
+    // Verify authentication before fetching data
+    if (verifyAuthentication()) {
+      fetchUserData();
+      fetchUserProgressData();
+      fetchProgressTemplates();
+    }
     
-    // Clean up the event listener when component unmounts
+    // Listen for auth state changes
+    window.addEventListener('authStateChanged', () => {
+      if (!verifyAuthentication()) {
+        // Redirect happened in verifyAuthentication
+        return;
+      }
+      fetchUserData();
+      fetchUserProgressData();
+    });
+    
+    // Check auth status when component is focused (user returns from another tab/window)
+    window.addEventListener('focus', verifyAuthentication);
+    
+    // Cleanup
     return () => {
-      window.removeEventListener('followStatusChanged', handleFollowStatusChange);
+      window.removeEventListener('authStateChanged', verifyAuthentication);
+      window.removeEventListener('focus', verifyAuthentication);
     };
   }, [navigate]);
 
