@@ -4,7 +4,7 @@ import ProgressForm from './ProgressForm';
 import ProgressFeed from './ProgressFeed';
 import { FaSyncAlt } from 'react-icons/fa';
 
-const ProgressPage = () => {
+const ProgressAll = () => {
   const [refreshFeed, setRefreshFeed] = useState(false);
   const [activeTab, setActiveTab] = useState('global');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -173,4 +173,4 @@ const ProgressPage = () => {
   );
 };
 
-export default ProgressPage; 
+export default ProgressAll; 

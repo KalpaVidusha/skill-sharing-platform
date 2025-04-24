@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import apiService from '../../services/api';
 import { formatDistanceToNow, format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parse } from 'date-fns';
 import { FaCalendarAlt, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { toast } from "react-toastify";
 
 const ProgressForm = ({ onSubmitSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -244,6 +245,9 @@ const ProgressForm = ({ onSubmitSuccess }) => {
       
       setSuccess(true);
       
+      // Show success toast
+      toast.success('Progress added successfully!');
+      
       // Notify parent component
       if (onSubmitSuccess) {
         onSubmitSuccess();
@@ -256,6 +260,8 @@ const ProgressForm = ({ onSubmitSuccess }) => {
     } catch (error) {
       setError('Could not create your progress update');
       console.error(error);
+      // Show error toast
+      toast.error('Failed to add progress');
     } finally {
       setLoading(false);
     }
@@ -380,6 +386,7 @@ const ProgressForm = ({ onSubmitSuccess }) => {
 
   return (
     <div className="bg-white rounded-lg w-full mb-4">
+      
       <div className="p-4">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           Share Your Learning Progress

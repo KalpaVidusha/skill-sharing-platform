@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import apiService from '../../services/api';
 import { formatDistanceToNow, format, parse, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
 import { FaEdit, FaTrash, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSyncAlt, FaSort } from 'react-icons/fa';
+import { toast } from "react-toastify";
 
 const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters }) => {
   const [progressUpdates, setProgressUpdates] = useState([]);
@@ -198,9 +199,13 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
       await apiService.deleteProgress(deleteId);
       setProgressUpdates(progressUpdates.filter(p => p.id !== deleteId));
       setShowConfirm(false);
+
+      toast.error('Progress deleted successfully!', {
+      });
     } catch (error) {
       setError('Could not delete progress update');
       console.error(error);
+      toast.error('Failed to delete progress');
     }
   };
 
@@ -272,12 +277,15 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
         });
       });
       
+      toast.success('Progress updated successfully!');
+      
       // Clear edit state
       setEditingProgress(null);
       setEditFormData({});
     } catch (error) {
       setError('Could not update progress');
       console.error(error);
+      toast.error('Failed to update progress');
     }
   };
 
@@ -617,6 +625,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
 
   return (
     <div>
+      
       {/* Sorting Controls - Only show if not using limit param and hideFilters is not true */}
       {!limit && !hideFilters && (
         <div className="flex justify-between items-center mb-4">

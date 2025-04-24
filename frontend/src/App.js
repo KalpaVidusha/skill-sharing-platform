@@ -10,7 +10,7 @@ import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetiz
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
-import Progress from "./pages/Progress";
+import Progress from "./pages/Progress/ProgressAll";
 import OAuthSuccess from "./pages/OAuthSuccess";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
