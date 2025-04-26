@@ -101,6 +101,8 @@ public class CommentController {
                                 return ResponseEntity.ok(comments);
                             }
                         } catch (Exception e) {
+                            System.err.println("Error checking post ownership: " + e.getMessage());
+                            return ResponseEntity.ok(e.getMessage());
                             // If there's any error checking post ownership, just continue
                             // and return the comments as a regular user
                         }
