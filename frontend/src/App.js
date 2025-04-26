@@ -7,6 +7,8 @@ import UserDashboard from "./pages/UserDashboard";
 import Posts from './pages/Posts/Posts';
 import PostDetail from './pages/Posts/PostDetail';
 import CreatePost from "./pages/Posts/CreatePost";
+import MyPosts from "./pages/Posts/MyPosts";
+import EditPost from "./pages/Posts/EditPost";
 import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import Feed from "./pages/Feed";
@@ -41,6 +43,8 @@ function App() {
         <Route path="/posts" element={<Posts />} />
         <Route path="/posts/:id" element={<PostDetail />} />
         <Route path="/add-post" element={<CreatePost />} />
+        <Route path="/my-posts" element={<MyPosts />} />
+        <Route path="/edit-post/:id" element={<EditPost />} />
         
         {/* User Management */}
         <Route path="/userdashboard" element={<UserDashboard />} />

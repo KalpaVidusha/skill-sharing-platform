@@ -1060,11 +1060,13 @@ const UserDashboard = () => {
           
           <div className="flex flex-col gap-4">
             {[
+ 
               { id: "profile", icon: <FaUser />, label: "Profile", onClick: () => handleTabChange('profile') },
               { id: "followers", icon: <FaUsers />, label: `Followers (${userData.followers})`, onClick: () => handleTabChange('followers') },
               { id: "following", icon: <FaUsers />, label: `Following (${userData.following})`, onClick: () => handleTabChange('following') },
               { id: "findUsers", icon: <FaSearch />, label: "Find Users", onClick: () => handleTabChange('findUsers') },
               { id: "explore", icon: <FaCompass />, label: "Explore", onClick: () => navigate("/") },
+              { id: "myposts", icon: <FaFileAlt />, label: "My Posts", onClick: () => navigate("/my-posts") },
               { id: "addpost", icon: <FaPlus />, label: "Add Post", onClick: handleAddPost },
               { id: "progress", icon: <FaChartLine />, label: "Progress", onClick: () => handleTabChange('progress') },
               { id: "progress", icon: <FaChartPie />, label: "Monetization", onClick: () => navigate("/monetize") },
