@@ -2,8 +2,10 @@ package com.y3s1.we15.skillsharingplatform.Controllers;
 
 import com.y3s1.we15.skillsharingplatform.Models.Post;
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
+import com.y3s1.we15.skillsharingplatform.Models.Notification;
 import com.y3s1.we15.skillsharingplatform.Service.PostService;
 import com.y3s1.we15.skillsharingplatform.Service.UserService;
+import com.y3s1.we15.skillsharingplatform.Service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,11 +22,13 @@ public class PostController {
 
     private final PostService postService;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     @Autowired
-    public PostController(PostService postService, UserService userService) {
+    public PostController(PostService postService, UserService userService, NotificationService notificationService) {
         this.postService = postService;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
     @PostMapping
@@ -114,11 +118,23 @@ public class PostController {
         Post post = optionalPost.get();
                 
 
-        String userId = user.getId();
-        if (post.getLikedUserIds().contains(userId)) {
+        boolean wasLiked = post.getLikedUserIds().contains(userId);
+        if (wasLiked) {
             post.getLikedUserIds().remove(userId);
         } else {
             post.getLikedUserIds().add(userId);
+            // Send notification to post owner when someone likes their post
+            if (!post.getUser().getId().equals(userId)) { // Don't send notification if user likes their own post
+                String content = String.format("%s %s liked your post: %s", 
+                    user.getFirstName(), user.getLastName(), post.getTitle());
+                notificationService.createNotification(
+                    post.getUser().getId(),
+                    userId,
+                    postId,
+                    Notification.NotificationType.LIKE,
+                    content
+                );
+            }
         }
 
         post.setLikeCount(post.getLikedUserIds().size());

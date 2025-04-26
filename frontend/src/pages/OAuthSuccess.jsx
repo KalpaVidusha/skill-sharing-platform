@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 const OAuthSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [countdown, setCountdown] = useState(5);
   
   useEffect(() => {
     // Get params from URL query params
@@ -29,22 +28,9 @@ const OAuthSuccess = () => {
       console.warn("Missing user data in URL parameters");
     }
     
-    // Show success message
+    // Show success message and navigate to dashboard
     toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} authentication successful!`);
-    
-    // Redirect to dashboard after countdown
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          navigate('/userdashboard');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
-    return () => clearInterval(timer);
+    navigate('/userdashboard');
   }, [navigate, location]);
 
   return (
@@ -55,14 +41,8 @@ const OAuthSuccess = () => {
           You have successfully authenticated with your account.
         </p>
         <p style={messageStyle}>
-          Redirecting to your dashboard in <span style={countdownStyle}>{countdown}</span> seconds...
+          Redirecting to your dashboard...
         </p>
-        <button
-          onClick={() => navigate('/userdashboard')}
-          style={buttonStyle}
-        >
-          Go to Dashboard Now
-        </button>
       </div>
     </div>
   );
@@ -109,25 +89,6 @@ const messageStyle = {
   fontSize: '16px',
   color: '#0d47a1',
   margin: '20px 0',
-};
-
-const countdownStyle = {
-  fontWeight: 'bold',
-  fontSize: '20px',
-  color: '#2196f3',
-};
-
-const buttonStyle = {
-  padding: '14px 24px',
-  borderRadius: '10px',
-  border: 'none',
-  backgroundColor: '#2196f3',
-  color: '#ffffff',
-  fontSize: '16px',
-  fontWeight: '600',
-  cursor: 'pointer',
-  transition: 'background-color 0.3s ease',
-  marginTop: '10px',
 };
 
 export default OAuthSuccess; 

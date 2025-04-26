@@ -109,6 +109,13 @@ const apiService = {
     localStorage.removeItem("email");
     localStorage.removeItem("isLoggedIn");
     
+    // Force clear any browser cache for authenticated routes
+    if (window.history && window.history.pushState) {
+      // Add a random parameter to the URL to prevent browser caching
+      window.history.pushState({}, "", 
+        window.location.href.split("?")[0] + "?logout=" + Date.now());
+    }
+    
     // Return a resolved promise to allow chaining
     return Promise.resolve({ success: true });
   },
@@ -176,7 +183,13 @@ const apiService = {
   getProgressById: (progressId) => api.get(`/progress/${progressId}`),
   createProgress: (progressData) => api.post("/progress", progressData),
   updateProgress: (progressId, progressData) => api.put(`/progress/${progressId}`, progressData),
-  deleteProgress: (progressId) => api.delete(`/progress/${progressId}`)
+  deleteProgress: (progressId) => api.delete(`/progress/${progressId}`),
+
+  // Notifications
+  getNotifications: () => api.get(`/notifications?t=${new Date().getTime()}`),
+  getUnreadNotifications: () => api.get(`/notifications/unread?t=${new Date().getTime()}`),
+  markNotificationAsRead: (notificationId) => api.put(`/notifications/${notificationId}/read`),
+  markAllNotificationsAsRead: () => api.put("/notifications/read-all"),
 };
 
 export default apiService;

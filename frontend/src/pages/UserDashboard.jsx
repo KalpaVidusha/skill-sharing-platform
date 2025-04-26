@@ -36,6 +36,8 @@ const UserDashboard = () => {
   const [sortOrder, setSortOrder] = useState('newest'); // 'newest' or 'oldest'
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [progressToDelete, setProgressToDelete] = useState(null);
   const navigate = useNavigate();
 
   // Function to fetch user data - extracted so it can be called to refresh
@@ -225,28 +227,55 @@ const UserDashboard = () => {
   };
 
   useEffect(() => {
-    setTimeout(() => setAnimate(true), 100);
-    
-    // Initial fetch of user data
-    fetchUserData();
-    
-    // Fetch user progress data
-    fetchUserProgressData();
-    
-    // Fetch progress templates for formatting
-    fetchProgressTemplates();
-    
-    // Add event listener for follow/unfollow events
-    const handleFollowStatusChange = () => {
-      console.log("Follow status changed, refreshing dashboard data");
-      fetchUserData();
+    const verifyAuthentication = () => {
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      
+      // Check for all required auth data, not just isLoggedIn flag
+      if (!isLoggedIn || !token || !userId) {
+        // Clear any partial auth data that might exist
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("username");
+        localStorage.removeItem("email");
+        localStorage.removeItem("isLoggedIn");
+        
+        // Redirect to login
+        navigate('/login');
+        return false;
+      }
+      
+      // Set local auth state
+      setIsLoggedIn(true);
+      setUsername(localStorage.getItem('username') || '');
+      return true;
     };
     
-    window.addEventListener('followStatusChanged', handleFollowStatusChange);
+    // Verify authentication before fetching data
+    if (verifyAuthentication()) {
+      fetchUserData();
+      fetchUserProgressData();
+      fetchProgressTemplates();
+    }
     
-    // Clean up the event listener when component unmounts
+    // Listen for auth state changes
+    window.addEventListener('authStateChanged', () => {
+      if (!verifyAuthentication()) {
+        // Redirect happened in verifyAuthentication
+        return;
+      }
+      fetchUserData();
+      fetchUserProgressData();
+    });
+    
+    // Check auth status when component is focused (user returns from another tab/window)
+    window.addEventListener('focus', verifyAuthentication);
+    
+    // Cleanup
     return () => {
-      window.removeEventListener('followStatusChanged', handleFollowStatusChange);
+      window.removeEventListener('authStateChanged', verifyAuthentication);
+      window.removeEventListener('focus', verifyAuthentication);
     };
   }, [navigate]);
 
@@ -381,15 +410,15 @@ const UserDashboard = () => {
           const isDateField = field.toLowerCase().includes('date');
           
           if (isDateField) {
-            // Use date input for date fields with Flatpickr
+            // Use HTML5 date input for date fields
             return `
               <div class="mb-3">
                 <label class="block text-sm font-medium text-gray-700 mb-1">${field.charAt(0).toUpperCase() + field.slice(1)}</label>
                 <input 
+                  type="date"
                   id="progress-field-${field}" 
-                  class="flatpickr w-full p-2 border border-gray-300 rounded-md"
-                  data-default-date="${fieldValue}"
-                  placeholder="Select a date..."
+                  class="w-full p-2 border border-gray-300 rounded-md"
+                  value="${fieldValue}"
                 />
               </div>
             `;
@@ -402,42 +431,18 @@ const UserDashboard = () => {
                   id="progress-field-${field}" 
                   class="w-full p-2 border border-gray-300 rounded-md"
                   value="${fieldValue.replace(/"/g, '&quot;')}"
-                  onkeyup="updatePreview()"
-                  onchange="updatePreview()"
                 />
               </div>
             `;
           }
         }).join('');
         
+        // Store template format for preview
+        const templateFormat = template.format;
+        
         Swal.fire({
           title: `Edit ${progressToEdit.templateType.charAt(0).toUpperCase() + progressToEdit.templateType.slice(1)}`,
           html: `
-            <!-- Flatpickr CSS -->
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-            <style>
-              /* Custom Calendar Styles */
-              .flatpickr-calendar {
-                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-                border-radius: 8px;
-                padding: 8px;
-              }
-              .flatpickr-day.selected {
-                background: #4f46e5;
-                border-color: #4f46e5;
-              }
-              .flatpickr-day.selected:hover {
-                background: #3730a3;
-                border-color: #3730a3;
-              }
-              .flatpickr-day:hover {
-                background: #f3f4f6;
-              }
-              .flatpickr-day.today {
-                border-color: #4f46e5;
-              }
-            </style>
-
             <div class="p-4">
               ${fieldsHtml}
               <div class="mt-4 p-3 bg-gray-50 rounded text-sm">
@@ -445,59 +450,67 @@ const UserDashboard = () => {
                 <p id="preview-content" class="text-gray-600">${formatProgressContent(progressToEdit)}</p>
               </div>
             </div>
-
-            <!-- Flatpickr JavaScript -->
-            <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-            <script>
-              // Initialize Flatpickr date pickers
-              document.querySelectorAll('.flatpickr').forEach(input => {
-                flatpickr(input, {
-                  dateFormat: "Y-m-d",
-                  defaultDate: input.dataset.defaultDate || new Date(),
-                  onChange: function(selectedDates, dateStr) {
-                    // Update the value and trigger preview
-                    input.value = dateStr;
-                    updatePreview();
-                  }
-                });
-              });
-
-              function updatePreview() {
-                const fields = {};
-                ${template.fields.map(field => `
-                  fields['${field}'] = document.getElementById('progress-field-${field}').value;
-                `).join('')}
-                
-                let format = "${template.format.replace(/"/g, '\\"')}";
-                ${template.fields.map(field => `
-                  format = format.replace('{${field}}', fields['${field}'] || '');
-                `).join('')}
-                
-                document.getElementById('preview-content').textContent = format;
-              }
-
-              // Trigger initial preview update
-              setTimeout(updatePreview, 100);
-            </script>
           `,
           showCancelButton: true,
           confirmButtonText: 'Save Changes',
           confirmButtonColor: '#4f46e5',
           cancelButtonText: 'Cancel',
           didOpen: () => {
-            // Let the script initialize everything properly
-            setTimeout(() => {
-              // Trigger update to refresh preview after Flatpickr initialization
-              if (typeof window.updatePreview === 'function') {
-                window.updatePreview();
+            // Function to update preview
+            const updatePreview = () => {
+              const fields = {};
+              template.fields.forEach(field => {
+                const input = document.getElementById(`progress-field-${field}`);
+                if (input) {
+                  fields[field] = input.value;
+                }
+              });
+              
+              let format = templateFormat;
+              template.fields.forEach(field => {
+                const value = fields[field] || '';
+                format = format.replace(new RegExp(`{${field}}`, 'g'), value);
+              });
+              
+              const previewElement = document.getElementById('preview-content');
+              if (previewElement) {
+                previewElement.textContent = format;
               }
-            }, 200);
+            };
+
+            // Add event listeners to all inputs
+            template.fields.forEach(field => {
+              const input = document.getElementById(`progress-field-${field}`);
+              if (input) {
+                input.addEventListener('input', updatePreview);
+                input.addEventListener('change', updatePreview);
+              }
+            });
+
+            // Initial preview update
+            updatePreview();
+
+            // Store updatePreview in window for cleanup
+            window.updatePreview = updatePreview;
+          },
+          willClose: () => {
+            // Clean up event listeners
+            template.fields.forEach(field => {
+              const input = document.getElementById(`progress-field-${field}`);
+              if (input) {
+                input.removeEventListener('input', window.updatePreview);
+                input.removeEventListener('change', window.updatePreview);
+              }
+            });
+            // Clean up window reference
+            delete window.updatePreview;
           },
           preConfirm: () => {
             // Collect updated values for each field
             const updatedFields = {};
             template.fields.forEach(field => {
-              updatedFields[field] = document.getElementById(`progress-field-${field}`).value;
+              const input = document.getElementById(`progress-field-${field}`);
+              updatedFields[field] = input.value;
             });
             
             return { fields: updatedFields };
@@ -532,26 +545,6 @@ const UserDashboard = () => {
     Swal.fire({
       title: `Edit ${progressType}`,
       html: `
-        <!-- Flatpickr CSS -->
-        ${hasDatePatterns ? `
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-        <style>
-          .flatpickr-calendar {
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            padding: 8px;
-          }
-          .flatpickr-day.selected {
-            background: #4f46e5;
-            border-color: #4f46e5;
-          }
-          .flatpickr-day.selected:hover {
-            background: #3730a3;
-            border-color: #3730a3;
-          }
-        </style>
-        ` : ''}
-
         <div class="p-4">
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-1">Progress Content</label>
@@ -593,35 +586,6 @@ const UserDashboard = () => {
           </div>
           ` : ''}
         </div>
-        
-        ${hasDatePatterns ? `
-        <!-- Flatpickr JavaScript -->
-        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-        <script>
-          // Initialize date picker
-          flatpickr("#date-picker", {
-            dateFormat: "Y-m-d",
-            defaultDate: new Date()
-          });
-          
-          // Function to insert selected date at cursor position in textarea
-          function insertDate() {
-            const textarea = document.getElementById('progress-content');
-            const dateValue = document.getElementById('date-picker').value;
-            const cursorPos = textarea.selectionStart;
-            
-            const textBefore = textarea.value.substring(0, cursorPos);
-            const textAfter = textarea.value.substring(cursorPos);
-            
-            textarea.value = textBefore + dateValue + textAfter;
-            
-            // Reset cursor position after the inserted date
-            textarea.selectionStart = cursorPos + dateValue.length;
-            textarea.selectionEnd = cursorPos + dateValue.length;
-            textarea.focus();
-          }
-        </script>
-        ` : ''}
       `,
       showCancelButton: true,
       confirmButtonText: 'Save Changes',
@@ -689,44 +653,23 @@ const UserDashboard = () => {
   };
 
   const handleDeleteProgress = (progressId) => {
-    Swal.fire({
-      title: 'Are you sure?',
-      text: 'This progress update will be permanently deleted.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      confirmButtonColor: '#ef4444',
-      cancelButtonText: 'Cancel',
-      cancelButtonColor: '#6b7280'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        deleteProgress(progressId);
-      }
-    });
+    setProgressToDelete(progressId);
+    setShowDeleteModal(true);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setProgressToDelete(null);
   };
 
   const deleteProgress = async (progressId) => {
     try {
       await apiService.deleteProgress(progressId);
-      
-      // Update the userProgress state by filtering out the deleted progress
-      setUserProgress(prevProgress => prevProgress.filter(p => p.id !== progressId));
-      
-      // Show success message
-      Swal.fire({
-        title: 'Deleted!',
-        text: 'Your progress has been deleted.',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false
-      });
+      setUserProgress(userProgress.filter(progress => progress.id !== progressId));
+      setShowDeleteModal(false);
+      setProgressToDelete(null);
     } catch (error) {
       console.error('Error deleting progress:', error);
-      Swal.fire({
-        title: 'Error!',
-        text: 'Failed to delete progress',
-        icon: 'error'
-      });
     }
   };
 
@@ -1128,7 +1071,7 @@ const UserDashboard = () => {
               { id: "progress", icon: <FaChartLine />, label: "Progress", onClick: () => handleTabChange('progress') },
               { id: "progress", icon: <FaChartPie />, label: "Monetization", onClick: () => navigate("/monetize") },
             ].map((item) => (
-              <button
+              <button 
                 key={item.id}
                 onClick={item.onClick}
                 className={`flex items-center gap-3 py-2.5 px-3 rounded-lg text-left transition ${
@@ -1145,7 +1088,7 @@ const UserDashboard = () => {
             ))}
           </div>
           
-          <button
+          <button 
             onClick={showLogoutConfirmation}
             className="mt-auto bg-red-600 hover:bg-red-700 text-white flex items-center gap-3 py-2.5 px-3 rounded-lg transition"
             onMouseEnter={() => setHovered("logout")}
@@ -1162,6 +1105,56 @@ const UserDashboard = () => {
           {renderTabContent()}
         </main>
       </div>
+
+      {/* Delete Progress Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={cancelDelete}></div>
+
+            {/* This element is to trick the browser into centering the modal contents */}
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            {/* Modal content */}
+            <div className="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Progress Update</h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Are you sure you want to delete this progress update? This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button 
+                  type="button" 
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => deleteProgress(progressToDelete)}
+                >
+                  Delete
+                </button>
+                <button 
+                  type="button" 
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={cancelDelete}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
