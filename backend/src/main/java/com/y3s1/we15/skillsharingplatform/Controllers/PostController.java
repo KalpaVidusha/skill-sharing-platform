@@ -117,7 +117,7 @@ public class PostController {
         }
         Post post = optionalPost.get();
 
-        
+        String userId = user.getId();
                 
         boolean wasLiked = post.getLikedUserIds().contains(userId);
         if (wasLiked) {
