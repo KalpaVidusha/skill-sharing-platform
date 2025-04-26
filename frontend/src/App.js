@@ -8,6 +8,8 @@ import PostDetail from './pages/Posts/PostDetail';
 import CreatePost from "./pages/Posts/CreatePost";
 import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
+import EditRequest from "./pages/monetizationAndRewardManagement/EditMonetization"; // This will be the edit page
+import Applications from "./pages/monetizationAndRewardManagement/Applications";
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
 import Progress from "./pages/Progress";
@@ -52,6 +54,9 @@ function App() {
         {/*Monetization and reward management */}
         <Route path="/monetization/form" element={<MonetizationRequest />} />
         <Route path="/monetize" element={<MonetizationForm />} />
+        <Route path="/Applications" element={<Applications />} />
+        <Route path="/edit/:id" element={<EditRequest />} />
+        
         
         {/* Optional: Category Filter */}
         <Route path="/category/:categoryName" element={<Home />} />
