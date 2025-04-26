@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaSearch, FaSignInAlt, FaUserPlus, FaUser, FaBars, FaTimes } from 'react-icons/fa';
 import { FiBook, FiHome, FiLogOut } from 'react-icons/fi';
+import NotificationDropdown from '../pages/Notification/NotificationDropdown';
 
 export const authStateChanged = new Event('authStateChanged');
 
@@ -153,6 +154,7 @@ const Navbar = () => {
                     </div>
                     <span className="text-sm font-medium">{username}</span>
                   </Link>
+                  <NotificationDropdown />
                   <button
                     onClick={() => setShowLogoutModal(true)}
                     className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 transition-all duration-200 shadow-sm hover:shadow-md flex items-center"

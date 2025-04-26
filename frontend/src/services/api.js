@@ -183,7 +183,13 @@ const apiService = {
   getProgressById: (progressId) => api.get(`/progress/${progressId}`),
   createProgress: (progressData) => api.post("/progress", progressData),
   updateProgress: (progressId, progressData) => api.put(`/progress/${progressId}`, progressData),
-  deleteProgress: (progressId) => api.delete(`/progress/${progressId}`)
+  deleteProgress: (progressId) => api.delete(`/progress/${progressId}`),
+
+  // Notifications
+  getNotifications: () => api.get(`/notifications?t=${new Date().getTime()}`),
+  getUnreadNotifications: () => api.get(`/notifications/unread?t=${new Date().getTime()}`),
+  markNotificationAsRead: (notificationId) => api.put(`/notifications/${notificationId}/read`),
+  markAllNotificationsAsRead: () => api.put("/notifications/read-all"),
 };
 
 export default apiService;
