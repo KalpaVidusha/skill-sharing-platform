@@ -4,7 +4,7 @@ import {
   FaPlus, FaUser, FaSignOutAlt, FaChartLine,
   FaFileAlt, FaComments, FaCompass, FaSearch, FaUsers,
   FaEdit, FaTrashAlt, FaSort, FaCalendarAlt, FaSave, FaSyncAlt,
-  FaChevronLeft, FaChevronRight
+  FaChevronLeft, FaChevronRight,FaBellSlash,FaChartPie
 } from "react-icons/fa";
 import Navbar from "../components/Navbar";
 import FollowList from "../components/FollowList";
@@ -761,16 +761,16 @@ const UserDashboard = () => {
   // Show loading indicator while fetching data
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen bg-gradient-to-br from-indigo-50 to-blue-100">
+      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-indigo-50 to-blue-100">
         <div className="relative">
           {/* Animated sphere logo */}
-          <div className="w-24 h-24 bg-gradient-to-tr from-blue-600 to-indigo-800 rounded-full shadow-lg animate-pulse">
-            <div className="absolute inset-4 bg-white/30 rounded-full"></div>
+          <div className="w-24 h-24 rounded-full shadow-lg bg-gradient-to-tr from-blue-600 to-indigo-800 animate-pulse">
+            <div className="absolute rounded-full inset-4 bg-white/30"></div>
           </div>
           
           {/* SkillSphere text with animation */}
           <div className="mt-6 text-center">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text">
               SkillSphere
             </h1>
             <p className="mt-2 text-blue-700/80 animate-pulse">Crafting your learning universe...</p>
@@ -778,7 +778,7 @@ const UserDashboard = () => {
         </div>
         
         {/* Animated loading dots */}
-        <div className="flex space-x-2 mt-8">
+        <div className="flex mt-8 space-x-2">
           {[...Array(3)].map((_, i) => (
             <div 
               key={i}
@@ -789,7 +789,7 @@ const UserDashboard = () => {
         </div>
         
         {/* Subtle footer */}
-        <p className="absolute bottom-6 text-sm text-blue-900/50">
+        <p className="absolute text-sm bottom-6 text-blue-900/50">
           Loading your personalized dashboard...
         </p>
       </div>
@@ -803,11 +803,11 @@ const UserDashboard = () => {
       case 'profile':
         return (
           <>
-            <header className="flex justify-between items-center mb-8">
+            <header className="flex items-center justify-between mb-8">
               <h1 className="text-2xl font-semibold text-blue-900">Welcome, {userData.name} 👋</h1>
               <button
                 onClick={handleAddPost}
-                className="bg-blue-900 text-white border-none py-2 px-4 rounded-lg text-sm flex items-center gap-2 hover:bg-blue-700 transition duration-300"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-white transition duration-300 bg-blue-900 border-none rounded-lg hover:bg-blue-700"
                 onMouseEnter={() => setHovered("mainAddPost")}
                 onMouseLeave={() => setHovered(null)}
               >
@@ -815,20 +815,20 @@ const UserDashboard = () => {
               </button>
             </header>
 
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-              <div className="bg-white p-5 rounded-xl shadow-md">
+            <section className="grid grid-cols-1 gap-6 mb-10 md:grid-cols-3">
+              <div className="p-5 bg-white shadow-md rounded-xl">
                 <h3 className="mb-3 text-lg font-semibold text-blue-500">Your Info</h3>
                 <p>Name: {userData.name}</p>
                 <p>Email: {userData.email}</p>
                 <p>Member Since: {userData.memberSince}</p>
               </div>
-              <div className="bg-white p-5 rounded-xl shadow-md">
+              <div className="p-5 bg-white shadow-md rounded-xl">
                 <h3 className="mb-3 text-lg font-semibold text-blue-500">Progress</h3>
                 <p>Posts: {userData.posts}</p>
                 <p>Likes Received: {userData.likesReceived}</p>
                 <p>Comments: {userData.comments}</p>
                 <button
-                  className="mt-3 bg-blue-100 py-2 px-3 border-none rounded-lg font-medium cursor-pointer text-blue-800 hover:bg-blue-200 transition duration-300 flex items-center gap-2"
+                  className="flex items-center gap-2 px-3 py-2 mt-3 font-medium text-blue-800 transition duration-300 bg-blue-100 border-none rounded-lg cursor-pointer hover:bg-blue-200"
                   onMouseEnter={() => setHovered("viewProgress")}
                   onMouseLeave={() => setHovered(null)}
                   onClick={() => handleTabChange('progress')}
@@ -836,12 +836,12 @@ const UserDashboard = () => {
                   <FaChartLine /> View Progress
                 </button>
               </div>
-              <div className="bg-white p-5 rounded-xl shadow-md">
+              <div className="p-5 bg-white shadow-md rounded-xl">
                 <h3 className="mb-3 text-lg font-semibold text-blue-500">Connections</h3>
                 <p>Followers: {userData.followers}</p>
                 <p>Following: {userData.following}</p>
                 <button
-                  className="mt-3 bg-blue-100 py-2 px-3 border-none rounded-lg font-medium cursor-pointer text-blue-800 hover:bg-blue-200 transition duration-300 flex items-center gap-2"
+                  className="flex items-center gap-2 px-3 py-2 mt-3 font-medium text-blue-800 transition duration-300 bg-blue-100 border-none rounded-lg cursor-pointer hover:bg-blue-200"
                   onMouseEnter={() => setHovered("viewConnections")}
                   onMouseLeave={() => setHovered(null)}
                   onClick={() => handleTabChange('followers')}
@@ -852,15 +852,15 @@ const UserDashboard = () => {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-4">Recent Posts</h2>
+              <h2 className="mb-4 text-xl font-semibold">Recent Posts</h2>
               
               {userData.recentPosts.length === 0 ? (
-                <div className="p-5 bg-gray-50 rounded-lg text-center text-gray-500">
+                <div className="p-5 text-center text-gray-500 rounded-lg bg-gray-50">
                   You haven't created any posts yet.
                   <div className="mt-2">
                     <button
                       onClick={handleAddPost}
-                      className="bg-blue-600 text-white border-none py-2 px-4 rounded-lg text-sm flex items-center gap-2 mx-auto hover:bg-blue-700 transition"
+                      className="flex items-center gap-2 px-4 py-2 mx-auto text-sm text-white transition bg-blue-600 border-none rounded-lg hover:bg-blue-700"
                       onMouseEnter={() => setHovered("emptyAddPost")}
                       onMouseLeave={() => setHovered(null)}
                     >
@@ -869,15 +869,15 @@ const UserDashboard = () => {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   {userData.recentPosts.map((post) => (
                     <div
                       key={post.id}
-                      className="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer"
+                      className="p-5 transition bg-white rounded-lg shadow-md cursor-pointer hover:shadow-lg"
                       onClick={() => navigate(`/posts/${post.id}`)}
                     >
                       <div className="mb-2 text-2xl">{post.icon}</div>
-                      <h3 className="font-semibold text-lg mb-2 text-blue-800">{post.title}</h3>
+                      <h3 className="mb-2 text-lg font-semibold text-blue-800">{post.title}</h3>
                       <p className="text-gray-600 line-clamp-2">
                         {post.summary || post.content.substring(0, 120) + '...'}
                       </p>
@@ -888,23 +888,23 @@ const UserDashboard = () => {
             </section>
 
             <section className="mb-8">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Recent Progress</h2>
                 <button
                   onClick={() => handleTabChange('progress')}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                  className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
                 >
                   View All <FaChartLine />
                 </button>
               </div>
               
               {userProgress.length === 0 ? (
-                <div className="p-5 bg-gray-50 rounded-lg text-center text-gray-500">
+                <div className="p-5 text-center text-gray-500 rounded-lg bg-gray-50">
                   You haven't shared any progress updates yet.
                   <div className="mt-2">
                     <button
                       onClick={() => handleTabChange('progress')}
-                      className="bg-blue-600 text-white border-none py-2 px-4 rounded-lg text-sm flex items-center gap-2 mx-auto hover:bg-blue-700 transition"
+                      className="flex items-center gap-2 px-4 py-2 mx-auto text-sm text-white transition bg-blue-600 border-none rounded-lg hover:bg-blue-700"
                     >
                       <FaChartLine /> Track Your Progress
                     </button>
@@ -917,12 +917,12 @@ const UserDashboard = () => {
                       key={progress.id}
                       className={`p-4 ${index !== userProgress.slice(0, 3).length - 1 ? 'border-b border-gray-200' : ''}`}
                     >
-                      <div className="flex justify-between items-start">
+                      <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="font-semibold text-md mb-1 text-blue-800">
+                          <h3 className="mb-1 font-semibold text-blue-800 text-md">
                             {progress.templateType && progress.templateType.charAt(0).toUpperCase() + progress.templateType.slice(1)}
                           </h3>
-                          <p className="text-gray-600 text-sm">
+                          <p className="text-sm text-gray-600">
                             {progress.formattedContent || formatProgressContent(progress)}
                           </p>
                         </div>
@@ -950,25 +950,25 @@ const UserDashboard = () => {
       case 'progress':
         return (
           <>
-            <header className="flex justify-between items-center mb-8">
+            <header className="flex items-center justify-between mb-8">
               <h1 className="text-2xl font-semibold text-blue-900">Your Learning Progress</h1>
               <button
                 onClick={fetchUserProgressData}
-                className="bg-blue-600 text-white border-none py-2 px-4 rounded-lg text-sm flex items-center gap-2 hover:bg-blue-700 transition duration-300"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-white transition duration-300 bg-blue-600 border-none rounded-lg hover:bg-blue-700"
               >
                 <FaSyncAlt className="mr-1" /> Refresh Progress
               </button>
             </header>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               <div className="md:col-span-2">
                 <ProgressForm onSubmitSuccess={fetchUserProgressData} />
               </div>
               
               <div className="md:col-span-1">
-                <div className="bg-white p-5 rounded-xl shadow-md mb-6">
+                <div className="p-5 mb-6 bg-white shadow-md rounded-xl">
                   <h3 className="mb-3 text-lg font-semibold text-blue-500">Progress Tips</h3>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
+                  <ul className="space-y-2 text-gray-700 list-disc list-inside">
                     <li>Regular updates help track your learning journey</li>
                     <li>Share specific achievements and milestones</li>
                     <li>Reflect on challenges you've overcome</li>
@@ -979,20 +979,20 @@ const UserDashboard = () => {
             </div>
             
             <section className="mt-8">
-              <div className="flex flex-wrap justify-between items-center mb-4">
+              <div className="flex flex-wrap items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">
                   All Progress Updates 
-                  <span className="text-sm font-normal text-gray-500 ml-2">
+                  <span className="ml-2 text-sm font-normal text-gray-500">
                     ({userProgress.length} {userProgress.length === 1 ? 'entry' : 'entries'})
                   </span>
                 </h2>
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center">
-                    <span className="text-sm text-gray-600 mr-2">Sort by:</span>
+                    <span className="mr-2 text-sm text-gray-600">Sort by:</span>
                     <select 
                       value={sortOrder}
                       onChange={(e) => handleSortOrderChange(e.target.value)}
-                      className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                     >
                       <option value="newest">Newest First</option>
                       <option value="oldest">Oldest First</option>
@@ -1000,7 +1000,7 @@ const UserDashboard = () => {
                   </div>
                   <button
                     onClick={fetchUserProgressData}
-                    className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                    className="flex items-center text-sm text-blue-600 hover:text-blue-800"
                   >
                     <FaSyncAlt className="mr-1" /> Refresh
                   </button>
@@ -1008,7 +1008,7 @@ const UserDashboard = () => {
               </div>
               
               {userProgress.length === 0 ? (
-                <div className="p-5 bg-gray-50 rounded-lg text-center text-gray-500">
+                <div className="p-5 text-center text-gray-500 rounded-lg bg-gray-50">
                   You haven't shared any progress updates yet. Use the form above to share your learning journey!
                 </div>
               ) : (
@@ -1017,11 +1017,11 @@ const UserDashboard = () => {
                     {currentProgressItems.map((progress) => (
                       <div
                         key={progress.id}
-                        className="bg-white p-5 rounded-lg shadow-md"
+                        className="p-5 bg-white rounded-lg shadow-md"
                       >
-                        <div className="flex justify-between items-start">
+                        <div className="flex items-start justify-between">
                           <div className="flex-grow">
-                            <h3 className="font-semibold text-lg mb-2 text-blue-800">
+                            <h3 className="mb-2 text-lg font-semibold text-blue-800">
                               {progress.templateType && progress.templateType.charAt(0).toUpperCase() + progress.templateType.slice(1)}
                             </h3>
                             <p className="text-gray-600">
@@ -1029,19 +1029,19 @@ const UserDashboard = () => {
                             </p>
                           </div>
                           <div className="flex flex-col items-end">
-                            <div className="text-sm text-gray-500 mb-2">
+                            <div className="mb-2 text-sm text-gray-500">
                               {new Date(progress.createdAt).toLocaleDateString()}
                             </div>
                             <div className="flex space-x-2">
                               <button 
                                 onClick={() => handleEditProgress(progress.id)}
-                                className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-md px-2 py-1 text-sm flex items-center"
+                                className="flex items-center px-2 py-1 text-sm text-blue-600 rounded-md hover:text-blue-800 bg-blue-50 hover:bg-blue-100"
                               >
                                 <FaEdit className="mr-1" /> Edit
                               </button>
                               <button 
                                 onClick={() => handleDeleteProgress(progress.id)}
-                                className="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-md px-2 py-1 text-sm flex items-center"
+                                className="flex items-center px-2 py-1 text-sm text-red-600 rounded-md hover:text-red-800 bg-red-50 hover:bg-red-100"
                               >
                                 <FaTrashAlt className="mr-1" /> Delete
                               </button>
@@ -1111,9 +1111,9 @@ const UserDashboard = () => {
   return (
     <div>
       <Navbar />
-      <div className="flex min-h-screen font-sans bg-gradient-to-r from-blue-100 to-white text-blue-900 pt-20">
-        <aside className="w-64 bg-blue-600 text-white p-6 flex flex-col gap-4">
-          <h2 className="text-2xl font-bold mb-8">SkillSphere</h2>
+      <div className="flex min-h-screen pt-20 font-sans text-blue-900 bg-gradient-to-r from-blue-100 to-white">
+        <aside className="flex flex-col w-64 gap-4 p-6 text-white bg-blue-600">
+          <h2 className="mb-8 text-2xl font-bold">SkillSphere</h2>
           
           <div className="flex flex-col gap-4">
             {[
@@ -1124,6 +1124,7 @@ const UserDashboard = () => {
               { id: "explore", icon: <FaCompass />, label: "Explore", onClick: () => navigate("/") },
               { id: "addpost", icon: <FaPlus />, label: "Add Post", onClick: handleAddPost },
               { id: "progress", icon: <FaChartLine />, label: "Progress", onClick: () => handleTabChange('progress') },
+              { id: "progress", icon: <FaChartPie />, label: "Monetization", onClick: () => navigate("/monetize") },
             ].map((item) => (
               <button
                 key={item.id}
