@@ -116,8 +116,9 @@ public class PostController {
             return ResponseEntity.status(404).body("Post not found with id: " + postId);
         }
         Post post = optionalPost.get();
-                
 
+        String userId = user.getId();
+                
         boolean wasLiked = post.getLikedUserIds().contains(userId);
         if (wasLiked) {
             post.getLikedUserIds().remove(userId);
