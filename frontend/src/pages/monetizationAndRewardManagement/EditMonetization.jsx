@@ -337,6 +337,278 @@
 
 
 
+// import { useState, useEffect } from "react";
+// import { useParams, useNavigate } from "react-router-dom"; // Import hooks
+// import axios from "axios";
+
+// const EditMonetization = () => {
+//   const { id } = useParams(); // Get ID from URL parameters
+//   const navigate = useNavigate(); // Hook for navigation
+//   const [form, setForm] = useState({
+//     userId: "", // Fetched, but not editable
+//     contentType: "",
+//     description: "",
+//     platform: "",
+//     expectedEarnings: "",
+//   });
+//   const [isLoading, setIsLoading] = useState(true); // For fetch loading state
+//   const [isUpdating, setIsUpdating] = useState(false); // For update loading state
+//   const [fetchError, setFetchError] = useState(null); // Error during initial data fetch
+//   const [updateError, setUpdateError] = useState(null); // Error during update submission
+//   const [updateStatus, setUpdateStatus] = useState(''); // Success message for update
+
+//   // --- Helper Function to Get Token ---
+//   const getToken = () => {
+//     const token = localStorage.getItem("token");
+//     if (!token) {
+//       // Set general fetch error if token is missing during load
+//       setFetchError("Authentication token not found. Please login again.");
+//       // Redirect or handle as needed
+//       // navigate('/login');
+//     }
+//     return token;
+//   };
+
+//   // --- Fetch existing request data when component mounts ---
+//   useEffect(() => {
+//     const fetchRequest = async () => {
+//       setIsLoading(true);
+//       setFetchError(null); // Reset fetch error
+//       const token = getToken();
+//       if (!token) {
+//         setIsLoading(false);
+//         return; // Stop if no token
+//       }
+
+//       try {
+//         // GET request to fetch data for the specific ID
+//         const res = await axios.get(
+//           `http://localhost:8081/api/monetization/${id}`, // Endpoint for specific request
+//           {
+//             headers: { Authorization: `Bearer ${token}` }, // Send token
+//           }
+//         );
+//         setForm(res.data); // Populate form state with fetched data
+//       } catch (err) {
+//         console.error("Fetch Error:", err);
+//         let fetchErrorMessage = "Failed to fetch request details.";
+//         if (err.response) {
+//            fetchErrorMessage = `Error ${err.response.status}: ${err.response.data?.error || err.response.data?.message || err.response.statusText}`;
+//            if (err.response.status === 401 || err.response.status === 403) {
+//              fetchErrorMessage += " You might not own this request or need to login again.";
+//            } else if (err.response.status === 404) {
+//              fetchErrorMessage = "Request not found.";
+//            }
+//         } else if (err.request) {
+//             fetchErrorMessage = "Network error or server not responding.";
+//         } else {
+//             fetchErrorMessage = err.message;
+//         }
+//         setFetchError(fetchErrorMessage); // Set fetch-specific error
+//       } finally {
+//         setIsLoading(false); // Loading finished
+//       }
+//     };
+
+//     fetchRequest();
+//   }, [id]); // Dependency array includes 'id' - re-fetch if ID changes
+
+//   // --- Handle changes in form inputs ---
+//   const handleChange = (e) => {
+//     const { name, value } = e.target;
+//     // Prevent direct editing of userId if it were shown
+//     if (name === 'userId') return;
+//     setForm(prevForm => ({ ...prevForm, [name]: value }));
+//   };
+
+//   // --- Handle form submission for update ---
+//   const handleSubmit = async (e) => {
+//     e.preventDefault(); // Prevent default form submission
+//     setUpdateError(null); // Reset update error
+//     setUpdateStatus(''); // Reset update status
+//     setIsUpdating(true); // Set updating state
+
+//     const token = getToken();
+//     if (!token) {
+//       setUpdateError("Cannot update: Authentication token missing.");
+//       setIsUpdating(false);
+//       return; // Stop if no token
+//     }
+
+//     // Data to be sent in the PUT request body (excluding userId)
+//     const dataToUpdate = {
+//       contentType: form.contentType,
+//       description: form.description,
+//       platform: form.platform,
+//       expectedEarnings: form.expectedEarnings,
+//     };
+
+//     try {
+//       // Send PUT request to update the data
+//       await axios.put(
+//         `http://localhost:8081/api/monetization/${id}`, // Endpoint for specific request
+//         dataToUpdate, // Send only editable data
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`, // Send token
+//             "Content-Type": "application/json", // Set content type
+//           },
+//         }
+//       );
+//       setUpdateStatus("Request updated successfully!"); // Set success message
+
+//       // Redirect back to the list page after showing the success message
+//       setTimeout(() => {
+//         navigate("/applications"); // Use React Router's navigate
+//       }, 1500); // Delay for user to see the message
+
+//     } catch (err) {
+//       console.error("Update Error:", err);
+//        let updateErrorMessage = "Failed to update request.";
+//         if (err.response) {
+//            if (err.response.status === 401 || err.response.status === 403) {
+//              updateErrorMessage = "Update failed: You might not be the owner of this request or your session expired.";
+//            } else if (err.response.status === 404) {
+//              updateErrorMessage = "Update failed: Request not found.";
+//            } else {
+//               updateErrorMessage = `Error ${err.response.status}: ${err.response.data?.error || err.response.data?.message || err.response.statusText}`;
+//            }
+//         } else if (err.request) {
+//             updateErrorMessage = "Network error during update.";
+//         } else {
+//             updateErrorMessage = err.message;
+//         }
+//       setUpdateError(updateErrorMessage); // Set update-specific error
+//     } finally {
+//        setIsUpdating(false); // Stop updating indicator
+//     }
+//   };
+
+//   // --- Conditional Rendering based on state ---
+
+//   // Show loading indicator while fetching initial data
+//   if (isLoading) {
+//     return <div className="flex items-center justify-center min-h-screen text-xl">Loading Request Data...</div>;
+//   }
+
+//   // Show error if fetching failed
+//   if (fetchError) {
+//     return (
+//          <div className="flex flex-col items-center justify-center min-h-screen p-4">
+//              <div className="p-6 text-center text-red-700 bg-red-100 border border-red-300 rounded shadow-lg">
+//                 <p className="mb-3 font-semibold">Error loading request details:</p>
+//                 <p>{fetchError}</p>
+//                 <button onClick={() => navigate('/applications')} className="px-4 py-2 mt-4 text-sm text-white transition bg-blue-600 rounded hover:bg-blue-700">
+//                     Back to List
+//                 </button>
+//             </div>
+//          </div>
+//     );
+//   }
+
+//   // --- Render the Edit Form ---
+//   return (
+//     <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-gray-100">
+//         {/* Navbar */}
+//         <nav className="flex items-center justify-between px-6 py-4 bg-white shadow-md">
+//              <div className="text-2xl font-bold text-blue-600">SkillSphere</div>
+//              {/* Link to go back */}
+//              <button onClick={() => navigate('/applications')} className="text-sm text-blue-600 hover:underline">
+//                  ← Back to Requests
+//              </button>
+//         </nav>
+
+//         {/* Form Container */}
+//         <div className="flex items-center justify-center flex-grow px-4 py-12">
+//             <div className="w-full max-w-lg p-10 bg-white shadow-xl rounded-2xl">
+//             <h1 className="mb-6 text-3xl font-bold text-center text-blue-700">Edit Monetization Request</h1>
+
+//              {/* Display Update Success Message */}
+//              {updateStatus && <div className="p-3 mb-4 text-center text-green-700 bg-green-100 rounded shadow">{updateStatus}</div>}
+//              {/* Display Update Error Message */}
+//              {updateError && <div className="p-3 mb-4 text-center text-red-700 bg-red-100 rounded shadow">{updateError}</div>}
+
+
+//             <form onSubmit={handleSubmit} className="space-y-5">
+//                 {/* Display Owner ID (Read-only) - Informational */}
+//                  <div className="p-3 bg-gray-100 rounded">
+//                     <label className="block text-sm font-medium text-gray-500">Request Owner ID</label>
+//                     <p className="mt-1 text-gray-800">{form.userId || 'N/A'}</p>
+//                 </div>
+
+//                 {/* Editable Fields */}
+//                 <div>
+//                      <label htmlFor="contentType" className="block mb-1 text-sm font-medium text-gray-700">Content Type</label>
+//                      <input
+//                         id="contentType"
+//                         type="text"
+//                         name="contentType"
+//                         value={form.contentType}
+//                         onChange={handleChange}
+//                         placeholder="e.g., Video Tutorial, Blog Post"
+//                         className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+//                         required
+//                      />
+//                 </div>
+//                 <div>
+//                      <label htmlFor="description" className="block mb-1 text-sm font-medium text-gray-700">Description</label>
+//                      <textarea
+//                         id="description"
+//                         name="description"
+//                         value={form.description}
+//                         onChange={handleChange}
+//                         placeholder="Detailed description of the content"
+//                         className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm resize-none h-28 focus:outline-none focus:ring-2 focus:ring-blue-400"
+//                         required
+//                      ></textarea>
+//                 </div>
+//                 <div>
+//                     <label htmlFor="platform" className="block mb-1 text-sm font-medium text-gray-700">Platform</label>
+//                     <input
+//                         id="platform"
+//                         type="text"
+//                         name="platform"
+//                         value={form.platform}
+//                         onChange={handleChange}
+//                         placeholder="e.g., YouTube, Medium, Own Website"
+//                         className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+//                         required
+//                     />
+//                 </div>
+//                  <div>
+//                      <label htmlFor="expectedEarnings" className="block mb-1 text-sm font-medium text-gray-700">Expected Earnings</label>
+//                      <input
+//                         id="expectedEarnings"
+//                         type="text"
+//                         name="expectedEarnings"
+//                         value={form.expectedEarnings}
+//                         onChange={handleChange}
+//                         placeholder="e.g., 150 USD, Revenue Share"
+//                         className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+//                         required
+//                     />
+//                  </div>
+
+//                 {/* Submit Button */}
+//                 <button
+//                     type="submit"
+//                     className={`w-full py-3 font-semibold text-white transition-all bg-blue-600 rounded-xl shadow-md hover:bg-blue-700 active:scale-95 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+//                     disabled={isUpdating} // Disable button while update is in progress
+//                 >
+//                     {isUpdating ? 'Updating...' : 'Update Request'}
+//                 </button>
+//             </form>
+//             </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default EditMonetization;
+
+
+
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom"; // Import hooks
 import axios from "axios";
@@ -361,10 +633,7 @@ const EditMonetization = () => {
   const getToken = () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      // Set general fetch error if token is missing during load
       setFetchError("Authentication token not found. Please login again.");
-      // Redirect or handle as needed
-      // navigate('/login');
     }
     return token;
   };
@@ -373,69 +642,68 @@ const EditMonetization = () => {
   useEffect(() => {
     const fetchRequest = async () => {
       setIsLoading(true);
-      setFetchError(null); // Reset fetch error
+      setFetchError(null);
       const token = getToken();
       if (!token) {
         setIsLoading(false);
-        return; // Stop if no token
+        return;
       }
 
       try {
-        // GET request to fetch data for the specific ID
         const res = await axios.get(
-          `http://localhost:8081/api/monetization/${id}`, // Endpoint for specific request
+          `http://localhost:8081/api/monetization/${id}`,
           {
-            headers: { Authorization: `Bearer ${token}` }, // Send token
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
-        setForm(res.data); // Populate form state with fetched data
+        setForm(res.data);
       } catch (err) {
         console.error("Fetch Error:", err);
         let fetchErrorMessage = "Failed to fetch request details.";
         if (err.response) {
-           fetchErrorMessage = `Error ${err.response.status}: ${err.response.data?.error || err.response.data?.message || err.response.statusText}`;
+           // ... (error message logic as before) ...
            if (err.response.status === 401 || err.response.status === 403) {
              fetchErrorMessage += " You might not own this request or need to login again.";
            } else if (err.response.status === 404) {
              fetchErrorMessage = "Request not found.";
+           } else {
+              fetchErrorMessage = `Error ${err.response.status}: ${err.response.data?.error || err.response.data?.message || err.response.statusText}`;
            }
         } else if (err.request) {
             fetchErrorMessage = "Network error or server not responding.";
         } else {
             fetchErrorMessage = err.message;
         }
-        setFetchError(fetchErrorMessage); // Set fetch-specific error
+        setFetchError(fetchErrorMessage);
       } finally {
-        setIsLoading(false); // Loading finished
+        setIsLoading(false);
       }
     };
 
     fetchRequest();
-  }, [id]); // Dependency array includes 'id' - re-fetch if ID changes
+  }, [id]); // Re-fetch if ID changes
 
   // --- Handle changes in form inputs ---
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Prevent direct editing of userId if it were shown
-    if (name === 'userId') return;
+    if (name === 'userId') return; // Do not allow changing userId
     setForm(prevForm => ({ ...prevForm, [name]: value }));
   };
 
   // --- Handle form submission for update ---
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission
-    setUpdateError(null); // Reset update error
-    setUpdateStatus(''); // Reset update status
-    setIsUpdating(true); // Set updating state
+    e.preventDefault();
+    setUpdateError(null);
+    setUpdateStatus('');
+    setIsUpdating(true);
 
     const token = getToken();
     if (!token) {
       setUpdateError("Cannot update: Authentication token missing.");
       setIsUpdating(false);
-      return; // Stop if no token
+      return;
     }
 
-    // Data to be sent in the PUT request body (excluding userId)
     const dataToUpdate = {
       contentType: form.contentType,
       description: form.description,
@@ -444,28 +712,27 @@ const EditMonetization = () => {
     };
 
     try {
-      // Send PUT request to update the data
       await axios.put(
-        `http://localhost:8081/api/monetization/${id}`, // Endpoint for specific request
-        dataToUpdate, // Send only editable data
+        `http://localhost:8081/api/monetization/${id}`,
+        dataToUpdate,
         {
           headers: {
-            Authorization: `Bearer ${token}`, // Send token
-            "Content-Type": "application/json", // Set content type
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }
       );
-      setUpdateStatus("Request updated successfully!"); // Set success message
+      setUpdateStatus("Request updated successfully!");
 
-      // Redirect back to the list page after showing the success message
       setTimeout(() => {
-        navigate("/applications"); // Use React Router's navigate
-      }, 1500); // Delay for user to see the message
+        navigate("/applications"); // Redirect back to list
+      }, 1500);
 
     } catch (err) {
       console.error("Update Error:", err);
        let updateErrorMessage = "Failed to update request.";
         if (err.response) {
+           // ... (error message logic as before) ...
            if (err.response.status === 401 || err.response.status === 403) {
              updateErrorMessage = "Update failed: You might not be the owner of this request or your session expired.";
            } else if (err.response.status === 404) {
@@ -478,23 +745,21 @@ const EditMonetization = () => {
         } else {
             updateErrorMessage = err.message;
         }
-      setUpdateError(updateErrorMessage); // Set update-specific error
+      setUpdateError(updateErrorMessage);
     } finally {
-       setIsUpdating(false); // Stop updating indicator
+       setIsUpdating(false);
     }
   };
 
-  // --- Conditional Rendering based on state ---
-
-  // Show loading indicator while fetching initial data
+  // --- Conditional Rendering ---
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen text-xl">Loading Request Data...</div>;
   }
 
-  // Show error if fetching failed
   if (fetchError) {
     return (
          <div className="flex flex-col items-center justify-center min-h-screen p-4">
+             {/* ... (Error display as before) ... */}
              <div className="p-6 text-center text-red-700 bg-red-100 border border-red-300 rounded shadow-lg">
                 <p className="mb-3 font-semibold">Error loading request details:</p>
                 <p>{fetchError}</p>
@@ -506,13 +771,12 @@ const EditMonetization = () => {
     );
   }
 
-  // --- Render the Edit Form ---
+  // --- Render Edit Form ---
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-gray-100">
         {/* Navbar */}
         <nav className="flex items-center justify-between px-6 py-4 bg-white shadow-md">
              <div className="text-2xl font-bold text-blue-600">SkillSphere</div>
-             {/* Link to go back */}
              <button onClick={() => navigate('/applications')} className="text-sm text-blue-600 hover:underline">
                  ← Back to Requests
              </button>
@@ -523,77 +787,38 @@ const EditMonetization = () => {
             <div className="w-full max-w-lg p-10 bg-white shadow-xl rounded-2xl">
             <h1 className="mb-6 text-3xl font-bold text-center text-blue-700">Edit Monetization Request</h1>
 
-             {/* Display Update Success Message */}
+             {/* Update Status/Error Messages */}
              {updateStatus && <div className="p-3 mb-4 text-center text-green-700 bg-green-100 rounded shadow">{updateStatus}</div>}
-             {/* Display Update Error Message */}
              {updateError && <div className="p-3 mb-4 text-center text-red-700 bg-red-100 rounded shadow">{updateError}</div>}
 
 
             <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Display Owner ID (Read-only) - Informational */}
-                 <div className="p-3 bg-gray-100 rounded">
+                 {/* ... (Read-only Owner ID and Editable Fields as before) ... */}
+                  <div className="p-3 bg-gray-100 rounded">
                     <label className="block text-sm font-medium text-gray-500">Request Owner ID</label>
                     <p className="mt-1 text-gray-800">{form.userId || 'N/A'}</p>
                 </div>
-
-                {/* Editable Fields */}
                 <div>
                      <label htmlFor="contentType" className="block mb-1 text-sm font-medium text-gray-700">Content Type</label>
-                     <input
-                        id="contentType"
-                        type="text"
-                        name="contentType"
-                        value={form.contentType}
-                        onChange={handleChange}
-                        placeholder="e.g., Video Tutorial, Blog Post"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        required
-                     />
+                     <input id="contentType" type="text" name="contentType" value={form.contentType} onChange={handleChange} placeholder="e.g., Video Tutorial, Blog Post" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required />
                 </div>
-                <div>
+                 <div>
                      <label htmlFor="description" className="block mb-1 text-sm font-medium text-gray-700">Description</label>
-                     <textarea
-                        id="description"
-                        name="description"
-                        value={form.description}
-                        onChange={handleChange}
-                        placeholder="Detailed description of the content"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm resize-none h-28 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        required
-                     ></textarea>
+                     <textarea id="description" name="description" value={form.description} onChange={handleChange} placeholder="Detailed description of the content" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm resize-none h-28 focus:outline-none focus:ring-2 focus:ring-blue-400" required ></textarea>
                 </div>
                 <div>
                     <label htmlFor="platform" className="block mb-1 text-sm font-medium text-gray-700">Platform</label>
-                    <input
-                        id="platform"
-                        type="text"
-                        name="platform"
-                        value={form.platform}
-                        onChange={handleChange}
-                        placeholder="e.g., YouTube, Medium, Own Website"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        required
-                    />
+                    <input id="platform" type="text" name="platform" value={form.platform} onChange={handleChange} placeholder="e.g., YouTube, Medium, Own Website" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required />
                 </div>
                  <div>
                      <label htmlFor="expectedEarnings" className="block mb-1 text-sm font-medium text-gray-700">Expected Earnings</label>
-                     <input
-                        id="expectedEarnings"
-                        type="text"
-                        name="expectedEarnings"
-                        value={form.expectedEarnings}
-                        onChange={handleChange}
-                        placeholder="e.g., 150 USD, Revenue Share"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        required
-                    />
+                     <input id="expectedEarnings" type="text" name="expectedEarnings" value={form.expectedEarnings} onChange={handleChange} placeholder="e.g., 150 USD, Revenue Share" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required />
                  </div>
-
                 {/* Submit Button */}
                 <button
                     type="submit"
                     className={`w-full py-3 font-semibold text-white transition-all bg-blue-600 rounded-xl shadow-md hover:bg-blue-700 active:scale-95 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={isUpdating} // Disable button while update is in progress
+                    disabled={isUpdating}
                 >
                     {isUpdating ? 'Updating...' : 'Update Request'}
                 </button>
