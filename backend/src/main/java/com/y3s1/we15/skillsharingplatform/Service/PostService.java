@@ -6,6 +6,7 @@ import com.y3s1.we15.skillsharingplatform.Repositories.PostRepository;
 import com.y3s1.we15.skillsharingplatform.Repositories.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,9 +23,9 @@ public class PostService {
 
     public Post createPost(Post post) {
         if (post.getCreatedAt() == null) {
-            post.setCreatedAt(java.time.LocalDateTime.now());
+            post.setCreatedAt(LocalDateTime.now());
         }
-        post.setUpdatedAt(java.time.LocalDateTime.now());
+        post.setUpdatedAt(LocalDateTime.now());
         return postRepository.save(post);
     }
 
@@ -34,6 +35,11 @@ public class PostService {
 
     public Optional<Post> getPostById(String id) {
         return postRepository.findById(id);
+    }
+
+    public Post updatePost(Post post) {
+        post.setUpdatedAt(LocalDateTime.now());
+        return postRepository.save(post);
     }
 
     public List<Post> getPostsByCategory(String category) {
@@ -46,10 +52,7 @@ public class PostService {
 
     public List<Post> getPostsByUserId(String userId) {
         Optional<UserModel> user = userRepository.findById(userId);
-        if (user.isPresent()) {
-            return postRepository.findByUser(user.get());
-        }
-        return List.of(); // Return empty list if user not found
+        return user.map(postRepository::findByUser).orElse(List.of());
     }
 
     public void deletePost(String id) {
@@ -57,24 +60,16 @@ public class PostService {
     }
 
     public boolean isPostOwner(String postId, String userId) {
-        Optional<Post> post = postRepository.findById(postId);
-        if (!post.isPresent()) {
-            return false;
-        }
-        
-        Post postObj = post.get();
-        UserModel user = postObj.getUser();
-        
-        // Check if the post has a valid user
-        if (user == null) {
-            return false;
-        }
-        
-        return user.getId().equals(userId);
+        return postRepository.findById(postId)
+                .map(post -> {
+                    UserModel user = post.getUser();
+                    return user != null && userId.equals(user.getId());
+                })
+                .orElse(false);
     }
 
-    //  NEW: Add save method to support post update (e.g. for like toggle)
     public Post save(Post post) {
+        post.setUpdatedAt(LocalDateTime.now());
         return postRepository.save(post);
     }
 }
