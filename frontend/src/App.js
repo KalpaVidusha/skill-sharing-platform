@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -10,8 +11,9 @@ import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetiz
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
-import Progress from "./pages/Progress";
+import Progress from "./pages/Progress/ProgressAll";
 import OAuthSuccess from "./pages/OAuthSuccess";
+import NotificationsPage from './pages/Notification/NotificationsPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -48,6 +50,7 @@ function App() {
         <Route path="/courses" element={<Courses />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/oauth-success" element={<OAuthSuccess />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
 
         {/*Monetization and reward management */}
         <Route path="/monetization/form" element={<MonetizationRequest />} />

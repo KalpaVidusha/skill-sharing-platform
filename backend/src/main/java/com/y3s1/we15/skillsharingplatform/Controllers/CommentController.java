@@ -2,9 +2,12 @@ package com.y3s1.we15.skillsharingplatform.Controllers;
 
 import com.y3s1.we15.skillsharingplatform.Models.Comment;
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
+import com.y3s1.we15.skillsharingplatform.Models.Notification;
+import com.y3s1.we15.skillsharingplatform.Models.Post;
 import com.y3s1.we15.skillsharingplatform.Service.CommentService;
 import com.y3s1.we15.skillsharingplatform.Service.PostService;
 import com.y3s1.we15.skillsharingplatform.Service.UserService;
+import com.y3s1.we15.skillsharingplatform.Service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -30,6 +33,9 @@ public class CommentController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private NotificationService notificationService;
+
     @PostMapping
     public ResponseEntity<?> addComment(@RequestBody Comment comment, HttpSession session) {
         // Get user from security context instead of session
@@ -48,7 +54,23 @@ public class CommentController {
         }
         
         comment.setUserId(user.getId());
-        return ResponseEntity.ok(commentService.addComment(comment));
+        Comment savedComment = commentService.addComment(comment);
+
+        // Send notification to post owner when someone comments on their post
+        Optional<Post> post = postService.getPostById(comment.getPostId());
+        if (post.isPresent() && !post.get().getUser().getId().equals(user.getId())) {
+            String content = String.format("%s %s commented on your post: %s", 
+                user.getFirstName(), user.getLastName(), post.get().getTitle());
+            notificationService.createNotification(
+                post.get().getUser().getId(),
+                user.getId(),
+                comment.getPostId(),
+                Notification.NotificationType.COMMENT,
+                content
+            );
+        }
+
+        return ResponseEntity.ok(savedComment);
     }
 
     @GetMapping("/post/{postId}")

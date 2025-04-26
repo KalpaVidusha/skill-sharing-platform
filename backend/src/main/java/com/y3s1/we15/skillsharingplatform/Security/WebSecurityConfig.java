@@ -3,6 +3,7 @@ package com.y3s1.we15.skillsharingplatform.Security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -115,7 +116,9 @@ public class WebSecurityConfig {
                     .requestMatchers("/api/public/**").permitAll()
                     .requestMatchers("/api/comments").permitAll()
                     .requestMatchers("/api/comments/post/**").permitAll()  // Allow access to get comments by post
-                    .requestMatchers("/api/posts/**").permitAll() 
+                    .requestMatchers("/api/posts/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/progress").permitAll() // Allow public access to GET progress updates
+                    .requestMatchers(HttpMethod.GET, "/api/progress/templates").permitAll() // Allow public access to GET progress templates
                     .anyRequest().authenticated()
             );
         
