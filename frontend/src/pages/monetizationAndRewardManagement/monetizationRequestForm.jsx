@@ -399,7 +399,7 @@ const MonetizationForm = () => {
             />
             <input
               type="text"
-              placeholder="Platform (e.g., YouTube, Medium)"
+              placeholder="Channel Link"
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
               required
