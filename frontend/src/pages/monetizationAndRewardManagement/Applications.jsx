@@ -923,7 +923,7 @@ const Applications = () => {
 
       {/* Page content */}
       <div className="flex-grow p-4 md:p-8">
-        <h2 className="mb-6 text-3xl font-bold text-center text-blue-700">Monetization Requests</h2>
+        <h2 className="mb-6 text-3xl font-bold text-center text-blue-700">My Requests</h2>
 
         {/* Loading Indicator */}
         {loading && <div className="text-lg text-center text-blue-600 animate-pulse">Loading...</div>}
@@ -963,7 +963,7 @@ const Applications = () => {
                   <tr>
                     <th className="px-4 py-3 font-semibold tracking-wider text-left">Content Type</th>
                     <th className="px-4 py-3 font-semibold tracking-wider text-left">Description</th>
-                    <th className="px-4 py-3 font-semibold tracking-wider text-left">Platform</th>
+                    <th className="px-4 py-3 font-semibold tracking-wider text-left">Channel Link</th>
                     <th className="px-4 py-3 font-semibold tracking-wider text-right">Earnings ($)</th>
                     <th className="hidden px-4 py-3 font-semibold tracking-wider text-left md:table-cell">Owner ID</th>
                     <th className="px-4 py-3 font-semibold tracking-wider text-center">Actions</th>
