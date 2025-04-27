@@ -2,15 +2,16 @@ package com.y3s1.we15.skillsharingplatform.Controllers;
 
 import com.y3s1.we15.skillsharingplatform.Models.Post;
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
+import com.y3s1.we15.skillsharingplatform.Models.Notification;
 import com.y3s1.we15.skillsharingplatform.Service.PostService;
 import com.y3s1.we15.skillsharingplatform.Service.UserService;
-
-
+import com.y3s1.we15.skillsharingplatform.Service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.*;
 
@@ -21,11 +22,13 @@ public class PostController {
 
     private final PostService postService;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     @Autowired
-    public PostController(PostService postService, UserService userService) {
+    public PostController(PostService postService, UserService userService, NotificationService notificationService) {
         this.postService = postService;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
     @PostMapping
@@ -52,6 +55,34 @@ public class PostController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Post> updatePost(@PathVariable String id, @RequestBody Post postDetails) {
+        Optional<Post> optionalPost = postService.getPostById(id);
+        if (!optionalPost.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        Post post = optionalPost.get();
+
+        post.setTitle(postDetails.getTitle());
+        post.setDescription(postDetails.getDescription());
+        post.setCategory(postDetails.getCategory());
+        post.setMediaUrls(postDetails.getMediaUrls());
+        
+        Post updatedPost = postService.updatePost(post);
+        return ResponseEntity.ok(updatedPost);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePost(@PathVariable String id) {
+        Optional<Post> optionalPost = postService.getPostById(id);
+        if (!optionalPost.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        postService.deletePost(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/category/{category}")
     public List<Post> getPostsByCategory(@PathVariable String category) {
         return postService.getPostsByCategory(category);
@@ -67,16 +98,8 @@ public class PostController {
         return postService.getPostsByUserId(userId);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePost(@PathVariable String id) {
-        postService.deletePost(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // Updated like toggle endpoint to use JWT authentication
     @PostMapping("/{postId}/like")
     public ResponseEntity<?> toggleLike(@PathVariable String postId) {
-        // Get authenticated user from SecurityContext (JWT)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(401).body("Login required");
@@ -89,26 +112,38 @@ public class PostController {
         }
 
         Optional<Post> optionalPost = postService.getPostById(postId);
-        if (optionalPost.isEmpty()) {
-            return ResponseEntity.status(404).body("Post not found");
+        if (!optionalPost.isPresent()) {
+            return ResponseEntity.status(404).body("Post not found with id: " + postId);
         }
-
         Post post = optionalPost.get();
-        String userId = user.getId();
 
-        if (post.getLikedUserIds().contains(userId)) {
+        String userId = user.getId();
+                
+        boolean wasLiked = post.getLikedUserIds().contains(userId);
+        if (wasLiked) {
             post.getLikedUserIds().remove(userId);
         } else {
             post.getLikedUserIds().add(userId);
+            // Send notification to post owner when someone likes their post
+            if (!post.getUser().getId().equals(userId)) { // Don't send notification if user likes their own post
+                String content = String.format("%s %s liked your post: %s", 
+                    user.getFirstName(), user.getLastName(), post.getTitle());
+                notificationService.createNotification(
+                    post.getUser().getId(),
+                    userId,
+                    postId,
+                    Notification.NotificationType.LIKE,
+                    content
+                );
+            }
         }
 
         post.setLikeCount(post.getLikedUserIds().size());
-        postService.save(post);
+        Post updatedPost = postService.updatePost(post);
 
         Map<String, Object> res = new HashMap<>();
-        res.put("likeCount", post.getLikeCount());
-        res.put("likedByCurrentUser", post.getLikedUserIds().contains(userId));
-
+        res.put("likeCount", updatedPost.getLikeCount());
+        res.put("likedByCurrentUser", updatedPost.getLikedUserIds().contains(userId));
         return ResponseEntity.ok(res);
     }
 }

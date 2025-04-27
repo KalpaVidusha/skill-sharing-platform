@@ -16,6 +16,8 @@ const PostDetail = () => {
   const [editingComment, setEditingComment] = useState(null);
   const [likeCount, setLikeCount] = useState(0);
   const [liked, setLiked] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -73,12 +75,24 @@ const PostDetail = () => {
     }
   };
 
-  const handleDeleteComment = async (commentId) => {
+  const confirmDeleteComment = (commentId) => {
+    setCommentToDelete(commentId);
+    setShowConfirm(true);
+  };
+
+  const cancelDelete = () => {
+    setCommentToDelete(null);
+    setShowConfirm(false);
+  };
+
+  const handleDeleteComment = async () => {
     try {
-      await apiService.deleteComment(commentId);
+      await apiService.deleteComment(commentToDelete);
       // Refresh comments after deleting
       const data = await apiService.getCommentsByPost(id);
       setComments(data);
+      setShowConfirm(false);
+      setCommentToDelete(null);
     } catch (err) {
       console.error('Error deleting comment:', err);
       setError('Failed to delete comment.');
@@ -96,7 +110,12 @@ const PostDetail = () => {
     }
   };
 
-  const canManageComment = (comment) => {
+  const canEditComment = (comment) => {
+    const userId = localStorage.getItem('userId');
+    return isLoggedIn && comment.userId === userId;
+  };
+
+  const canDeleteComment = (comment) => {
     const userId = localStorage.getItem('userId');
     return isLoggedIn && (comment.userId === userId || isPostOwner);
   };
@@ -192,18 +211,99 @@ const PostDetail = () => {
                 <>
                   <p>{c.content}</p>
                   <small>{new Date(c.createdAt).toLocaleString()}</small>
-                  {canManageComment(c) && (
-                    <div style={{ marginTop: '10px' }}>
+                  <div style={{ marginTop: '10px' }}>
+                    {canEditComment(c) && (
                       <button onClick={() => setEditingComment(c.id)} style={{ marginRight: '10px' }}>✏️ Edit</button>
-                      <button onClick={() => handleDeleteComment(c.id)}>🗑️ Delete</button>
-                    </div>
-                  )}
+                    )}
+                    {canDeleteComment(c) && (
+                      <button onClick={() => confirmDeleteComment(c.id)}>🗑️ Delete</button>
+                    )}
+                  </div>
                 </>
               )}
             </div>
           ))
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showConfirm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            width: '90%',
+            maxWidth: '500px',
+            padding: '20px',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ 
+                backgroundColor: '#FEE2E2', 
+                borderRadius: '50%', 
+                width: '40px', 
+                height: '40px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                marginRight: '16px'
+              }}>
+                <svg style={{ height: '24px', width: '24px', color: '#DC2626' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Delete Comment</h3>
+                <p style={{ fontSize: '14px', color: '#6B7280' }}>
+                  Are you sure you want to delete this comment? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+              <button
+                onClick={cancelDelete}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: '6px',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteComment}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#DC2626',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: 'white',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
