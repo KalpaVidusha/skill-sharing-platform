@@ -1,0 +1,68 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
+import { FaCheck } from 'react-icons/fa';
+import apiService from '../../services/api';
+
+const NotificationItem = ({ notification, onMarkAsRead }) => {
+  const navigate = useNavigate();
+  // Parse isRead properly to ensure it's treated as a boolean
+  const isRead = notification.isRead === true || notification.isRead === "true";
+
+  const handleMarkAsRead = async (e) => {
+    e.stopPropagation(); // Prevent triggering the parent click event
+    try {
+      await apiService.markNotificationAsRead(notification.id);
+      onMarkAsRead(notification.id);
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
+  };
+
+  const handleNotificationClick = async () => {
+    // Mark as read when clicked
+    if (!isRead) {
+      try {
+        await apiService.markNotificationAsRead(notification.id);
+        onMarkAsRead(notification.id);
+      } catch (err) {
+        console.error('Error marking notification as read:', err);
+      }
+    }
+
+    // Navigate to the post that generated this notification
+    if (notification.postId) {
+      navigate(`/posts/${notification.postId}`);
+    }
+  };
+
+  return (
+    <div 
+      className={`p-4 border-b border-gray-200 transition-colors duration-200 ${
+        isRead ? 'bg-white' : 'bg-blue-50'
+      } cursor-pointer hover:bg-gray-50`}
+      onClick={handleNotificationClick}
+    >
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <p className="text-sm text-gray-800">
+            {notification.content}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+          </p>
+        </div>
+        {!isRead && (
+          <button
+            className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-100 transition-colors duration-200 flex items-center"
+            onClick={handleMarkAsRead}
+          >
+            <FaCheck className="mr-1" /> Mark as read
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default NotificationItem; 
