@@ -91,14 +91,22 @@ const Navbar = () => {
             {/* Logo and primary navigation */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-2">
+              <div className="flex justify-center mb-6">
+              <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-indigo-800 rounded-full shadow-md">
-                    <div className="absolute inset-1 bg-white/30 rounded-full"></div>
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-800 rounded-full shadow-md flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full border-2 border-white/10"></div>
+                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
                   </div>
                 </div>
                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text text-transparent">
                   SkillSphere
                 </span>
+              </div>
+            </div>
+  
               </Link>
               
               <div className="hidden md:ml-10 md:flex md:items-center md:space-x-6">
