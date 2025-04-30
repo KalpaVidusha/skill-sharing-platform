@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import apiService from '../../services/api';
 import { formatDistanceToNow, format, parse, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
-import { FaEdit, FaTrash, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSyncAlt, FaSort } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSyncAlt, FaSort, FaThumbsUp, FaRegThumbsUp, FaComment, FaRegComment } from 'react-icons/fa';
 import { toast } from "react-toastify";
 
 const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters }) => {
@@ -28,6 +28,13 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
   const [selectedDate, setSelectedDate] = useState(new Date());
   const calendarRef = useRef(null);
   const [calendarPosition, setCalendarPosition] = useState({ left: 0, top: 0 });
+
+  // Comments and likes state
+  const [expandedComments, setExpandedComments] = useState({});
+  const [comments, setComments] = useState({});
+  const [commentText, setCommentText] = useState({});
+  const [editingComment, setEditingComment] = useState(null);
+  const [editCommentText, setEditCommentText] = useState('');
 
   // Update internal sort order when external changes
   useEffect(() => {
@@ -82,8 +89,17 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
       
       try {
         const data = await apiService.getAllProgress(userId);
+        
+        // Process the data to ensure likes and comments are properly initialized
+        const processedData = data.map(progress => ({
+          ...progress,
+          likes: progress.likes || [],
+          likeCount: progress.likes?.length || 0,
+          commentCount: progress.commentCount || 0
+        }));
+        
         // Sort the data based on current sort order
-        const sortedData = sortProgressByDate(data, sortOrder);
+        const sortedData = sortProgressByDate(processedData, sortOrder);
         // If limit is provided, only show that many updates
         const limitedData = limit ? sortedData.slice(0, limit) : sortedData;
         setProgressUpdates(limitedData);
@@ -599,6 +615,245 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
     }
   };
 
+  // Toggle comments visibility for a progress update
+  const toggleComments = async (progressId) => {
+    // Toggle expanded state
+    setExpandedComments(prev => ({
+      ...prev,
+      [progressId]: !prev[progressId]
+    }));
+    
+    // If expanding and comments not loaded yet, fetch them
+    if (!expandedComments[progressId] && !comments[progressId]) {
+      try {
+        console.log(`Fetching comments for progress ${progressId}...`);
+        const commentData = await apiService.getProgressComments(progressId);
+        console.log(`Received comments:`, commentData);
+        
+        // Store the comments in the state
+        setComments(prev => ({
+          ...prev,
+          [progressId]: commentData || []
+        }));
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+        toast.error('Failed to load comments. Please try again later.');
+        
+        // Initialize with empty array in case of error
+        setComments(prev => ({
+          ...prev,
+          [progressId]: []
+        }));
+      }
+    }
+  };
+
+  // Handle adding a new comment
+  const handleAddComment = async (progressId) => {
+    // Check if user is logged in
+    if (!currentUserId) {
+      toast.info('Please sign in to comment on progress updates');
+      // Redirect to sign in page
+      window.location.href = '/signin';
+      return;
+    }
+    
+    if (!commentText[progressId]?.trim()) return;
+    
+    try {
+      const newComment = {
+        content: commentText[progressId]
+      };
+      
+      const createdComment = await apiService.addProgressComment(progressId, newComment);
+      
+      // Update comments state with the new comment
+      setComments(prev => ({
+        ...prev,
+        [progressId]: [...(prev[progressId] || []), createdComment]
+      }));
+      
+      // Clear comment input
+      setCommentText(prev => ({
+        ...prev,
+        [progressId]: ''
+      }));
+      
+      toast.success('Comment added');
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      
+      // Check if error is unauthorized
+      if (error.status === 401) {
+        toast.error('Please sign in to comment on progress updates');
+        // Redirect to sign in page after a short delay
+        setTimeout(() => {
+          window.location.href = '/signin';
+        }, 1500);
+      } else {
+        toast.error('Failed to add comment');
+      }
+    }
+  };
+
+  // Helper function to check if user is authenticated
+  const checkAuthenticated = () => {
+    if (!currentUserId) {
+      toast.info('Please sign in to perform this action');
+      // Redirect to sign in page
+      window.location.href = '/signin';
+      return false;
+    }
+    return true;
+  };
+
+  // Start editing a comment
+  const startEditComment = (comment) => {
+    if (!checkAuthenticated()) return;
+    
+    // Check if the current user is the comment owner
+    if (comment.userId !== currentUserId) {
+      toast.error('You can only edit your own comments');
+      return;
+    }
+    
+    setEditingComment(comment.id);
+    setEditCommentText(comment.content);
+  };
+
+  // Cancel editing a comment
+  const cancelEditComment = () => {
+    setEditingComment(null);
+    setEditCommentText('');
+  };
+
+  // Handle updating a comment
+  const handleUpdateComment = async (commentId, progressId) => {
+    if (!checkAuthenticated()) return;
+    if (!editCommentText.trim()) return;
+    
+    try {
+      const updatedComment = {
+        content: editCommentText
+      };
+      
+      await apiService.updateProgressComment(commentId, updatedComment);
+      
+      // Update comments state with edited comment
+      setComments(prev => ({
+        ...prev,
+        [progressId]: prev[progressId].map(comment => 
+          comment.id === commentId 
+            ? { ...comment, content: editCommentText } 
+            : comment
+        )
+      }));
+      
+      // Exit edit mode
+      setEditingComment(null);
+      setEditCommentText('');
+      
+      toast.success('Comment updated');
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      
+      if (error.status === 401) {
+        toast.error('Please sign in to update comments');
+      } else if (error.status === 403) {
+        toast.error('You can only edit your own comments');
+      } else {
+        toast.error('Failed to update comment');
+      }
+    }
+  };
+
+  // Handle deleting a comment
+  const handleDeleteComment = async (commentId, progressId) => {
+    if (!checkAuthenticated()) return;
+    
+    try {
+      await apiService.deleteProgressComment(commentId);
+      
+      // Remove deleted comment from state
+      setComments(prev => ({
+        ...prev,
+        [progressId]: prev[progressId].filter(comment => comment.id !== commentId)
+      }));
+      
+      toast.success('Comment deleted');
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      
+      if (error.status === 401) {
+        toast.error('Please sign in to delete comments');
+      } else if (error.status === 403) {
+        toast.error('You can only delete your own comments');
+      } else {
+        toast.error('Failed to delete comment');
+      }
+    }
+  };
+
+  // Toggle like on a progress update
+  const toggleLike = async (progress) => {
+    // Check if user is logged in
+    if (!currentUserId) {
+      toast.info('Please sign in to like progress updates');
+      // Redirect to sign in page
+      window.location.href = '/signin';
+      return;
+    }
+    
+    try {
+      // If user already liked the progress, unlike it
+      if (progress.likes?.includes(currentUserId)) {
+        await apiService.unlikeProgress(progress.id);
+        
+        // Update progress state to remove the like
+        setProgressUpdates(prev => 
+          prev.map(p => 
+            p.id === progress.id 
+              ? { 
+                  ...p, 
+                  likes: p.likes.filter(id => id !== currentUserId),
+                  likeCount: p.likeCount - 1
+                } 
+              : p
+          )
+        );
+      } else {
+        // Otherwise, add a like
+        await apiService.likeProgress(progress.id);
+        
+        // Update progress state to add the like
+        setProgressUpdates(prev => 
+          prev.map(p => 
+            p.id === progress.id 
+              ? { 
+                  ...p, 
+                  likes: [...(p.likes || []), currentUserId],
+                  likeCount: (p.likeCount || 0) + 1
+                } 
+              : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      
+      // Check if error is unauthorized
+      if (error.status === 401) {
+        toast.error('Please sign in to like progress updates');
+        // Redirect to sign in page after a short delay
+        setTimeout(() => {
+          window.location.href = '/signin';
+        }, 1500);
+      } else {
+        toast.error('Failed to update like');
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -625,6 +880,21 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
 
   return (
     <div>
+      {/* Login Prompt for non-logged users */}
+      {!currentUserId && !error && progressUpdates.length > 0 && (
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center">
+          <div className="flex-1">
+            <h3 className="font-medium text-blue-800">Want to engage with the community?</h3>
+            <p className="text-sm text-blue-700 mt-1">Sign in to like and comment on progress updates.</p>
+          </div>
+          <Link 
+            to="/signin" 
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium"
+          >
+            Sign In
+          </Link>
+        </div>
+      )}
       
       {/* Sorting Controls - Only show if not using limit param and hideFilters is not true */}
       {!limit && !hideFilters && (
@@ -713,6 +983,143 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                 <div className="mt-2 flex items-center text-sm text-gray-500">
                   <FaCalendarAlt className="mr-1" />
                   <span>Target date: {progress.content.targetDate}</span>
+                </div>
+              )}
+              
+              {/* Like and Comment Actions */}
+              <div className="mt-3 pt-3 border-t border-gray-200 flex items-center space-x-6">
+                {/* Like button - clickable for all users, but prompts login for non-logged in users */}
+                <button 
+                  onClick={() => toggleLike(progress)}
+                  className={`flex items-center text-sm ${progress.likes?.includes(currentUserId) ? 'text-blue-600' : 'text-gray-500 hover:text-blue-600'}`}
+                >
+                  {progress.likes?.includes(currentUserId) ? <FaThumbsUp className="mr-1" /> : <FaRegThumbsUp className="mr-1" />}
+                  <span className={progress.likes?.includes(currentUserId) ? "font-medium" : ""}>
+                    {progress.likeCount || 0}
+                  </span>
+                  <span className="ml-1">{progress.likeCount === 1 ? 'Like' : 'Likes'}</span>
+                </button>
+                
+                {/* Display comment count - clickable for all users */}
+                <div 
+                  onClick={() => toggleComments(progress.id)}
+                  className={`flex items-center text-sm ${expandedComments[progress.id] ? 'text-blue-600' : 'text-gray-500'} cursor-pointer hover:text-blue-600`}
+                >
+                  {expandedComments[progress.id] ? <FaComment className="mr-1" /> : <FaRegComment className="mr-1" />}
+                  <span className={expandedComments[progress.id] ? "font-medium" : ""}>
+                    {(comments[progress.id]?.length || progress.commentCount || 0)}
+                  </span>
+                  <span className="ml-1">
+                    {(comments[progress.id]?.length || progress.commentCount) === 1 ? 'Comment' : 'Comments'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Comments Section - visible to all users */}
+              {expandedComments[progress.id] && (
+                <div className="mt-4 border-t border-gray-200 pt-4">
+                  {/* Comment List */}
+                  <div className="space-y-3 mb-3">
+                    {comments[progress.id]?.length > 0 ? (
+                      comments[progress.id].map(comment => (
+                        <div key={comment.id} className="flex items-start space-x-2">
+                          <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium text-xs">
+                            {comment.userName?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                          <div className="flex-1 bg-gray-100 rounded-lg p-2">
+                            <div className="flex justify-between items-start">
+                              <div className="font-medium text-sm text-gray-800">{comment.userName || 'User'}</div>
+                              {currentUserId === comment.userId && (
+                                <div className="flex space-x-2">
+                                  <button 
+                                    onClick={() => startEditComment(comment)}
+                                    className="text-xs text-blue-600 hover:text-blue-800"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDeleteComment(comment.id, progress.id)}
+                                    className="text-xs text-red-600 hover:text-red-800"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {editingComment === comment.id ? (
+                              <div className="mt-1">
+                                <textarea
+                                  className="w-full text-sm border border-gray-300 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  value={editCommentText}
+                                  onChange={e => setEditCommentText(e.target.value)}
+                                  rows="2"
+                                />
+                                <div className="flex justify-end space-x-2 mt-1">
+                                  <button 
+                                    onClick={cancelEditComment}
+                                    className="text-xs text-gray-700 hover:text-gray-900"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button 
+                                    onClick={() => handleUpdateComment(comment.id, progress.id)}
+                                    className="text-xs text-blue-600 hover:text-blue-800"
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
+                            )}
+                            
+                            <div className="text-xs text-gray-500 mt-1">
+                              {comment.createdAt ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true }) : 'Recently'}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No comments yet.</p>
+                    )}
+                  </div>
+                  
+                  {/* Add Comment Form - only for logged-in users */}
+                  {currentUserId ? (
+                    <div className="flex space-x-2 mt-3">
+                      <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium">
+                        {localStorage.getItem('username')?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                      <div className="flex-1">
+                        <textarea
+                          className="w-full text-sm border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="Write a comment..."
+                          value={commentText[progress.id] || ''}
+                          onChange={e => setCommentText(prev => ({ ...prev, [progress.id]: e.target.value }))}
+                          rows="1"
+                        />
+                        <div className="flex justify-end mt-1">
+                          <button
+                            onClick={() => handleAddComment(progress.id)}
+                            className="bg-blue-600 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700"
+                            disabled={!commentText[progress.id]?.trim()}
+                          >
+                            Comment
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 text-center">
+                      <button
+                        onClick={() => window.location.href = '/signin'}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                      >
+                        Sign in to comment
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

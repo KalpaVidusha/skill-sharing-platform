@@ -119,6 +119,8 @@ public class WebSecurityConfig {
                     .requestMatchers("/api/posts/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/progress").permitAll() // Allow public access to GET progress updates
                     .requestMatchers(HttpMethod.GET, "/api/progress/templates").permitAll() // Allow public access to GET progress templates
+                    .requestMatchers(HttpMethod.GET, "/api/progress/{progressId}/comments").permitAll() // Allow public access to GET progress comments
+                    .requestMatchers(HttpMethod.GET, "/api/progress/*/comments").permitAll() // Alternative pattern for path variables
                     .anyRequest().authenticated()
             );
         

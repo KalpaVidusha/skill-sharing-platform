@@ -4,7 +4,8 @@ import {
   FaPlus, FaUser, FaSignOutAlt, FaChartLine,
   FaFileAlt, FaComments, FaCompass, FaSearch, FaUsers,
   FaEdit, FaTrashAlt, FaSort, FaCalendarAlt, FaSave, FaSyncAlt,
-  FaChevronLeft, FaChevronRight,FaBellSlash,FaChartPie
+  FaChevronLeft, FaChevronRight,FaBellSlash,FaChartPie,
+  FaThumbsUp, FaRegThumbsUp, FaRegComment, FaPaperPlane
 } from "react-icons/fa";
 import Navbar from "../components/Navbar";
 import FollowList from "../components/FollowList";
@@ -38,6 +39,8 @@ const UserDashboard = () => {
   const [itemsPerPage] = useState(5);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [progressToDelete, setProgressToDelete] = useState(null);
+  const [showComments, setShowComments] = useState({});
+  const [commentText, setCommentText] = useState({});
   const navigate = useNavigate();
 
   // Function to fetch user data - extracted so it can be called to refresh
@@ -191,7 +194,16 @@ const UserDashboard = () => {
       if (progressResponse && Array.isArray(progressResponse)) {
         // Sort progress based on current sort order
         const sortedProgress = sortProgressByDate(progressResponse, sortOrder);
-        setUserProgress(sortedProgress);
+        
+        // Initialize progress with empty comments/likes arrays if they don't exist
+        const progressWithInteractions = sortedProgress.map(prog => ({
+          ...prog,
+          comments: prog.comments || [],
+          likes: prog.likes || [],
+          likeCount: prog.likes ? prog.likes.length : 0
+        }));
+        
+        setUserProgress(progressWithInteractions);
       }
     } catch (error) {
       console.error('Error fetching user progress data:', error);
@@ -701,6 +713,128 @@ const UserDashboard = () => {
     setCurrentPage(1);
   };
 
+  // Add new functions for likes and comments
+  const handleLikeProgress = async (progressId) => {
+    try {
+      const userId = localStorage.getItem('userId');
+      if (!userId) return;
+      
+      // Find the progress item
+      const progressItem = userProgress.find(p => p.id === progressId);
+      if (!progressItem) return;
+      
+      // Check if user already liked this progress
+      const alreadyLiked = progressItem.likes && progressItem.likes.includes(userId);
+      
+      // Create updated likes array
+      let updatedLikes = [...(progressItem.likes || [])];
+      
+      if (alreadyLiked) {
+        // Remove like if already liked
+        updatedLikes = updatedLikes.filter(id => id !== userId);
+      } else {
+        // Add like if not already liked
+        updatedLikes.push(userId);
+      }
+      
+      // Update progress with new likes
+      const updatedProgress = {
+        ...progressItem,
+        likes: updatedLikes
+      };
+      
+      // Call API to update progress
+      await apiService.updateProgress(progressId, updatedProgress);
+      
+      // Update local state
+      setUserProgress(userProgress.map(p => 
+        p.id === progressId 
+          ? { ...p, likes: updatedLikes, likeCount: updatedLikes.length }
+          : p
+      ));
+      
+    } catch (error) {
+      console.error('Error updating like status:', error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to update like status',
+        icon: 'error'
+      });
+    }
+  };
+  
+  const handleToggleComments = (progressId) => {
+    setShowComments(prev => ({
+      ...prev,
+      [progressId]: !prev[progressId]
+    }));
+  };
+  
+  const handleCommentChange = (progressId, text) => {
+    setCommentText(prev => ({
+      ...prev,
+      [progressId]: text
+    }));
+  };
+  
+  const handleAddComment = async (progressId) => {
+    try {
+      const userId = localStorage.getItem('userId');
+      const username = localStorage.getItem('username');
+      if (!userId || !username) return;
+      
+      // Get comment text
+      const text = commentText[progressId];
+      if (!text || text.trim() === '') return;
+      
+      // Find the progress item
+      const progressItem = userProgress.find(p => p.id === progressId);
+      if (!progressItem) return;
+      
+      // Create new comment
+      const newComment = {
+        id: Date.now().toString(), // Simple unique ID for now
+        userId,
+        username,
+        text,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Create updated comments array
+      const updatedComments = [...(progressItem.comments || []), newComment];
+      
+      // Update progress with new comments
+      const updatedProgress = {
+        ...progressItem,
+        comments: updatedComments
+      };
+      
+      // Call API to update progress
+      await apiService.updateProgress(progressId, updatedProgress);
+      
+      // Update local state
+      setUserProgress(userProgress.map(p => 
+        p.id === progressId 
+          ? { ...p, comments: updatedComments }
+          : p
+      ));
+      
+      // Clear comment input
+      setCommentText(prev => ({
+        ...prev,
+        [progressId]: ''
+      }));
+      
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to add comment',
+        icon: 'error'
+      });
+    }
+  };
+
   // Show loading indicator while fetching data
   if (loading) {
     return (
@@ -991,6 +1125,73 @@ const UserDashboard = () => {
                             </div>
                           </div>
                         </div>
+                        
+                        {/* Add Like and Comment Actions */}
+                        <div className="flex items-center pt-4 mt-4 border-t border-gray-200">
+                          <button 
+                            onClick={() => handleLikeProgress(progress.id)}
+                            className={`flex items-center mr-4 px-2 py-1 text-sm rounded-md 
+                              ${progress.likes && progress.likes.includes(localStorage.getItem('userId')) 
+                                ? 'text-blue-600 bg-blue-50' 
+                                : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'}`}
+                          >
+                            {progress.likes && progress.likes.includes(localStorage.getItem('userId')) 
+                              ? <FaThumbsUp className="mr-1" /> 
+                              : <FaRegThumbsUp className="mr-1" />}
+                            Like {progress.likeCount > 0 && `(${progress.likeCount})`}
+                          </button>
+                          
+                          <button 
+                            onClick={() => handleToggleComments(progress.id)}
+                            className="flex items-center px-2 py-1 text-sm text-gray-500 rounded-md hover:text-blue-600 hover:bg-blue-50"
+                          >
+                            <FaRegComment className="mr-1" /> 
+                            Comments {progress.comments && progress.comments.length > 0 && `(${progress.comments.length})`}
+                          </button>
+                        </div>
+                        
+                        {/* Comments Section */}
+                        {showComments[progress.id] && (
+                          <div className="mt-4 pt-3 border-t border-gray-100">
+                            {/* Comment List */}
+                            {progress.comments && progress.comments.length > 0 ? (
+                              <div className="mb-4 max-h-60 overflow-y-auto">
+                                {progress.comments.map(comment => (
+                                  <div key={comment.id} className="mb-3 pb-3 border-b border-gray-100 last:border-0">
+                                    <div className="flex items-center mb-1">
+                                      <span className="font-medium text-blue-600">{comment.username}</span>
+                                      <span className="ml-2 text-xs text-gray-500">
+                                        {new Date(comment.createdAt).toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-700">{comment.text}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="mb-4 text-sm text-gray-500 italic">No comments yet. Be the first to comment!</p>
+                            )}
+                            
+                            {/* Comment Form */}
+                            <div className="flex">
+                              <input
+                                type="text"
+                                value={commentText[progress.id] || ''}
+                                onChange={(e) => handleCommentChange(progress.id, e.target.value)}
+                                placeholder="Add a comment..."
+                                className="flex-grow p-2 text-sm border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                onKeyPress={(e) => e.key === 'Enter' && handleAddComment(progress.id)}
+                              />
+                              <button
+                                onClick={() => handleAddComment(progress.id)}
+                                className="flex items-center justify-center px-3 bg-blue-600 text-white rounded-r-md hover:bg-blue-700"
+                                disabled={!commentText[progress.id]}
+                              >
+                                <FaPaperPlane />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1060,7 +1261,6 @@ const UserDashboard = () => {
           
           <div className="flex flex-col gap-4">
             {[
- 
               { id: "profile", icon: <FaUser />, label: "Profile", onClick: () => handleTabChange('profile') },
               { id: "followers", icon: <FaUsers />, label: `Followers (${userData.followers})`, onClick: () => handleTabChange('followers') },
               { id: "following", icon: <FaUsers />, label: `Following (${userData.following})`, onClick: () => handleTabChange('following') },
@@ -1068,8 +1268,8 @@ const UserDashboard = () => {
               { id: "explore", icon: <FaCompass />, label: "Explore", onClick: () => navigate("/") },
               { id: "myposts", icon: <FaFileAlt />, label: "My Posts", onClick: () => navigate("/my-posts") },
               { id: "addpost", icon: <FaPlus />, label: "Add Post", onClick: handleAddPost },
-              { id: "progress", icon: <FaChartLine />, label: "Progress", onClick: () => handleTabChange('progress') },
-              { id: "progress", icon: <FaChartPie />, label: "Monetization", onClick: () => navigate("/monetize") },
+              { id: "progress_tracker", icon: <FaChartLine />, label: "Progress", onClick: () => handleTabChange('progress') },
+              { id: "monetization", icon: <FaChartPie />, label: "Monetization", onClick: () => navigate("/monetize") },
             ].map((item) => (
               <button 
                 key={item.id}
@@ -1082,7 +1282,7 @@ const UserDashboard = () => {
               >
                 {item.icon} {item.label}
                 {hovered === item.id && (
-                  <span className={`w-1 h-1 rounded-full bg-white ml-auto ${animate ? "animate-ping" : ""}`}></span>
+                  <span className="w-1 h-1 rounded-full bg-white ml-auto animate-pulse"></span>
                 )}
               </button>
             ))}
@@ -1096,7 +1296,7 @@ const UserDashboard = () => {
           >
             <FaSignOutAlt /> Logout
             {hovered === "logout" && (
-              <span className={`w-1 h-1 rounded-full bg-white ml-auto ${animate ? "animate-ping" : ""}`}></span>
+              <span className="w-1 h-1 rounded-full bg-white ml-auto animate-pulse"></span>
             )}
           </button>
         </aside>

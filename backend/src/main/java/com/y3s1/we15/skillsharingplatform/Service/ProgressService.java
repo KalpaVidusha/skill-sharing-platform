@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,5 +55,40 @@ public class ProgressService {
 
     public void deleteProgress(String id) {
         progressRepository.deleteById(id);
+    }
+    
+    public Progress addLike(String progressId, String userId) {
+        Optional<Progress> existingProgress = progressRepository.findById(progressId);
+        if (existingProgress.isPresent()) {
+            Progress progress = existingProgress.get();
+            List<String> likes = progress.getLikes();
+            if (likes == null) {
+                likes = new ArrayList<>();
+            }
+            
+            // Only add if not already liked
+            if (!likes.contains(userId)) {
+                likes.add(userId);
+                progress.setLikes(likes);
+                return progressRepository.save(progress);
+            }
+            return progress;
+        }
+        return null;
+    }
+    
+    public Progress removeLike(String progressId, String userId) {
+        Optional<Progress> existingProgress = progressRepository.findById(progressId);
+        if (existingProgress.isPresent()) {
+            Progress progress = existingProgress.get();
+            List<String> likes = progress.getLikes();
+            if (likes != null && likes.contains(userId)) {
+                likes.remove(userId);
+                progress.setLikes(likes);
+                return progressRepository.save(progress);
+            }
+            return progress;
+        }
+        return null;
     }
 } 

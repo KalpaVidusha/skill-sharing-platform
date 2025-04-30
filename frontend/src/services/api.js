@@ -184,6 +184,26 @@ const apiService = {
   createProgress: (progressData) => api.post("/progress", progressData),
   updateProgress: (progressId, progressData) => api.put(`/progress/${progressId}`, progressData),
   deleteProgress: (progressId) => api.delete(`/progress/${progressId}`),
+  
+  // Progress Likes
+  likeProgress: (progressId) => api.post(`/progress/${progressId}/like`),
+  unlikeProgress: (progressId) => api.delete(`/progress/${progressId}/like`),
+  
+  // Progress Comments
+  getProgressComments: (progressId) => axios.get(`${API_BASE_URL}/progress/${progressId}/comments`)
+    .then(response => response.data)
+    .catch(error => {
+      console.error("Error fetching comments:", error);
+      return Promise.reject({ 
+        message: error.response?.data?.message || error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+    }),
+    
+  addProgressComment: (progressId, commentData) => api.post(`/progress/${progressId}/comments`, commentData),
+  updateProgressComment: (commentId, commentData) => api.put(`/progress/comments/${commentId}`, commentData),
+  deleteProgressComment: (commentId) => api.delete(`/progress/comments/${commentId}`),
 
   // Notifications
   getNotifications: () => api.get(`/notifications?t=${new Date().getTime()}`),

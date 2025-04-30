@@ -5,6 +5,8 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Document(collection = "progress")
@@ -19,10 +21,14 @@ public class Progress {
     private Map<String, String> content; // Flexible content based on template type
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<String> likes; // List of user IDs who liked this progress
+    private int commentCount; // Number of comments on this progress
 
     public Progress() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.likes = new ArrayList<>();
+        this.commentCount = 0;
     }
 
     public Progress(UserModel user, String templateType, Map<String, String> content) {
@@ -79,5 +85,21 @@ public class Progress {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    public List<String> getLikes() {
+        return likes;
+    }
+    
+    public void setLikes(List<String> likes) {
+        this.likes = likes;
+    }
+    
+    public int getCommentCount() {
+        return commentCount;
+    }
+    
+    public void setCommentCount(int commentCount) {
+        this.commentCount = commentCount;
     }
 } 
