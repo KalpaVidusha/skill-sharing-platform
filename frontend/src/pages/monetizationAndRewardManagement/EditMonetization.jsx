@@ -610,26 +610,28 @@
 
 
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom"; // Import hooks
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import Navbar from "../../components/Navbar";
 
 const EditMonetization = () => {
-  const { id } = useParams(); // Get ID from URL parameters
-  const navigate = useNavigate(); // Hook for navigation
+  const { id } = useParams();
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
-    userId: "", // Fetched, but not editable
+    userId: "",
     contentType: "",
     description: "",
     platform: "",
     expectedEarnings: "",
   });
-  const [isLoading, setIsLoading] = useState(true); // For fetch loading state
-  const [isUpdating, setIsUpdating] = useState(false); // For update loading state
-  const [fetchError, setFetchError] = useState(null); // Error during initial data fetch
-  const [updateError, setUpdateError] = useState(null); // Error during update submission
-  const [updateStatus, setUpdateStatus] = useState(''); // Success message for update
 
-  // --- Helper Function to Get Token ---
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+  const [updateError, setUpdateError] = useState(null);
+  const [updateStatus, setUpdateStatus] = useState('');
+
   const getToken = () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -638,7 +640,6 @@ const EditMonetization = () => {
     return token;
   };
 
-  // --- Fetch existing request data when component mounts ---
   useEffect(() => {
     const fetchRequest = async () => {
       setIsLoading(true);
@@ -658,21 +659,19 @@ const EditMonetization = () => {
         );
         setForm(res.data);
       } catch (err) {
-        console.error("Fetch Error:", err);
         let fetchErrorMessage = "Failed to fetch request details.";
         if (err.response) {
-           // ... (error message logic as before) ...
-           if (err.response.status === 401 || err.response.status === 403) {
-             fetchErrorMessage += " You might not own this request or need to login again.";
-           } else if (err.response.status === 404) {
-             fetchErrorMessage = "Request not found.";
-           } else {
-              fetchErrorMessage = `Error ${err.response.status}: ${err.response.data?.error || err.response.data?.message || err.response.statusText}`;
-           }
+          if (err.response.status === 401 || err.response.status === 403) {
+            fetchErrorMessage += " You might not own this request or need to login again.";
+          } else if (err.response.status === 404) {
+            fetchErrorMessage = "Request not found.";
+          } else {
+            fetchErrorMessage = `Error ${err.response.status}: ${err.response.data?.error || err.response.data?.message || err.response.statusText}`;
+          }
         } else if (err.request) {
-            fetchErrorMessage = "Network error or server not responding.";
+          fetchErrorMessage = "Network error or server not responding.";
         } else {
-            fetchErrorMessage = err.message;
+          fetchErrorMessage = err.message;
         }
         setFetchError(fetchErrorMessage);
       } finally {
@@ -681,16 +680,14 @@ const EditMonetization = () => {
     };
 
     fetchRequest();
-  }, [id]); // Re-fetch if ID changes
+  }, [id]);
 
-  // --- Handle changes in form inputs ---
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'userId') return; // Do not allow changing userId
+    if (name === 'userId') return;
     setForm(prevForm => ({ ...prevForm, [name]: value }));
   };
 
-  // --- Handle form submission for update ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setUpdateError(null);
@@ -725,105 +722,104 @@ const EditMonetization = () => {
       setUpdateStatus("Request updated successfully!");
 
       setTimeout(() => {
-        navigate("/applications"); // Redirect back to list
+        navigate("/applications");
       }, 1500);
 
     } catch (err) {
-      console.error("Update Error:", err);
-       let updateErrorMessage = "Failed to update request.";
-        if (err.response) {
-           // ... (error message logic as before) ...
-           if (err.response.status === 401 || err.response.status === 403) {
-             updateErrorMessage = "Update failed: You might not be the owner of this request or your session expired.";
-           } else if (err.response.status === 404) {
-             updateErrorMessage = "Update failed: Request not found.";
-           } else {
-              updateErrorMessage = `Error ${err.response.status}: ${err.response.data?.error || err.response.data?.message || err.response.statusText}`;
-           }
-        } else if (err.request) {
-            updateErrorMessage = "Network error during update.";
+      let updateErrorMessage = "Failed to update request.";
+      if (err.response) {
+        if (err.response.status === 401 || err.response.status === 403) {
+          updateErrorMessage = "Update failed: You might not be the owner of this request or your session expired.";
+        } else if (err.response.status === 404) {
+          updateErrorMessage = "Update failed: Request not found.";
         } else {
-            updateErrorMessage = err.message;
+          updateErrorMessage = `Error ${err.response.status}: ${err.response.data?.error || err.response.data?.message || err.response.statusText}`;
         }
+      } else if (err.request) {
+        updateErrorMessage = "Network error during update.";
+      } else {
+        updateErrorMessage = err.message;
+      }
       setUpdateError(updateErrorMessage);
     } finally {
-       setIsUpdating(false);
+      setIsUpdating(false);
     }
   };
 
-  // --- Conditional Rendering ---
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen text-xl">Loading Request Data...</div>;
   }
 
   if (fetchError) {
     return (
-         <div className="flex flex-col items-center justify-center min-h-screen p-4">
-             {/* ... (Error display as before) ... */}
-             <div className="p-6 text-center text-red-700 bg-red-100 border border-red-300 rounded shadow-lg">
-                <p className="mb-3 font-semibold">Error loading request details:</p>
-                <p>{fetchError}</p>
-                <button onClick={() => navigate('/applications')} className="px-4 py-2 mt-4 text-sm text-white transition bg-blue-600 rounded hover:bg-blue-700">
-                    Back to List
-                </button>
-            </div>
-         </div>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="p-6 text-center text-red-700 bg-red-100 border border-red-300 rounded shadow-lg">
+          <p className="mb-3 font-semibold">Error loading request details:</p>
+          <p>{fetchError}</p>
+          <button onClick={() => navigate('/applications')} className="px-4 py-2 mt-4 text-sm text-white transition bg-blue-600 rounded hover:bg-blue-700">
+            Back to List
+          </button>
+        </div>
+      </div>
     );
   }
 
-  // --- Render Edit Form ---
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-gray-100">
-        {/* Navbar */}
-        <nav className="flex items-center justify-between px-6 py-4 bg-white shadow-md">
-             <div className="text-2xl font-bold text-blue-600">SkillSphere</div>
-             <button onClick={() => navigate('/applications')} className="text-sm text-blue-600 hover:underline">
-                 ← Back to Requests
-             </button>
-        </nav>
+    <div
+      className="flex flex-col min-h-screen bg-fixed bg-center bg-cover"
+      style={{
+        backgroundImage: "url('https://images.pexels.com/photos/7688336/pexels-photo-7688336.jpeg?auto=compress&cs=tinysrgb&w=1600')",
+      }}
+    >
+      {/* Navbar */}
+      <Navbar />
 
-        {/* Form Container */}
-        <div className="flex items-center justify-center flex-grow px-4 py-12">
-            <div className="w-full max-w-lg p-10 bg-white shadow-xl rounded-2xl">
-            <h1 className="mb-6 text-3xl font-bold text-center text-blue-700">Edit Monetization Request</h1>
+      {/* Form Container */}
+      <div className="flex items-center justify-center flex-grow px-4 py-12 mt-12">
+        <div className="w-full max-w-lg p-10 bg-white shadow-xl rounded-2xl">
+          <h1 className="mb-6 text-3xl font-bold text-center text-blue-700">Edit Monetization Request</h1>
 
-             {/* Update Status/Error Messages */}
-             {updateStatus && <div className="p-3 mb-4 text-center text-green-700 bg-green-100 rounded shadow">{updateStatus}</div>}
-             {updateError && <div className="p-3 mb-4 text-center text-red-700 bg-red-100 rounded shadow">{updateError}</div>}
+          {updateStatus && <div className="p-3 mb-4 text-center text-green-700 bg-green-100 rounded shadow">{updateStatus}</div>}
+          {updateError && <div className="p-3 mb-4 text-center text-red-700 bg-red-100 rounded shadow">{updateError}</div>}
 
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-                 {/* ... (Read-only Owner ID and Editable Fields as before) ... */}
-                  <div className="p-3 bg-gray-100 rounded">
-                    <label className="block text-sm font-medium text-gray-500">Request Owner ID</label>
-                    <p className="mt-1 text-gray-800">{form.userId || 'N/A'}</p>
-                </div>
-                <div>
-                     <label htmlFor="contentType" className="block mb-1 text-sm font-medium text-gray-700">Content Type</label>
-                     <input id="contentType" type="text" name="contentType" value={form.contentType} onChange={handleChange} placeholder="e.g., Video Tutorial, Blog Post" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required />
-                </div>
-                 <div>
-                     <label htmlFor="description" className="block mb-1 text-sm font-medium text-gray-700">Description</label>
-                     <textarea id="description" name="description" value={form.description} onChange={handleChange} placeholder="Detailed description of the content" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm resize-none h-28 focus:outline-none focus:ring-2 focus:ring-blue-400" required ></textarea>
-                </div>
-                <div>
-                    <label htmlFor="platform" className="block mb-1 text-sm font-medium text-gray-700">Platform</label>
-                    <input id="platform" type="text" name="platform" value={form.platform} onChange={handleChange} placeholder="e.g., YouTube, Medium, Own Website" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required />
-                </div>
-                 <div>
-                     <label htmlFor="expectedEarnings" className="block mb-1 text-sm font-medium text-gray-700">Expected Earnings</label>
-                     <input id="expectedEarnings" type="text" name="expectedEarnings" value={form.expectedEarnings} onChange={handleChange} placeholder="e.g., 150 USD, Revenue Share" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required />
-                 </div>
-                {/* Submit Button */}
-                <button
-                    type="submit"
-                    className={`w-full py-3 font-semibold text-white transition-all bg-blue-600 rounded-xl shadow-md hover:bg-blue-700 active:scale-95 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={isUpdating}
-                >
-                    {isUpdating ? 'Updating...' : 'Update Request'}
-                </button>
-            </form>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="p-3 bg-gray-100 rounded">
+              <label className="block text-sm font-medium text-gray-500">Request Owner ID</label>
+              <p className="mt-1 text-gray-800">{form.userId || 'N/A'}</p>
             </div>
+            <div>
+              <label htmlFor="contentType" className="block mb-1 text-sm font-medium text-gray-700">Content Type</label>
+              <input id="contentType" type="text" name="contentType" value={form.contentType} onChange={handleChange} placeholder="e.g., Video Tutorial, Blog Post" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required />
+            </div>
+            <div>
+              <label htmlFor="description" className="block mb-1 text-sm font-medium text-gray-700">Description</label>
+              <textarea id="description" name="description" value={form.description} onChange={handleChange} placeholder="Detailed description of the content" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm resize-none h-28 focus:outline-none focus:ring-2 focus:ring-blue-400" required ></textarea>
+            </div>
+            <div>
+              <label htmlFor="platform" className="block mb-1 text-sm font-medium text-gray-700">Channel Link</label>
+              <input id="platform" type="text" name="platform" value={form.platform} onChange={handleChange} placeholder="e.g., YouTube, Medium, Own Website" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required />
+            </div>
+            <div>
+              <label htmlFor="expectedEarnings" className="block mb-1 text-sm font-medium text-gray-700">Expected Earnings</label>
+              <input id="expectedEarnings" type="text" name="expectedEarnings" value={form.expectedEarnings} onChange={handleChange} placeholder="e.g., 150 USD, Revenue Share" className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400" required />
+            </div>
+            <button
+              type="submit"
+              className={`w-full py-3 font-semibold text-white transition-all bg-blue-600 rounded-xl shadow-md hover:bg-blue-700 active:scale-95 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isUpdating}
+            >
+              {isUpdating ? 'Updating...' : 'Update Request'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/Applications")}
+              className="w-full py-2 font-semibold text-white transition-all duration-300 bg-gradient-to-r from-red-600 to-blue-700 shadow-lg hover:shadow-xl hover:from-red-700 hover:to-red-800 rounded-xl active:scale-[0.98]"
+            >
+              Back
+            </button>
+            
+          </form>
+        </div>
       </div>
     </div>
   );
