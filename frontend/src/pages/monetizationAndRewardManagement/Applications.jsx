@@ -793,216 +793,189 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom"; // useNavigate for programmatic navigation
+import { useNavigate } from "react-router-dom";
+import Navbar from "../../components/Navbar";
 
 const Applications = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(""); // Error specifically for fetching data
-  const [actionError, setActionError] = useState(""); // Error specifically for actions like delete
-  const navigate = useNavigate(); // Hook for navigation
+  const [fetchError, setFetchError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const navigate = useNavigate();
 
-  // --- Helper Function to Get Token ---
   const getToken = () => {
     const token = localStorage.getItem("token");
     if (!token) {
       setFetchError("Authentication required. Please login first.");
-      setActionError("");
     }
     return token;
   };
 
-  // --- Function to Fetch Monetization Requests ---
   const fetchRequests = async () => {
     setLoading(true);
     setFetchError("");
     setActionError("");
     const token = getToken();
-
     if (!token) {
       setLoading(false);
       return;
     }
 
     try {
-      const res = await axios.get(
-        "http://localhost:8081/api/monetization",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await axios.get("http://localhost:8081/api/monetization", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setRequests(res.data);
     } catch (err) {
-      console.error("Fetch Error:", err);
-      let errorMessage = "Failed to load requests.";
+      let msg = "Failed to load requests.";
       if (err.response) {
-        if (err.response.status === 401 || err.response.status === 403) {
-          errorMessage = "Unauthorized: Session may have expired or permissions missing. Please login again.";
+        if ([401, 403].includes(err.response.status)) {
+          msg = "Unauthorized. Please login again.";
         } else {
-          errorMessage = `Error ${err.response.status}: ${err.response.data?.message || err.response.data?.error || err.response.statusText}`;
+          msg = `Error ${err.response.status}: ${err.response.data?.message || "Unexpected error."}`;
         }
-      } else if (err.request) {
-        errorMessage = "Network error: Could not connect to the server.";
       } else {
-        errorMessage = err.message;
+        msg = "Network error: Unable to connect.";
       }
-      setFetchError(errorMessage);
+      setFetchError(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- useEffect Hook: Fetch on Mount ---
   useEffect(() => {
     fetchRequests();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- Function to Navigate to Edit Page ---
   const handleEdit = (id) => {
-    // Navigates to the dynamic route for editing.
-    // Ensure '/edit-monetization/:id' route exists in your Router setup.
     navigate(`/edit/${id}`);
-    
   };
 
-  // --- Function to Handle Deleting a Request ---
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to permanently delete this request?")) {
-      return;
-    }
-    setActionError("");
+    if (!window.confirm("Delete this request permanently?")) return;
     const token = getToken();
     if (!token) {
-      setActionError("Cannot delete: Authentication token missing.");
+      setActionError("Authentication token missing.");
       return;
     }
 
     try {
-      await axios.delete(
-        `http://localhost:8081/api/monetization/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      alert("Request deleted successfully.");
-      fetchRequests(); // Re-fetch after delete
+      await axios.delete(`http://localhost:8081/api/monetization/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchRequests();
     } catch (err) {
-      console.error("Delete Error:", err);
-      let deleteErrorMessage = "Failed to delete request.";
-       if (err.response) {
-          // ... (error message logic as before) ...
-          if (err.response.status === 401 || err.response.status === 403) {
-             deleteErrorMessage = "Delete failed: You might not own this request or lack permissions.";
-          } else if (err.response.status === 404) {
-             deleteErrorMessage = "Delete failed: Request not found.";
-          } else {
-             deleteErrorMessage = `Error ${err.response.status}: ${err.response.data?.error || err.response.data?.message || err.response.statusText}`;
-          }
-       } else if (err.request) {
-          deleteErrorMessage = "Network error during delete.";
-       } else {
-          deleteErrorMessage = err.message;
-       }
-      setActionError(deleteErrorMessage);
-      alert(`Deletion failed: ${deleteErrorMessage}`);
+      let msg = "Delete failed.";
+      if (err.response?.status === 404) msg = "Request not found.";
+      else if ([401, 403].includes(err.response?.status)) msg = "Unauthorized or permission denied.";
+      else if (err.request) msg = "Network error.";
+      setActionError(msg);
     }
   };
 
-  // --- JSX Rendering ---
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-blue-50">
-      {/* Navbar */}
-      <nav className="flex items-center justify-between px-6 py-4 bg-white shadow-md">
-        <div className="text-2xl font-bold text-blue-600">SkillSphere</div>
-        <ul className="flex items-center gap-6 font-medium text-gray-700">
-          <li><a href="/userdashboard" className="transition hover:text-blue-600">Home</a></li>
-          <li><a href="/monetization-form" className="transition hover:text-blue-600">New Request</a></li>
-        </ul>
-      </nav>
-
-      {/* Page content */}
-      <div className="flex-grow p-4 md:p-8">
-        <h2 className="mb-6 text-3xl font-bold text-center text-blue-700">My Requests</h2>
-
-        {/* Loading Indicator */}
-        {loading && <div className="text-lg text-center text-blue-600 animate-pulse">Loading...</div>}
-
-        {/* Fetch Error Display */}
-        {fetchError && !loading && (
-          <div className="p-4 mb-4 text-center text-red-700 bg-red-100 border border-red-300 rounded shadow">
-            <p className="font-semibold">Error Loading Data:</p>
-            <p>{fetchError}</p>
-            {!fetchError.includes("Authentication required") && (
-              <button onClick={fetchRequests} className="px-4 py-2 mt-3 text-sm text-white transition bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
-                Retry Fetch
-              </button>
-            )}
-          </div>
-        )}
-
-         {/* Action Error Display */}
-         {actionError && !loading && (
-             <div className="p-3 mb-4 text-center text-red-700 bg-red-100 border border-red-300 rounded shadow">
-                 <p>{actionError}</p>
-             </div>
-         )}
-
-        {/* Table or 'No Requests' Message */}
-        {!loading && !fetchError && (
-          requests.length === 0 ? (
-             <div className="py-10 text-center text-gray-600">
-               No monetization requests found.
-               <a href="/monetization-form" className="ml-2 text-blue-600 underline hover:text-blue-800">Create one?</a>
-             </div>
-          ) : (
-            <div className="overflow-x-auto shadow-lg rounded-xl">
-              <table className="min-w-full overflow-hidden bg-white table-auto">
-                 {/* ... (thead definition as before) ... */}
-                 <thead className="text-sm text-white uppercase bg-blue-600">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold tracking-wider text-left">Content Type</th>
-                    <th className="px-4 py-3 font-semibold tracking-wider text-left">Description</th>
-                    <th className="px-4 py-3 font-semibold tracking-wider text-left">Channel Link</th>
-                    <th className="px-4 py-3 font-semibold tracking-wider text-right">Earnings ($)</th>
-                    <th className="hidden px-4 py-3 font-semibold tracking-wider text-left md:table-cell">Owner ID</th>
-                    <th className="px-4 py-3 font-semibold tracking-wider text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="text-gray-700 divide-y divide-gray-200">
-                  {requests.map((req) => (
-                    <tr key={req.id} className="transition-colors duration-150 hover:bg-gray-100">
-                       {/* ... (td definitions for data as before) ... */}
-                       <td className="px-4 py-3 whitespace-nowrap">{req.contentType}</td>
-                      <td className="max-w-xs px-4 py-3 truncate" title={req.description}>{req.description}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">{req.platform}</td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">{req.expectedEarnings}</td>
-                      <td className="hidden px-4 py-3 md:table-cell whitespace-nowrap">{req.userId}</td>
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        {/* EDIT BUTTON - Navigates on click */}
-                        <button
-                           onClick={() => handleEdit(req.id)}
-                           className="px-3 py-1 mr-2 text-xs font-medium text-white transition bg-yellow-500 rounded hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50"
-                           aria-label={`Edit request for ${req.contentType}`}
-                        >
-                          Edit
-                        </button>
-                        {/* DELETE BUTTON - Calls delete handler on click */}
-                        <button
-                          onClick={() => handleDelete(req.id)}
-                          className="px-3 py-1 text-xs font-medium text-white transition bg-red-600 rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-                           aria-label={`Delete request for ${req.contentType}`}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+    <div
+      className="min-h-screen bg-fixed bg-center bg-no-repeat bg-cover"
+      style={{
+        backgroundImage:
+          "url('https://images.pexels.com/photos/7688336/pexels-photo-7688336.jpeg?auto=compress&cs=tinysrgb&w=1600')",
+      }}
+    >
+      {/* Overlay for readability */}
+      <div className="min-h-screen bg-black/10 backdrop-blur-sm">
+        {/* Navbar */}
+        <Navbar />
+  
+        {/* Main Content */}
+        <div className="px-4 py-12 mx-auto max-w-7xl">
+          <h2 className="mb-8 text-4xl font-bold text-center text-blue-600">
+            My Monetization Requests
+          </h2>
+  
+          {loading && (
+            <div className="text-lg text-center text-blue-600 animate-pulse">
+              Loading...
             </div>
-          )
-        )}
+          )}
+  
+          {fetchError && (
+            <div className="p-4 mb-6 text-center text-red-700 bg-red-100 border border-red-300 rounded-lg">
+              <p className="font-semibold">Error:</p>
+              <p>{fetchError}</p>
+              {!fetchError.includes("Authentication") && (
+                <button
+                  onClick={fetchRequests}
+                  className="px-4 py-2 mt-3 text-sm text-white bg-blue-600 rounded hover:bg-blue-700"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
+  
+          {actionError && (
+            <div className="p-4 mb-6 text-center text-red-600 border border-red-200 rounded bg-red-50">
+              {actionError}
+            </div>
+          )}
+  
+          {!loading && !fetchError && requests.length === 0 && (
+            <div className="py-10 text-center text-black">
+              No requests found.{" "}
+              <a
+                href="/monetization-form"
+                className="text-blue-600 underline hover:text-blue-800"
+              >
+                Create one
+              </a>
+            </div>
+          )}
+  
+          {!loading && !fetchError && requests.length > 0 && (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {requests.map((req) => (
+                <div
+                  key={req.id}
+                  className="p-5 transition-all border border-gray-200 shadow-md bg-white/80 rounded-xl hover:shadow-lg"
+                >
+                  <h3 className="mb-1 text-xl font-semibold text-blue-700">
+                    {req.contentType}
+                  </h3>
+                  <p
+                    className="text-sm text-black line-clamp-3"
+                    title={req.description}
+                  >
+                    <span className="font-medium">Description:</span> {req.description}
+                  </p>
+                  <p className="mt-2 text-sm text-black">
+                    <span className="font-medium">Channel Link:</span> {req.platform}
+                  </p>
+                  <p className="mt-2 text-sm text-black">
+                    <span className="font-medium">Earnings:</span> $
+                    {req.expectedEarnings}
+                  </p>
+                  <p className="mt-2 text-sm text-black ">
+                  <span className="font-medium">User ID:</span> {req.userId}
+                  </p>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <button
+                      onClick={() => handleEdit(req.id)}
+                      className="px-3 py-1 text-sm font-medium text-white bg-yellow-500 rounded hover:bg-yellow-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(req.id)}
+                      className="px-3 py-1 text-sm font-medium text-white bg-red-600 rounded hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
