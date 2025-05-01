@@ -7,5 +7,7 @@ import java.util.List;
 
 public interface ProgressCommentRepository extends MongoRepository<ProgressComment, String> {
     List<ProgressComment> findByProgressId(String progressId);
+    List<ProgressComment> findByParentCommentId(String parentCommentId);
     long countByProgressId(String progressId);
+    long countByProgressIdAndParentCommentIdIsNull(String progressId);
 } 

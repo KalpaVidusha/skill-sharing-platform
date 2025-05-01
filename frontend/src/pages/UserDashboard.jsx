@@ -189,24 +189,67 @@ const UserDashboard = () => {
       const userId = localStorage.getItem('userId');
       if (!userId) return;
       
+      console.log("Fetching progress data for user:", userId);
       const progressResponse = await apiService.getAllProgress(userId);
+      console.log("Progress response:", progressResponse);
       
       if (progressResponse && Array.isArray(progressResponse)) {
         // Sort progress based on current sort order
         const sortedProgress = sortProgressByDate(progressResponse, sortOrder);
         
-        // Initialize progress with empty comments/likes arrays if they don't exist
-        const progressWithInteractions = sortedProgress.map(prog => ({
-          ...prog,
-          comments: prog.comments || [],
-          likes: prog.likes || [],
-          likeCount: prog.likes ? prog.likes.length : 0
-        }));
+        // Fetch comments for each progress update
+        const progressWithInteractionsPromises = sortedProgress.map(async (prog) => {
+          try {
+            // Fetch comments for this progress
+            console.log("Fetching comments for progress:", prog.id);
+            const comments = await apiService.getProgressComments(prog.id);
+            console.log("Comments for progress", prog.id, ":", comments);
+            
+            // Map the comments to ensure they have consistent field names
+            const mappedComments = comments ? comments.map(comment => ({
+              id: comment.id,
+              userId: comment.userId,
+              username: comment.username,
+              text: comment.content || comment.text, // Support both field names
+              content: comment.content || comment.text,
+              createdAt: comment.createdAt || comment.timestamp || new Date().toISOString()
+            })) : [];
+            
+            return {
+              ...prog,
+              comments: mappedComments,
+              likes: prog.likes || [],
+              likeCount: prog.likes ? prog.likes.length : 0,
+              commentCount: mappedComments.length
+            };
+          } catch (error) {
+            console.error(`Error fetching comments for progress ${prog.id}:`, error);
+            return {
+              ...prog,
+              comments: [],
+              likes: prog.likes || [],
+              likeCount: prog.likes ? prog.likes.length : 0,
+              commentCount: 0
+            };
+          }
+        });
+        
+        // Wait for all progress items to be processed with their comments
+        const progressWithInteractions = await Promise.all(progressWithInteractionsPromises);
+        console.log("Progress with interactions:", progressWithInteractions);
         
         setUserProgress(progressWithInteractions);
+      } else {
+        console.error("Invalid progress response:", progressResponse);
       }
     } catch (error) {
       console.error('Error fetching user progress data:', error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to load progress data. Please try again later.',
+        icon: 'error',
+        timer: 3000
+      });
     }
   };
 
@@ -717,7 +760,22 @@ const UserDashboard = () => {
   const handleLikeProgress = async (progressId) => {
     try {
       const userId = localStorage.getItem('userId');
-      if (!userId) return;
+      if (!userId) {
+        // Redirect to login if not logged in
+        Swal.fire({
+          title: 'Login Required',
+          text: 'Please log in to like progress updates',
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Log in',
+          cancelButtonText: 'Cancel'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate('/login');
+          }
+        });
+        return;
+      }
       
       // Find the progress item
       const progressItem = userProgress.find(p => p.id === progressId);
@@ -726,7 +784,14 @@ const UserDashboard = () => {
       // Check if user already liked this progress
       const alreadyLiked = progressItem.likes && progressItem.likes.includes(userId);
       
-      // Create updated likes array
+      // Call the appropriate API endpoint
+      if (alreadyLiked) {
+        await apiService.unlikeProgress(progressId);
+      } else {
+        await apiService.likeProgress(progressId);
+      }
+      
+      // Create updated likes array for local state update
       let updatedLikes = [...(progressItem.likes || [])];
       
       if (alreadyLiked) {
@@ -736,15 +801,6 @@ const UserDashboard = () => {
         // Add like if not already liked
         updatedLikes.push(userId);
       }
-      
-      // Update progress with new likes
-      const updatedProgress = {
-        ...progressItem,
-        likes: updatedLikes
-      };
-      
-      // Call API to update progress
-      await apiService.updateProgress(progressId, updatedProgress);
       
       // Update local state
       setUserProgress(userProgress.map(p => 
@@ -781,41 +837,68 @@ const UserDashboard = () => {
     try {
       const userId = localStorage.getItem('userId');
       const username = localStorage.getItem('username');
-      if (!userId || !username) return;
+      
+      if (!userId || !username) {
+        // Redirect to login if not logged in
+        Swal.fire({
+          title: 'Login Required',
+          text: 'Please log in to comment on progress updates',
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Log in',
+          cancelButtonText: 'Cancel'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate('/login');
+          }
+        });
+        return;
+      }
       
       // Get comment text
       const text = commentText[progressId];
       if (!text || text.trim() === '') return;
       
+      // Create comment data with the correct field name (content instead of text)
+      const commentData = {
+        content: text, // Backend expects 'content' field
+        userId,
+        username
+      };
+      
+      console.log('Sending comment data:', commentData);
+      console.log('To endpoint:', `/progress/${progressId}/comments`);
+      
+      // Call API to add comment
+      const newComment = await apiService.addProgressComment(progressId, commentData);
+      console.log('Response from add comment:', newComment);
+      
+      if (!newComment) {
+        throw new Error('Failed to add comment - no response from server');
+      }
+      
       // Find the progress item
       const progressItem = userProgress.find(p => p.id === progressId);
       if (!progressItem) return;
       
-      // Create new comment
-      const newComment = {
-        id: Date.now().toString(), // Simple unique ID for now
+      // Create updated comments array
+      const updatedComments = [...(progressItem.comments || []), {
+        id: newComment.id || Date.now().toString(),
         userId,
         username,
-        text,
-        createdAt: new Date().toISOString()
-      };
-      
-      // Create updated comments array
-      const updatedComments = [...(progressItem.comments || []), newComment];
-      
-      // Update progress with new comments
-      const updatedProgress = {
-        ...progressItem,
-        comments: updatedComments
-      };
-      
-      // Call API to update progress
-      await apiService.updateProgress(progressId, updatedProgress);
+        text: text, // Use the original text for the UI
+        content: text, // Also store content to match backend
+        createdAt: newComment.createdAt || new Date().toISOString()
+      }];
       
       // Update local state
       setUserProgress(userProgress.map(p => 
         p.id === progressId 
-          ? { ...p, comments: updatedComments }
+          ? { 
+              ...p, 
+              comments: updatedComments,
+              commentCount: updatedComments.length
+            }
           : p
       ));
       
@@ -825,11 +908,16 @@ const UserDashboard = () => {
         [progressId]: ''
       }));
       
+      // Refresh progress data after a short delay to ensure server sync
+      setTimeout(() => {
+        fetchUserProgressData();
+      }, 1000);
+      
     } catch (error) {
       console.error('Error adding comment:', error);
       Swal.fire({
         title: 'Error!',
-        text: 'Failed to add comment',
+        text: `Failed to add comment: ${error.message || 'Unknown error'}`,
         icon: 'error'
       });
     }
@@ -1007,6 +1095,18 @@ const UserDashboard = () => {
                           {new Date(progress.createdAt).toLocaleDateString()}
                         </div>
                       </div>
+                      
+                      {/* Add Like and Comment Counts */}
+                      <div className="flex items-center mt-3 text-xs text-gray-500">
+                        <div className="flex items-center mr-4">
+                          <FaRegThumbsUp className="mr-1" /> 
+                          {progress.likeCount || 0} {progress.likeCount === 1 ? 'like' : 'likes'}
+                        </div>
+                        <div className="flex items-center">
+                          <FaRegComment className="mr-1" /> 
+                          {progress.commentCount || 0} {progress.commentCount === 1 ? 'comment' : 'comments'}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1164,7 +1264,7 @@ const UserDashboard = () => {
                                         {new Date(comment.createdAt).toLocaleString()}
                                       </span>
                                     </div>
-                                    <p className="text-sm text-gray-700">{comment.text}</p>
+                                    <p className="text-sm text-gray-700">{comment.content || comment.text}</p>
                                   </div>
                                 ))}
                               </div>
@@ -1268,7 +1368,7 @@ const UserDashboard = () => {
               { id: "explore", icon: <FaCompass />, label: "Explore", onClick: () => navigate("/") },
               { id: "myposts", icon: <FaFileAlt />, label: "My Posts", onClick: () => navigate("/my-posts") },
               { id: "addpost", icon: <FaPlus />, label: "Add Post", onClick: handleAddPost },
-              { id: "progress_tracker", icon: <FaChartLine />, label: "Progress", onClick: () => handleTabChange('progress') },
+              { id: "progress_tracker", icon: <FaChartLine />, label: "Progress", onClick: () => handleTabChange('progress'), 'data-tab': "progress" },
               { id: "monetization", icon: <FaChartPie />, label: "Monetization", onClick: () => navigate("/monetize") },
             ].map((item) => (
               <button 
@@ -1279,6 +1379,7 @@ const UserDashboard = () => {
                 }`}
                 onMouseEnter={() => setHovered(item.id)}
                 onMouseLeave={() => setHovered(null)}
+                data-tab={item['data-tab']}
               >
                 {item.icon} {item.label}
                 {hovered === item.id && (

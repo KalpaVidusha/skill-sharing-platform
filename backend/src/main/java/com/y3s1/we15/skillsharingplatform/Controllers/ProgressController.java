@@ -3,9 +3,11 @@ package com.y3s1.we15.skillsharingplatform.Controllers;
 import com.y3s1.we15.skillsharingplatform.Models.Progress;
 import com.y3s1.we15.skillsharingplatform.Models.ProgressComment;
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
+import com.y3s1.we15.skillsharingplatform.Models.Notification;
 import com.y3s1.we15.skillsharingplatform.Service.ProgressService;
 import com.y3s1.we15.skillsharingplatform.Service.ProgressCommentService;
 import com.y3s1.we15.skillsharingplatform.Service.UserService;
+import com.y3s1.we15.skillsharingplatform.Service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +25,16 @@ public class ProgressController {
     private final ProgressService progressService;
     private final UserService userService;
     private final ProgressCommentService progressCommentService;
+    private final NotificationService notificationService;
 
     @Autowired
-    public ProgressController(ProgressService progressService, UserService userService, ProgressCommentService progressCommentService) {
+    public ProgressController(ProgressService progressService, UserService userService, 
+                              ProgressCommentService progressCommentService, 
+                              NotificationService notificationService) {
         this.progressService = progressService;
         this.userService = userService;
         this.progressCommentService = progressCommentService;
+        this.notificationService = notificationService;
     }
 
     // GET all progress updates or filtered by user
@@ -85,6 +91,10 @@ public class ProgressController {
             
             // Set the user and create the progress update
             progress.setUser(user);
+            
+            // The mediaUrl will be handled in the service:
+            // - If provided by user, it will be kept
+            // - If not provided for eligible templates, a random GIF will be assigned
             Progress createdProgress = progressService.createProgress(progress);
             
             return ResponseEntity.status(HttpStatus.CREATED).body(createdProgress);
@@ -224,6 +234,18 @@ public class ProgressController {
                         .body("Progress update not found with ID: " + progressId);
             }
             
+            // Send notification to progress owner if the liker is not the owner
+            if (!progress.getUser().getId().equals(user.getId())) {
+                String content = String.format("%s liked your progress update", user.getUsername());
+                notificationService.createNotification(
+                    progress.getUser().getId(),  // recipient (progress owner)
+                    user.getId(),                // sender (user who liked)
+                    progressId,                  // progress ID
+                    Notification.NotificationType.LIKE,
+                    content
+                );
+            }
+            
             Map<String, Object> response = new HashMap<>();
             response.put("likes", progress.getLikes());
             response.put("likeCount", progress.getLikes().size());
@@ -311,6 +333,8 @@ public class ProgressController {
                         .body("Progress update not found with ID: " + progressId);
             }
             
+            Progress progress = existingProgress.get();
+            
             // Create and save the comment
             String content = commentData.getOrDefault("content", "").trim();
             if (content.isEmpty()) {
@@ -325,10 +349,138 @@ public class ProgressController {
             );
             
             ProgressComment savedComment = progressCommentService.createComment(comment);
+            
+            // Send notification to progress owner if the commenter is not the owner
+            if (!progress.getUser().getId().equals(user.getId())) {
+                String notificationContent = String.format("%s commented on your progress update: %s", 
+                    user.getUsername(), 
+                    content.length() > 50 ? content.substring(0, 47) + "..." : content);
+                
+                notificationService.createNotification(
+                    progress.getUser().getId(),  // recipient (progress owner)
+                    user.getId(),                // sender (user who commented)
+                    progressId,                  // progress ID
+                    Notification.NotificationType.COMMENT,
+                    notificationContent
+                );
+            }
+            
             return ResponseEntity.status(HttpStatus.CREATED).body(savedComment);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error adding comment: " + e.getMessage());
+        }
+    }
+    
+    // Add a reply to an existing comment
+    @PostMapping("/comments/{commentId}/replies")
+    public ResponseEntity<?> addReplyToComment(@PathVariable String commentId, @RequestBody Map<String, String> commentData) {
+        try {
+            // Get authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login required");
+            }
+            
+            String username = authentication.getName();
+            UserModel user = userService.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
+            }
+            
+            // Check if parent comment exists
+            Optional<ProgressComment> parentCommentOpt = progressCommentService.getCommentById(commentId);
+            if (parentCommentOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Parent comment not found with ID: " + commentId);
+            }
+            
+            ProgressComment parentComment = parentCommentOpt.get();
+            String progressId = parentComment.getProgressId();
+            
+            // Check if progress exists
+            Optional<Progress> existingProgress = progressService.getProgressById(progressId);
+            if (existingProgress.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Progress update not found with ID: " + progressId);
+            }
+            
+            Progress progress = existingProgress.get();
+            
+            // Create and save the reply
+            String content = commentData.getOrDefault("content", "").trim();
+            if (content.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Reply content cannot be empty");
+            }
+            
+            ProgressComment reply = new ProgressComment(
+                progressId,
+                user.getId(),
+                user.getUsername(),
+                content,
+                commentId  // Set the parent comment ID
+            );
+            
+            ProgressComment savedReply = progressCommentService.createReply(reply);
+            if (savedReply == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Failed to create reply - parent comment may not exist");
+            }
+            
+            // Send notification to the parent comment owner if the replier is not the comment owner
+            if (!parentComment.getUserId().equals(user.getId())) {
+                String notificationContent = String.format("%s replied to your comment: %s", 
+                    user.getUsername(), 
+                    content.length() > 50 ? content.substring(0, 47) + "..." : content);
+                
+                notificationService.createNotification(
+                    parentComment.getUserId(),   // recipient (comment owner)
+                    user.getId(),                // sender (user who replied)
+                    progressId,                  // progress ID 
+                    Notification.NotificationType.COMMENT,
+                    notificationContent
+                );
+            }
+            
+            // Also notify the progress owner if different from comment owner and replier
+            if (!progress.getUser().getId().equals(user.getId()) && 
+                !progress.getUser().getId().equals(parentComment.getUserId())) {
+                
+                String notificationContent = String.format("%s replied to a comment on your progress update", 
+                    user.getUsername());
+                
+                notificationService.createNotification(
+                    progress.getUser().getId(),  // recipient (progress owner)
+                    user.getId(),                // sender (user who replied)
+                    progressId,                  // progress ID
+                    Notification.NotificationType.COMMENT,
+                    notificationContent
+                );
+            }
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedReply);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error adding reply: " + e.getMessage());
+        }
+    }
+    
+    // Get replies to a specific comment
+    @GetMapping("/comments/{commentId}/replies")
+    public ResponseEntity<?> getCommentReplies(@PathVariable String commentId) {
+        try {
+            // Check if comment exists
+            Optional<ProgressComment> commentOpt = progressCommentService.getCommentById(commentId);
+            if (commentOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Comment not found with ID: " + commentId);
+            }
+            
+            List<ProgressComment> replies = progressCommentService.getRepliesByCommentId(commentId);
+            return ResponseEntity.ok(replies);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching replies: " + e.getMessage());
         }
     }
     

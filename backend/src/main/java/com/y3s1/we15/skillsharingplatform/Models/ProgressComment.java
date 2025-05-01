@@ -14,6 +14,7 @@ public class ProgressComment {
     private String userId;
     private String userName;
     private String content;
+    private String parentCommentId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -28,6 +29,15 @@ public class ProgressComment {
         this.userId = userId;
         this.userName = userName;
         this.content = content;
+    }
+
+    public ProgressComment(String progressId, String userId, String userName, String content, String parentCommentId) {
+        this();
+        this.progressId = progressId;
+        this.userId = userId;
+        this.userName = userName;
+        this.content = content;
+        this.parentCommentId = parentCommentId;
     }
 
     // Getters
@@ -49,6 +59,10 @@ public class ProgressComment {
 
     public String getContent() {
         return content;
+    }
+
+    public String getParentCommentId() {
+        return parentCommentId;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -78,6 +92,10 @@ public class ProgressComment {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public void setParentCommentId(String parentCommentId) {
+        this.parentCommentId = parentCommentId;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {

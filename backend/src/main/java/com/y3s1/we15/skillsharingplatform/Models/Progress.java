@@ -19,6 +19,7 @@ public class Progress {
     
     private String templateType; // "completed_tutorial", "new_skill", "learning_goal"
     private Map<String, String> content; // Flexible content based on template type
+    private String mediaUrl; // URL for user uploaded image or auto-selected GIF
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<String> likes; // List of user IDs who liked this progress
@@ -36,6 +37,14 @@ public class Progress {
         this.user = user;
         this.templateType = templateType;
         this.content = content;
+    }
+
+    public Progress(UserModel user, String templateType, Map<String, String> content, String mediaUrl) {
+        this();
+        this.user = user;
+        this.templateType = templateType;
+        this.content = content;
+        this.mediaUrl = mediaUrl;
     }
 
     // Getters and Setters
@@ -69,6 +78,14 @@ public class Progress {
 
     public void setContent(Map<String, String> content) {
         this.content = content;
+    }
+    
+    public String getMediaUrl() {
+        return mediaUrl;
+    }
+    
+    public void setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -190,20 +190,29 @@ const apiService = {
   unlikeProgress: (progressId) => api.delete(`/progress/${progressId}/like`),
   
   // Progress Comments
-  getProgressComments: (progressId) => axios.get(`${API_BASE_URL}/progress/${progressId}/comments`)
-    .then(response => response.data)
-    .catch(error => {
-      console.error("Error fetching comments:", error);
-      return Promise.reject({ 
-        message: error.response?.data?.message || error.message,
-        status: error.response?.status,
-        data: error.response?.data
-      });
-    }),
+  getProgressComments: (progressId) => api.get(`/progress/${progressId}/comments`),
     
-  addProgressComment: (progressId, commentData) => api.post(`/progress/${progressId}/comments`, commentData),
+  addProgressComment: (progressId, commentData) => {
+    console.log(`Adding comment to progress ${progressId}:`, commentData);
+    return api.post(`/progress/${progressId}/comments`, commentData)
+      .catch(error => {
+        console.error(`Error adding comment to progress ${progressId}:`, error);
+        throw error;
+      });
+  },
   updateProgressComment: (commentId, commentData) => api.put(`/progress/comments/${commentId}`, commentData),
   deleteProgressComment: (commentId) => api.delete(`/progress/comments/${commentId}`),
+  
+  // Comment Replies
+  getCommentReplies: (commentId) => api.get(`/progress/comments/${commentId}/replies`),
+  addCommentReply: (commentId, replyData) => {
+    console.log(`Adding reply to comment ${commentId}:`, replyData);
+    return api.post(`/progress/comments/${commentId}/replies`, replyData)
+      .catch(error => {
+        console.error(`Error adding reply to comment ${commentId}:`, error);
+        throw error;
+      });
+  },
 
   // Notifications
   getNotifications: () => api.get(`/notifications?t=${new Date().getTime()}`),

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ProgressCommentService {
@@ -24,7 +25,16 @@ public class ProgressCommentService {
     }
 
     public List<ProgressComment> getCommentsByProgressId(String progressId) {
-        return progressCommentRepository.findByProgressId(progressId);
+        List<ProgressComment> allComments = progressCommentRepository.findByProgressId(progressId);
+        
+        // Filter to return only root-level comments (comments with no parent)
+        return allComments.stream()
+            .filter(comment -> comment.getParentCommentId() == null)
+            .collect(Collectors.toList());
+    }
+    
+    public List<ProgressComment> getRepliesByCommentId(String commentId) {
+        return progressCommentRepository.findByParentCommentId(commentId);
     }
 
     public ProgressComment createComment(ProgressComment comment) {
@@ -40,6 +50,16 @@ public class ProgressCommentService {
         }
         
         return savedComment;
+    }
+    
+    public ProgressComment createReply(ProgressComment reply) {
+        // Validate that parent comment exists
+        Optional<ProgressComment> parentComment = progressCommentRepository.findById(reply.getParentCommentId());
+        if (!parentComment.isPresent()) {
+            return null; // Parent comment doesn't exist
+        }
+        
+        return createComment(reply);
     }
 
     public Optional<ProgressComment> getCommentById(String commentId) {
@@ -63,6 +83,12 @@ public class ProgressCommentService {
             ProgressComment comment = commentOptional.get();
             String progressId = comment.getProgressId();
             
+            // Delete all replies to this comment first
+            List<ProgressComment> replies = progressCommentRepository.findByParentCommentId(commentId);
+            for (ProgressComment reply : replies) {
+                progressCommentRepository.deleteById(reply.getId());
+            }
+            
             // Delete the comment
             progressCommentRepository.deleteById(commentId);
             
@@ -76,4 +102,4 @@ public class ProgressCommentService {
             }
         }
     }
-} 
+}

@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, createRef } from 'react';
 import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import apiService from '../../services/api';
 import { formatDistanceToNow, format, parse, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
-import { FaEdit, FaTrash, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSyncAlt, FaSort, FaThumbsUp, FaRegThumbsUp, FaComment, FaRegComment } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSyncAlt, FaSort, FaThumbsUp, FaRegThumbsUp, FaComment, FaRegComment, FaHeart, FaRegHeart, FaCheck, FaTimes } from 'react-icons/fa';
 import { toast } from "react-toastify";
 
 const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters }) => {
@@ -35,6 +35,12 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
   const [commentText, setCommentText] = useState({});
   const [editingComment, setEditingComment] = useState(null);
   const [editCommentText, setEditCommentText] = useState('');
+  
+  // State for comment replies
+  const [commentReplies, setCommentReplies] = useState({});
+  const [expandedReplies, setExpandedReplies] = useState({});
+  const [replyText, setReplyText] = useState({});
+  const [replyingTo, setReplyingTo] = useState(null);
 
   // Update internal sort order when external changes
   useEffect(() => {
@@ -172,6 +178,21 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
     }
     
     return text;
+  };
+
+  // Render the media content (image or GIF)
+  const renderMedia = (progress) => {
+    if (!progress.mediaUrl) return null;
+    
+    return (
+      <div className="mt-3 mb-4">
+        <img 
+          src={progress.mediaUrl.startsWith('http') ? progress.mediaUrl : `${process.env.PUBLIC_URL}${progress.mediaUrl}`} 
+          alt="Progress media" 
+          className="rounded-lg max-h-80 max-w-full mx-auto object-contain" 
+        />
+      </div>
+    );
   };
 
   // Generate preview of edited content
@@ -635,6 +656,53 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
           ...prev,
           [progressId]: commentData || []
         }));
+        
+        // For each comment, check if it has replies and fetch them
+        let totalReplyCount = 0;
+        if (commentData && commentData.length > 0) {
+          const replyPromises = commentData.map(async (comment) => {
+            try {
+              console.log(`Fetching replies for comment ${comment.id}...`);
+              const replyData = await apiService.getCommentReplies(comment.id);
+              console.log(`Received replies for comment ${comment.id}:`, replyData);
+              
+              if (replyData && replyData.length > 0) {
+                totalReplyCount += replyData.length;
+                
+                // Store the replies in the state
+                setCommentReplies(prev => ({
+                  ...prev,
+                  [comment.id]: replyData
+                }));
+                
+                // Auto-expand replies that have content
+                setExpandedReplies(prev => ({
+                  ...prev,
+                  [comment.id]: true
+                }));
+              }
+              return replyData || [];
+            } catch (error) {
+              console.error(`Error fetching replies for comment ${comment.id}:`, error);
+              return [];
+            }
+          });
+          
+          // Wait for all reply requests to complete
+          const allReplies = await Promise.all(replyPromises);
+          
+          // Update the progress comment count to reflect the actual number of comments + replies
+          const totalCommentCount = commentData.length + totalReplyCount;
+          
+          // Update the progress update with the correct comment count
+          setProgressUpdates(prev => 
+            prev.map(p => 
+              p.id === progressId 
+                ? { ...p, commentCount: totalCommentCount } 
+                : p
+            )
+          );
+        }
       } catch (error) {
         console.error('Error fetching comments:', error);
         toast.error('Failed to load comments. Please try again later.');
@@ -643,6 +711,39 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
         setComments(prev => ({
           ...prev,
           [progressId]: []
+        }));
+      }
+    }
+  };
+  
+  // Toggle replies for a comment
+  const toggleReplies = async (commentId) => {
+    // Toggle expanded state for replies
+    setExpandedReplies(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }));
+    
+    // If expanding and replies not loaded yet, fetch them
+    if (!expandedReplies[commentId] && !commentReplies[commentId]) {
+      try {
+        console.log(`Fetching replies for comment ${commentId}...`);
+        const replyData = await apiService.getCommentReplies(commentId);
+        console.log(`Received replies:`, replyData);
+        
+        // Store the replies in the state
+        setCommentReplies(prev => ({
+          ...prev,
+          [commentId]: replyData || []
+        }));
+      } catch (error) {
+        console.error('Error fetching replies:', error);
+        toast.error('Failed to load replies. Please try again later.');
+        
+        // Initialize with empty array in case of error
+        setCommentReplies(prev => ({
+          ...prev,
+          [commentId]: []
         }));
       }
     }
@@ -774,11 +875,49 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
     try {
       await apiService.deleteProgressComment(commentId);
       
-      // Remove deleted comment from state
-      setComments(prev => ({
-        ...prev,
-        [progressId]: prev[progressId].filter(comment => comment.id !== commentId)
-      }));
+      // Check if the comment is a reply by looking through all commentReplies
+      let isReply = false;
+      let parentCommentId = null;
+      
+      // Loop through all comments to find out if this is a reply and what its parent is
+      Object.entries(commentReplies).forEach(([parent, replies]) => {
+        if (replies.some(reply => reply.id === commentId)) {
+          isReply = true;
+          parentCommentId = parent;
+        }
+      });
+      
+      if (isReply && parentCommentId) {
+        // This is a reply - remove it from the replies state
+        setCommentReplies(prev => ({
+          ...prev,
+          [parentCommentId]: prev[parentCommentId].filter(reply => reply.id !== commentId)
+        }));
+      } else {
+        // This is a regular comment - remove it from the comments state and also remove its replies
+        setComments(prev => ({
+          ...prev,
+          [progressId]: prev[progressId].filter(comment => comment.id !== commentId)
+        }));
+        
+        // Remove associated replies if any
+        if (commentReplies[commentId]) {
+          setCommentReplies(prev => {
+            const newReplies = { ...prev };
+            delete newReplies[commentId];
+            return newReplies;
+          });
+        }
+      }
+      
+      // Update the comment count in the progress update
+      setProgressUpdates(prev => 
+        prev.map(p => 
+          p.id === progressId 
+            ? { ...p, commentCount: Math.max(0, (p.commentCount || 0) - 1) } 
+            : p
+        )
+      );
       
       toast.success('Comment deleted');
     } catch (error) {
@@ -850,6 +989,100 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
         }, 1500);
       } else {
         toast.error('Failed to update like');
+      }
+    }
+  };
+
+  // Start replying to a comment
+  const startReply = (commentId) => {
+    if (!checkAuthenticated()) return;
+    setReplyingTo(commentId);
+  };
+  
+  // Cancel replying to a comment
+  const cancelReply = () => {
+    setReplyingTo(null);
+    setReplyText({});
+  };
+  
+  // Handle adding a reply to a comment
+  const handleAddReply = async (commentId, progressId) => {
+    // Check if user is logged in
+    if (!currentUserId) {
+      toast.info('Please sign in to reply to comments');
+      window.location.href = '/signin';
+      return;
+    }
+    
+    if (!replyText[commentId]?.trim()) return;
+    
+    try {
+      const newReply = {
+        content: replyText[commentId]
+      };
+      
+      const createdReply = await apiService.addCommentReply(commentId, newReply);
+      
+      // If replies for this comment haven't been loaded yet, initialize the array
+      if (!commentReplies[commentId]) {
+        setCommentReplies(prev => ({
+          ...prev,
+          [commentId]: []
+        }));
+      }
+      
+      // Update replies state with the new reply
+      setCommentReplies(prev => ({
+        ...prev,
+        [commentId]: [...(prev[commentId] || []), createdReply]
+      }));
+      
+      // Automatically expand replies when adding a new one
+      if (!expandedReplies[commentId]) {
+        setExpandedReplies(prev => ({
+          ...prev,
+          [commentId]: true
+        }));
+      }
+      
+      // Clear reply input and exit reply mode
+      setReplyText(prev => ({
+        ...prev,
+        [commentId]: ''
+      }));
+      setReplyingTo(null);
+      
+      // Make sure the new reply isn't also added to the regular comments list
+      // by filtering it out if it exists there
+      setComments(prev => {
+        const currentComments = prev[progressId] || [];
+        return {
+          ...prev,
+          [progressId]: currentComments.filter(comment => comment.id !== createdReply.id)
+        };
+      });
+      
+      // Update the comment count in the progress update
+      setProgressUpdates(prev => 
+        prev.map(p => 
+          p.id === progressId 
+            ? { ...p, commentCount: (p.commentCount || 0) + 1 } 
+            : p
+        )
+      );
+      
+      toast.success('Reply added');
+    } catch (error) {
+      console.error('Error adding reply:', error);
+      
+      // Check if error is unauthorized
+      if (error.status === 401) {
+        toast.error('Please sign in to reply to comments');
+        setTimeout(() => {
+          window.location.href = '/signin';
+        }, 1500);
+      } else {
+        toast.error('Failed to add reply');
       }
     }
   };
@@ -986,6 +1219,9 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                 </div>
               )}
               
+              {/* Display media content if available */}
+              {renderMedia(progress)}
+              
               {/* Like and Comment Actions */}
               <div className="mt-3 pt-3 border-t border-gray-200 flex items-center space-x-6">
                 {/* Like button - clickable for all users, but prompts login for non-logged in users */}
@@ -1007,10 +1243,10 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                 >
                   {expandedComments[progress.id] ? <FaComment className="mr-1" /> : <FaRegComment className="mr-1" />}
                   <span className={expandedComments[progress.id] ? "font-medium" : ""}>
-                    {(comments[progress.id]?.length || progress.commentCount || 0)}
+                    {progress.commentCount || 0}
                   </span>
                   <span className="ml-1">
-                    {(comments[progress.id]?.length || progress.commentCount) === 1 ? 'Comment' : 'Comments'}
+                    {progress.commentCount === 1 ? 'Comment' : 'Comments'}
                   </span>
                 </div>
               </div>
@@ -1026,62 +1262,173 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                           <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium text-xs">
                             {comment.userName?.charAt(0).toUpperCase() || 'U'}
                           </div>
-                          <div className="flex-1 bg-gray-100 rounded-lg p-2">
-                            <div className="flex justify-between items-start">
-                              <div className="font-medium text-sm text-gray-800">{comment.userName || 'User'}</div>
-                              {currentUserId === comment.userId && (
+                          <div className="flex-1">
+                            <div className="bg-gray-100 rounded-lg p-2">
+                              <div className="flex justify-between items-start">
+                                <div className="font-medium text-sm text-gray-800">{comment.userName || 'User'}</div>
                                 <div className="flex space-x-2">
+                                  {currentUserId === comment.userId && (
+                                    <>
+                                      <button 
+                                        onClick={() => startEditComment(comment)}
+                                        className="text-xs text-blue-600 hover:text-blue-800"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button 
+                                        onClick={() => handleDeleteComment(comment.id, progress.id)}
+                                        className="text-xs text-red-600 hover:text-red-800"
+                                      >
+                                        Delete
+                                      </button>
+                                    </>
+                                  )}
                                   <button 
-                                    onClick={() => startEditComment(comment)}
-                                    className="text-xs text-blue-600 hover:text-blue-800"
+                                    onClick={() => startReply(comment.id)}
+                                    className="text-xs text-green-600 hover:text-green-800"
                                   >
-                                    Edit
-                                  </button>
-                                  <button 
-                                    onClick={() => handleDeleteComment(comment.id, progress.id)}
-                                    className="text-xs text-red-600 hover:text-red-800"
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {editingComment === comment.id ? (
-                              <div className="mt-1">
-                                <textarea
-                                  className="w-full text-sm border border-gray-300 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                  value={editCommentText}
-                                  onChange={e => setEditCommentText(e.target.value)}
-                                  rows="2"
-                                />
-                                <div className="flex justify-end space-x-2 mt-1">
-                                  <button 
-                                    onClick={cancelEditComment}
-                                    className="text-xs text-gray-700 hover:text-gray-900"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button 
-                                    onClick={() => handleUpdateComment(comment.id, progress.id)}
-                                    className="text-xs text-blue-600 hover:text-blue-800"
-                                  >
-                                    Save
+                                    Reply
                                   </button>
                                 </div>
                               </div>
-                            ) : (
-                              <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
+                              
+                              {editingComment === comment.id ? (
+                                <div className="mt-1">
+                                  <textarea
+                                    className="w-full text-sm border border-gray-300 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    value={editCommentText}
+                                    onChange={e => setEditCommentText(e.target.value)}
+                                    rows="2"
+                                  />
+                                  <div className="flex justify-end space-x-2 mt-1">
+                                    <button 
+                                      onClick={cancelEditComment}
+                                      className="text-xs text-gray-700 hover:text-gray-900"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button 
+                                      onClick={() => handleUpdateComment(comment.id, progress.id)}
+                                      className="text-xs text-blue-600 hover:text-blue-800"
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
+                              )}
+                              
+                              <div className="text-xs text-gray-500 mt-1 flex justify-between">
+                                <span>{comment.createdAt ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true }) : 'Recently'}</span>
+                                
+                                {/* Show reply count if there are replies or if replies are expanded */}
+                                {(commentReplies[comment.id]?.length > 0 || expandedReplies[comment.id]) && (
+                                  <button 
+                                    onClick={() => toggleReplies(comment.id)}
+                                    className="text-blue-600 hover:text-blue-800"
+                                  >
+                                    {expandedReplies[comment.id] ? 'Hide' : 'Show'} {commentReplies[comment.id]?.length || 0} {commentReplies[comment.id]?.length === 1 ? 'reply' : 'replies'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Reply Form */}
+                            {replyingTo === comment.id && (
+                              <div className="mt-2 ml-8">
+                                <textarea
+                                  className="w-full text-sm border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  placeholder="Write a reply..."
+                                  value={replyText[comment.id] || ''}
+                                  onChange={e => setReplyText(prev => ({ ...prev, [comment.id]: e.target.value }))}
+                                  rows="1"
+                                />
+                                <div className="flex justify-end mt-1 space-x-2">
+                                  <button
+                                    onClick={cancelReply}
+                                    className="bg-gray-300 text-gray-700 text-sm px-3 py-1 rounded-md hover:bg-gray-400"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() => handleAddReply(comment.id, progress.id)}
+                                    className="bg-blue-600 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700"
+                                    disabled={!replyText[comment.id]?.trim()}
+                                  >
+                                    Reply
+                                  </button>
+                                </div>
+                              </div>
                             )}
                             
-                            <div className="text-xs text-gray-500 mt-1">
-                              {comment.createdAt ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true }) : 'Recently'}
-                            </div>
+                            {/* Replies Section */}
+                            {expandedReplies[comment.id] && commentReplies[comment.id]?.length > 0 && (
+                              <div className="mt-2 ml-8 space-y-2">
+                                {commentReplies[comment.id].map(reply => (
+                                  <div key={reply.id} className="flex items-start space-x-2">
+                                    <div className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium text-xs">
+                                      {reply.userName?.charAt(0).toUpperCase() || 'U'}
+                                    </div>
+                                    <div className="flex-1 bg-gray-50 rounded-lg p-2">
+                                      <div className="flex justify-between items-start">
+                                        <div className="font-medium text-sm text-gray-800">{reply.userName || 'User'}</div>
+                                        {currentUserId === reply.userId && (
+                                          <div className="flex space-x-2">
+                                            <button 
+                                              onClick={() => startEditComment(reply)}
+                                              className="text-xs text-blue-600 hover:text-blue-800"
+                                            >
+                                              Edit
+                                            </button>
+                                            <button 
+                                              onClick={() => handleDeleteComment(reply.id, progress.id)}
+                                              className="text-xs text-red-600 hover:text-red-800"
+                                            >
+                                              Delete
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                      {editingComment === reply.id ? (
+                                        <div className="mt-1">
+                                          <textarea
+                                            className="w-full text-sm border border-gray-300 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            value={editCommentText}
+                                            onChange={e => setEditCommentText(e.target.value)}
+                                            rows="2"
+                                          />
+                                          <div className="flex justify-end space-x-2 mt-1">
+                                            <button 
+                                              onClick={cancelEditComment}
+                                              className="text-xs text-gray-700 hover:text-gray-900"
+                                            >
+                                              Cancel
+                                            </button>
+                                            <button 
+                                              onClick={() => handleUpdateComment(reply.id, progress.id)}
+                                              className="text-xs text-blue-600 hover:text-blue-800"
+                                            >
+                                              Save
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <p className="text-sm text-gray-700 mt-1">{reply.content}</p>
+                                      )}
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        {reply.createdAt ? formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true }) : 'Recently'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-gray-500">No comments yet.</p>
+                      <p className="text-sm text-gray-500">No comments yet. Be the first to comment!</p>
                     )}
                   </div>
                   
