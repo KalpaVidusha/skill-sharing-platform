@@ -69,7 +69,7 @@ const ProgressAll = () => {
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-24">
         <div className="bg-white shadow-md rounded-lg p-6 mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Learning Progress
+            Add Your Learning Progress
           </h1>
           <div className="border-b border-gray-200 mb-6"></div>
           
