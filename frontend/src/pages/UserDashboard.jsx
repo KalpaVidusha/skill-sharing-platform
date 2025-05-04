@@ -41,6 +41,13 @@ const UserDashboard = () => {
   const [progressToDelete, setProgressToDelete] = useState(null);
   const [showComments, setShowComments] = useState({});
   const [commentText, setCommentText] = useState({});
+  const [editingComment, setEditingComment] = useState(null);
+  const [editCommentText, setEditCommentText] = useState('');
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyText, setReplyText] = useState({});
+  const [expandedReplies, setExpandedReplies] = useState({});
+  const [commentReplies, setCommentReplies] = useState({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
 
   // Function to fetch user data - extracted so it can be called to refresh
@@ -183,9 +190,27 @@ const UserDashboard = () => {
     }
   };
 
-  // Function to fetch user progress data
+  // Helper function to map comment objects to a consistent format
+  const normalizeComment = (comment) => {
+    const currentUserId = localStorage.getItem('userId');
+    const isCurrentUser = comment.userId === currentUserId;
+    
+    return {
+      id: comment.id,
+      userId: comment.userId,
+      username: comment.username || comment.userName || 'User', // Handle both username and userName fields
+      userName: comment.username || comment.userName || 'User', // Store both for compatibility
+      text: comment.content || comment.text || '',
+      content: comment.content || comment.text || '',
+      createdAt: comment.createdAt || comment.timestamp || new Date().toISOString(),
+      isCurrentUser // Add flag for current user's comments
+    };
+  };
+
+  // Function to fetch user progress data - extracted so it can be called to refresh
   const fetchUserProgressData = async () => {
     try {
+      setIsRefreshing(true);
       const userId = localStorage.getItem('userId');
       if (!userId) return;
       
@@ -197,7 +222,7 @@ const UserDashboard = () => {
         // Sort progress based on current sort order
         const sortedProgress = sortProgressByDate(progressResponse, sortOrder);
         
-        // Fetch comments for each progress update
+        // Create a batch of promises to fetch comments and replies for each progress update
         const progressWithInteractionsPromises = sortedProgress.map(async (prog) => {
           try {
             // Fetch comments for this progress
@@ -206,21 +231,51 @@ const UserDashboard = () => {
             console.log("Comments for progress", prog.id, ":", comments);
             
             // Map the comments to ensure they have consistent field names
-            const mappedComments = comments ? comments.map(comment => ({
-              id: comment.id,
-              userId: comment.userId,
-              username: comment.username,
-              text: comment.content || comment.text, // Support both field names
-              content: comment.content || comment.text,
-              createdAt: comment.createdAt || comment.timestamp || new Date().toISOString()
-            })) : [];
+            const mappedComments = comments ? comments.map(normalizeComment) : [];
+            
+            // Track the total number of comments including replies
+            let totalCommentCount = mappedComments.length;
+            
+            // Fetch replies for each comment
+            for (const comment of mappedComments) {
+              try {
+                const replies = await apiService.getCommentReplies(comment.id);
+                console.log(`Fetched ${replies?.length || 0} replies for comment ${comment.id}`);
+                
+                if (replies && replies.length > 0) {
+                  // Store normalized replies in state
+                  const normalizedReplies = replies.map(normalizeComment);
+                  setCommentReplies(prev => ({
+                    ...prev,
+                    [comment.id]: normalizedReplies
+                  }));
+                  
+                  // Auto-expand comments that have replies
+                  setExpandedReplies(prev => ({
+                    ...prev,
+                    [comment.id]: true
+                  }));
+                  
+                  // Add to total comment count
+                  totalCommentCount += normalizedReplies.length;
+                } else {
+                  // Initialize empty replies array if none exist
+                  setCommentReplies(prev => ({
+                    ...prev,
+                    [comment.id]: []
+                  }));
+                }
+              } catch (replyError) {
+                console.error(`Error fetching replies for comment ${comment.id}:`, replyError);
+              }
+            }
             
             return {
               ...prog,
               comments: mappedComments,
               likes: prog.likes || [],
               likeCount: prog.likes ? prog.likes.length : 0,
-              commentCount: mappedComments.length
+              commentCount: totalCommentCount // Use our calculated total that includes replies
             };
           } catch (error) {
             console.error(`Error fetching comments for progress ${prog.id}:`, error);
@@ -234,7 +289,7 @@ const UserDashboard = () => {
           }
         });
         
-        // Wait for all progress items to be processed with their comments
+        // Wait for all progress items to be processed with their comments and replies
         const progressWithInteractions = await Promise.all(progressWithInteractionsPromises);
         console.log("Progress with interactions:", progressWithInteractions);
         
@@ -250,6 +305,8 @@ const UserDashboard = () => {
         icon: 'error',
         timer: 3000
       });
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -402,6 +459,21 @@ const UserDashboard = () => {
       console.error('Error formatting progress content:', error);
       return 'Progress update';
     }
+  };
+
+  // Render the media content (image or GIF)
+  const renderMedia = (progress) => {
+    if (!progress.mediaUrl) return null;
+    
+    return (
+      <div className="mt-3 mb-4">
+        <img 
+          src={progress.mediaUrl.startsWith('http') ? progress.mediaUrl : `${process.env.PUBLIC_URL}${progress.mediaUrl}`} 
+          alt="Progress media" 
+          className="rounded-lg max-h-80 max-w-full mx-auto object-contain" 
+        />
+      </div>
+    );
   };
 
   const handleAddPost = () => navigate("/add-post");
@@ -881,15 +953,31 @@ const UserDashboard = () => {
       const progressItem = userProgress.find(p => p.id === progressId);
       if (!progressItem) return;
       
-      // Create updated comments array
-      const updatedComments = [...(progressItem.comments || []), {
+      // Create normalized comment with consistent fields
+      const normalizedComment = normalizeComment({
         id: newComment.id || Date.now().toString(),
         userId,
         username,
-        text: text, // Use the original text for the UI
-        content: text, // Also store content to match backend
+        content: text,
         createdAt: newComment.createdAt || new Date().toISOString()
-      }];
+      });
+      
+      // Create updated comments array
+      const updatedComments = [...(progressItem.comments || []), normalizedComment];
+      
+      // Calculate the new comment count - maintain any existing replies
+      // Get current total reply count
+      let totalReplyCount = 0;
+      if (progressItem.comments) {
+        progressItem.comments.forEach(comment => {
+          if (commentReplies[comment.id]) {
+            totalReplyCount += commentReplies[comment.id].length;
+          }
+        });
+      }
+      
+      // New total is comments + replies
+      const newCommentCount = updatedComments.length + totalReplyCount;
       
       // Update local state
       setUserProgress(userProgress.map(p => 
@@ -897,7 +985,7 @@ const UserDashboard = () => {
           ? { 
               ...p, 
               comments: updatedComments,
-              commentCount: updatedComments.length
+              commentCount: newCommentCount
             }
           : p
       ));
@@ -906,6 +994,12 @@ const UserDashboard = () => {
       setCommentText(prev => ({
         ...prev,
         [progressId]: ''
+      }));
+      
+      // Initialize empty replies array for the new comment
+      setCommentReplies(prev => ({
+        ...prev,
+        [normalizedComment.id]: []
       }));
       
       // Refresh progress data after a short delay to ensure server sync
@@ -920,6 +1014,342 @@ const UserDashboard = () => {
         text: `Failed to add comment: ${error.message || 'Unknown error'}`,
         icon: 'error'
       });
+    }
+  };
+
+  // Start editing a comment
+  const startEditComment = (comment) => {
+    setEditingComment(comment.id);
+    setEditCommentText(comment.content || comment.text);
+  };
+  
+  // Cancel comment editing
+  const cancelEditComment = () => {
+    setEditingComment(null);
+    setEditCommentText('');
+  };
+  
+  // Update a comment - use the progress-specific endpoint
+  const handleUpdateComment = async (commentId, progressId) => {
+    try {
+      if (!editCommentText.trim()) return;
+      
+      // Call API to update comment - use the progress-specific endpoint
+      await apiService.updateProgressComment(commentId, { content: editCommentText });
+      
+      // Update comment in local state
+      setUserProgress(userProgress.map(progress => {
+        if (progress.id === progressId) {
+          return {
+            ...progress,
+            comments: progress.comments.map(comment => 
+              comment.id === commentId 
+                ? normalizeComment({ 
+                    ...comment, 
+                    content: editCommentText, 
+                    text: editCommentText 
+                  }) 
+                : comment
+            )
+          };
+        }
+        return progress;
+      }));
+      
+      // Reset editing state
+      setEditingComment(null);
+      setEditCommentText('');
+      
+      // Show success notification
+      Swal.fire({
+        title: 'Success!',
+        text: 'Comment updated successfully',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to update comment: ' + (error.message || 'Unknown error'),
+        icon: 'error'
+      });
+    }
+  };
+  
+  // Delete a comment - use the progress-specific endpoint
+  const handleDeleteComment = async (commentId, progressId) => {
+    try {
+      // Confirm before delete
+      const result = await Swal.fire({
+        title: 'Delete Comment',
+        text: 'Are you sure you want to delete this comment?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+      });
+      
+      if (result.isConfirmed) {
+        // Call API to delete comment - use the progress-specific endpoint
+        await apiService.deleteProgressComment(commentId);
+        
+        // Check if this is a reply to another comment
+        let parentCommentId = null;
+        let isReply = false;
+        
+        // Loop through all comments to find if this is a reply
+        for (const progress of userProgress) {
+          if (progress.id === progressId) {
+            // Check in comment replies
+            for (const [pCommentId, replies] of Object.entries(commentReplies)) {
+              if (replies.some(reply => reply.id === commentId)) {
+                parentCommentId = pCommentId;
+                isReply = true;
+                break;
+              }
+            }
+          }
+        }
+        
+        if (isReply && parentCommentId) {
+          // This is a reply - update the replies array
+          setCommentReplies(prev => ({
+            ...prev,
+            [parentCommentId]: prev[parentCommentId].filter(reply => reply.id !== commentId)
+          }));
+        } else {
+          // This is a main comment - also remove any replies tied to this comment from state
+          setCommentReplies(prev => {
+            const newReplies = { ...prev };
+            delete newReplies[commentId];
+            return newReplies;
+          });
+        }
+        
+        // Update local state - remove comment and update counts
+        setUserProgress(userProgress.map(progress => {
+          if (progress.id === progressId) {
+            // If it's a reply, keep the main comment but decrease comment count
+            if (isReply) {
+              return {
+                ...progress,
+                commentCount: progress.commentCount > 0 ? progress.commentCount - 1 : 0
+              };
+            } else {
+              // If it's a main comment, filter it out and update the count
+              // Count should decrease by 1 + number of replies
+              const replyCount = commentReplies[commentId]?.length || 0;
+              const totalDecrease = 1 + replyCount;
+              
+              return {
+                ...progress,
+                comments: progress.comments.filter(comment => comment.id !== commentId),
+                commentCount: Math.max(0, progress.commentCount - totalDecrease)
+              };
+            }
+          }
+          return progress;
+        }));
+        
+        // Show success notification
+        Swal.fire({
+          title: 'Deleted!',
+          text: 'Comment has been deleted.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to delete comment: ' + (error.message || 'Unknown error'),
+        icon: 'error'
+      });
+    }
+  };
+  
+  // Start replying to a comment
+  const startReply = (commentId) => {
+    setReplyingTo(commentId);
+    setReplyText(prev => ({ ...prev, [commentId]: '' }));
+  };
+  
+  // Cancel reply
+  const cancelReply = () => {
+    setReplyingTo(null);
+  };
+  
+  // Add a reply to a comment
+  const handleAddReply = async (commentId, progressId) => {
+    try {
+      const userId = localStorage.getItem('userId');
+      const username = localStorage.getItem('username');
+      
+      if (!userId || !username) {
+        Swal.fire({
+          title: 'Login Required',
+          text: 'Please log in to reply to comments',
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Log in',
+          cancelButtonText: 'Cancel'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate('/login');
+          }
+        });
+        return;
+      }
+      
+      if (!replyText[commentId]?.trim()) return;
+      
+      // Create reply data with consistent field naming
+      const replyData = {
+        content: replyText[commentId],
+        userId,
+        username: username, // Use consistent naming
+        parentId: commentId
+      };
+      
+      // Call API to add reply
+      const newReply = await apiService.addCommentReply(commentId, replyData);
+      console.log("Reply added:", newReply);
+      
+      // Normalize reply data
+      const normalizedReply = normalizeComment({
+        ...newReply,
+        userId,
+        username: username // Ensure username is set
+      });
+      
+      // Update local state with new reply
+      if (!commentReplies[commentId]) {
+        setCommentReplies(prev => ({ ...prev, [commentId]: [normalizedReply] }));
+      } else {
+        setCommentReplies(prev => ({
+          ...prev,
+          [commentId]: [...prev[commentId], normalizedReply]
+        }));
+      }
+      
+      // Auto-expand replies section
+      setExpandedReplies(prev => ({ ...prev, [commentId]: true }));
+      
+      // Find the progress item to update its comment count
+      const progressItem = userProgress.find(p => p.id === progressId);
+      if (progressItem) {
+        // Update progress comment count in the UI
+        setUserProgress(userProgress.map(progress => {
+          if (progress.id === progressId) {
+            // Increment the total comment count by 1
+            return {
+              ...progress,
+              commentCount: (progress.commentCount || 0) + 1
+            };
+          }
+          return progress;
+        }));
+      }
+      
+      // Reset form and reply state
+      setReplyText(prev => ({ ...prev, [commentId]: '' }));
+      setReplyingTo(null);
+      
+      // Show success notification
+      Swal.fire({
+        title: 'Success!',
+        text: 'Reply added successfully',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error adding reply:', error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to add reply: ' + (error.message || 'Unknown error'),
+        icon: 'error'
+      });
+    }
+  };
+  
+  // Toggle replies visibility
+  const toggleReplies = async (commentId) => {
+    // Toggle expanded state for replies
+    setExpandedReplies(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }));
+    
+    // If expanding and replies not loaded yet, fetch them
+    if (!expandedReplies[commentId] && !commentReplies[commentId]) {
+      try {
+        console.log(`Fetching replies for comment ${commentId}...`);
+        const replyData = await apiService.getCommentReplies(commentId);
+        console.log(`Received replies:`, replyData);
+        
+        if (replyData && replyData.length > 0) {
+          // Store normalized replies in the state
+          const normalizedReplies = replyData.map(normalizeComment);
+          setCommentReplies(prev => ({
+            ...prev,
+            [commentId]: normalizedReplies
+          }));
+          
+          // Update the comment count to include replies if it doesn't already
+          const progressItem = userProgress.find(p => 
+            p.comments && p.comments.some(c => c.id === commentId)
+          );
+          
+          if (progressItem) {
+            // Only update if the current count doesn't appear to include replies
+            const commentCount = progressItem.comments.length;
+            let totalReplies = 0;
+            
+            // Count all replies across all comments
+            Object.values(commentReplies).forEach(replies => {
+              totalReplies += replies.length;
+            });
+            
+            // Add the newly fetched replies
+            totalReplies += normalizedReplies.length;
+            
+            // If the stored count doesn't match comments + replies, update it
+            if (progressItem.commentCount !== commentCount + totalReplies) {
+              setUserProgress(userProgress.map(p => 
+                p.id === progressItem.id 
+                  ? { ...p, commentCount: commentCount + totalReplies }
+                  : p
+              ));
+            }
+          }
+        } else {
+          // Initialize with empty array if no replies
+          setCommentReplies(prev => ({
+            ...prev,
+            [commentId]: []
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching replies:', error);
+        Swal.fire({
+          title: 'Error!',
+          text: 'Failed to load replies',
+          icon: 'error',
+          timer: 2000
+        });
+        
+        // Initialize with empty array in case of error
+        setCommentReplies(prev => ({
+          ...prev,
+          [commentId]: []
+        }));
+      }
     }
   };
 
@@ -1090,6 +1520,9 @@ const UserDashboard = () => {
                           <p className="text-sm text-gray-600">
                             {progress.formattedContent || formatProgressContent(progress)}
                           </p>
+                          
+                          {/* Display media content if available */}
+                          {renderMedia(progress)}
                         </div>
                         <div className="text-xs text-gray-500">
                           {new Date(progress.createdAt).toLocaleDateString()}
@@ -1131,9 +1564,19 @@ const UserDashboard = () => {
               <h1 className="text-2xl font-semibold text-blue-900">Your Learning Progress</h1>
               <button
                 onClick={fetchUserProgressData}
+                disabled={isRefreshing}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-white transition duration-300 bg-blue-600 border-none rounded-lg hover:bg-blue-700"
               >
-                <FaSyncAlt className="mr-1" /> Refresh Progress
+                {isRefreshing ? (
+                  <>
+                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <FaSyncAlt className="mr-1" /> Refresh Progress
+                  </>
+                )}
               </button>
             </header>
             
@@ -1177,9 +1620,19 @@ const UserDashboard = () => {
                   </div>
                   <button
                     onClick={fetchUserProgressData}
+                    disabled={isRefreshing}
                     className="flex items-center text-sm text-blue-600 hover:text-blue-800"
                   >
-                    <FaSyncAlt className="mr-1" /> Refresh
+                    {isRefreshing ? (
+                      <>
+                        <div className="w-3 h-3 mr-1 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        Refreshing...
+                      </>
+                    ) : (
+                      <>
+                        <FaSyncAlt className="mr-1" /> Refresh
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1204,6 +1657,9 @@ const UserDashboard = () => {
                             <p className="text-gray-600">
                               {progress.formattedContent || formatProgressContent(progress)}
                             </p>
+                            
+                            {/* Display media content if available */}
+                            {renderMedia(progress)}
                           </div>
                           <div className="flex flex-col items-end">
                             <div className="mb-2 text-sm text-gray-500">
@@ -1246,7 +1702,7 @@ const UserDashboard = () => {
                             className="flex items-center px-2 py-1 text-sm text-gray-500 rounded-md hover:text-blue-600 hover:bg-blue-50"
                           >
                             <FaRegComment className="mr-1" /> 
-                            Comments {progress.comments && progress.comments.length > 0 && `(${progress.comments.length})`}
+                            Comments {progress.commentCount > 0 && `(${progress.commentCount})`}
                           </button>
                         </div>
                         
@@ -1258,13 +1714,184 @@ const UserDashboard = () => {
                               <div className="mb-4 max-h-60 overflow-y-auto">
                                 {progress.comments.map(comment => (
                                   <div key={comment.id} className="mb-3 pb-3 border-b border-gray-100 last:border-0">
-                                    <div className="flex items-center mb-1">
-                                      <span className="font-medium text-blue-600">{comment.username}</span>
-                                      <span className="ml-2 text-xs text-gray-500">
-                                        {new Date(comment.createdAt).toLocaleString()}
-                                      </span>
+                                    <div className="flex items-start space-x-2">
+                                      <div className="h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center text-white font-medium text-xs">
+                                        {comment.username?.charAt(0).toUpperCase() || comment.userName?.charAt(0).toUpperCase() || 'U'}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="bg-gray-50 rounded-lg p-2">
+                                          <div className="flex justify-between items-start">
+                                            <div className="font-medium text-sm text-gray-800">
+                                              {comment.username || comment.userName || 'User'}
+                                              {comment.userId === localStorage.getItem('userId') && (
+                                                <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
+                                              )}
+                                            </div>
+                                            <div className="flex space-x-2">
+                                              {comment.userId === localStorage.getItem('userId') && (
+                                                <>
+                                                  <button 
+                                                    onClick={() => startEditComment(comment)}
+                                                    className="text-xs text-blue-600 hover:text-blue-800"
+                                                  >
+                                                    Edit
+                                                  </button>
+                                                  <button 
+                                                    onClick={() => handleDeleteComment(comment.id, progress.id)}
+                                                    className="text-xs text-red-600 hover:text-red-800"
+                                                  >
+                                                    Delete
+                                                  </button>
+                                                </>
+                                              )}
+                                              <button 
+                                                onClick={() => startReply(comment.id)}
+                                                className="text-xs text-green-600 hover:text-green-800"
+                                              >
+                                                Reply
+                                              </button>
+                                            </div>
+                                          </div>
+                                          
+                                          {editingComment === comment.id ? (
+                                            <div className="mt-1">
+                                              <textarea
+                                                className="w-full text-sm border border-gray-300 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                value={editCommentText}
+                                                onChange={e => setEditCommentText(e.target.value)}
+                                                rows="2"
+                                              />
+                                              <div className="flex justify-end space-x-2 mt-1">
+                                                <button 
+                                                  onClick={cancelEditComment}
+                                                  className="text-xs text-gray-700 hover:text-gray-900"
+                                                >
+                                                  Cancel
+                                                </button>
+                                                <button 
+                                                  onClick={() => handleUpdateComment(comment.id, progress.id)}
+                                                  className="text-xs text-blue-600 hover:text-blue-800"
+                                                >
+                                                  Save
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <p className="text-sm text-gray-700 mt-1">{comment.content || comment.text}</p>
+                                          )}
+                                          
+                                          <div className="text-xs text-gray-500 mt-1 flex justify-between">
+                                            <span>{new Date(comment.createdAt).toLocaleString()}</span>
+                                            
+                                            {/* Show reply count if there are replies or if replies are expanded */}
+                                            {(commentReplies[comment.id]?.length > 0 || expandedReplies[comment.id]) && (
+                                              <button 
+                                                onClick={() => toggleReplies(comment.id)}
+                                                className="text-blue-600 hover:text-blue-800"
+                                              >
+                                                {expandedReplies[comment.id] ? 'Hide' : 'Show'} {commentReplies[comment.id]?.length || 0} {commentReplies[comment.id]?.length === 1 ? 'reply' : 'replies'}
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Reply Form */}
+                                        {replyingTo === comment.id && (
+                                          <div className="mt-2 ml-8">
+                                            <textarea
+                                              className="w-full text-sm border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                              placeholder="Write a reply..."
+                                              value={replyText[comment.id] || ''}
+                                              onChange={e => setReplyText(prev => ({ ...prev, [comment.id]: e.target.value }))}
+                                              rows="1"
+                                            />
+                                            <div className="flex justify-end mt-1 space-x-2">
+                                              <button
+                                                onClick={cancelReply}
+                                                className="bg-gray-300 text-gray-700 text-sm px-3 py-1 rounded-md hover:bg-gray-400"
+                                              >
+                                                Cancel
+                                              </button>
+                                              <button
+                                                onClick={() => handleAddReply(comment.id, progress.id)}
+                                                className="bg-blue-600 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700"
+                                                disabled={!replyText[comment.id]?.trim()}
+                                              >
+                                                Reply
+                                              </button>
+                                            </div>
+                                          </div>
+                                        )}
+                                        
+                                        {/* Replies Section */}
+                                        {expandedReplies[comment.id] && commentReplies[comment.id]?.length > 0 && (
+                                          <div className="mt-2 ml-8 space-y-2">
+                                            {commentReplies[comment.id].map(reply => (
+                                              <div key={reply.id} className="flex items-start space-x-2">
+                                                <div className="h-5 w-5 rounded-full bg-indigo-400 flex items-center justify-center text-white font-medium text-xs">
+                                                  {reply.username?.charAt(0).toUpperCase() || reply.userName?.charAt(0).toUpperCase() || 'U'}
+                                                </div>
+                                                <div className="flex-1 bg-gray-50 rounded-lg p-2">
+                                                  <div className="flex justify-between items-start">
+                                                    <div className="font-medium text-sm text-gray-800">
+                                                      {reply.username || reply.userName || 'User'}
+                                                      {reply.userId === localStorage.getItem('userId') && (
+                                                        <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
+                                                      )}
+                                                    </div>
+                                                    {reply.userId === localStorage.getItem('userId') && (
+                                                      <div className="flex space-x-2">
+                                                        <button 
+                                                          onClick={() => startEditComment(reply)}
+                                                          className="text-xs text-blue-600 hover:text-blue-800"
+                                                        >
+                                                          Edit
+                                                        </button>
+                                                        <button 
+                                                          onClick={() => handleDeleteComment(reply.id, progress.id)}
+                                                          className="text-xs text-red-600 hover:text-red-800"
+                                                        >
+                                                          Delete
+                                                        </button>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                  {editingComment === reply.id ? (
+                                                    <div className="mt-1">
+                                                      <textarea
+                                                        className="w-full text-sm border border-gray-300 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                        value={editCommentText}
+                                                        onChange={e => setEditCommentText(e.target.value)}
+                                                        rows="2"
+                                                      />
+                                                      <div className="flex justify-end space-x-2 mt-1">
+                                                        <button 
+                                                          onClick={cancelEditComment}
+                                                          className="text-xs text-gray-700 hover:text-gray-900"
+                                                        >
+                                                          Cancel
+                                                        </button>
+                                                        <button 
+                                                          onClick={() => handleUpdateComment(reply.id, progress.id)}
+                                                          className="text-xs text-blue-600 hover:text-blue-800"
+                                                        >
+                                                          Save
+                                                        </button>
+                                                      </div>
+                                                    </div>
+                                                  ) : (
+                                                    <p className="text-sm text-gray-700 mt-1">{reply.content || reply.text}</p>
+                                                  )}
+                                                  <div className="text-xs text-gray-500 mt-1">
+                                                    {new Date(reply.createdAt).toLocaleString()}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                    <p className="text-sm text-gray-700">{comment.content || comment.text}</p>
                                   </div>
                                 ))}
                               </div>

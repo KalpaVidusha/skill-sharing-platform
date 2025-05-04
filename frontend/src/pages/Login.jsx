@@ -119,18 +119,16 @@ const Login = () => {
                     onChange={(e) => setIdentifier(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     placeholder="you@example.com"
+                    tabIndex="1"
                   />
                 </div>
               </div>
   
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="mb-1">
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                     Password
                   </label>
-                  <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500">
-                    Forgot password?
-                  </a>
                 </div>
                 <div className="relative">
                   <input
@@ -142,11 +140,13 @@ const Login = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all pr-12"
                     placeholder="••••••••"
+                    tabIndex="2"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    tabIndex="-1"
                   >
                     {showPassword ? (
                       <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,12 +160,18 @@ const Login = () => {
                     )}
                   </button>
                 </div>
+                <div className="flex justify-end mt-1">
+                  <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500" tabIndex="4">
+                    Forgot password?
+                  </a>
+                </div>
               </div>
   
               <div>
                 <button
                   type="submit"
                   className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  tabIndex="3"
                 >
                   Sign in
                 </button>

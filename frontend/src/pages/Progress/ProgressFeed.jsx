@@ -893,8 +893,20 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
           ...prev,
           [parentCommentId]: prev[parentCommentId].filter(reply => reply.id !== commentId)
         }));
+
+        // Update the comment count in the progress update for the deleted reply
+        setProgressUpdates(prev => 
+          prev.map(p => 
+            p.id === progressId 
+              ? { ...p, commentCount: Math.max(0, (p.commentCount || 0) - 1) } 
+              : p
+          )
+        );
       } else {
-        // This is a regular comment - remove it from the comments state and also remove its replies
+        // This is a regular comment - count how many replies it has before removing it
+        const replyCount = commentReplies[commentId]?.length || 0;
+        
+        // Remove the comment from the comments state
         setComments(prev => ({
           ...prev,
           [progressId]: prev[progressId].filter(comment => comment.id !== commentId)
@@ -908,16 +920,16 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
             return newReplies;
           });
         }
+        
+        // Update the comment count in the progress update - decreasing by comment + all its replies
+        setProgressUpdates(prev => 
+          prev.map(p => 
+            p.id === progressId 
+              ? { ...p, commentCount: Math.max(0, (p.commentCount || 0) - (1 + replyCount)) } 
+              : p
+          )
+        );
       }
-      
-      // Update the comment count in the progress update
-      setProgressUpdates(prev => 
-        prev.map(p => 
-          p.id === progressId 
-            ? { ...p, commentCount: Math.max(0, (p.commentCount || 0) - 1) } 
-            : p
-        )
-      );
       
       toast.success('Comment deleted');
     } catch (error) {
@@ -1265,7 +1277,12 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                           <div className="flex-1">
                             <div className="bg-gray-100 rounded-lg p-2">
                               <div className="flex justify-between items-start">
-                                <div className="font-medium text-sm text-gray-800">{comment.userName || 'User'}</div>
+                                <div className="font-medium text-sm text-gray-800">
+                                  {comment.userName || 'User'}
+                                  {currentUserId === comment.userId && (
+                                    <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
+                                  )}
+                                </div>
                                 <div className="flex space-x-2">
                                   {currentUserId === comment.userId && (
                                     <>
@@ -1372,7 +1389,12 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                                     </div>
                                     <div className="flex-1 bg-gray-50 rounded-lg p-2">
                                       <div className="flex justify-between items-start">
-                                        <div className="font-medium text-sm text-gray-800">{reply.userName || 'User'}</div>
+                                        <div className="font-medium text-sm text-gray-800">
+                                          {reply.userName || 'User'}
+                                          {currentUserId === reply.userId && (
+                                            <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
+                                          )}
+                                        </div>
                                         {currentUserId === reply.userId && (
                                           <div className="flex space-x-2">
                                             <button 
