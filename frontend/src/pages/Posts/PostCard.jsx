@@ -231,7 +231,42 @@ const PostCard = ({ post }) => {
       <div style={styles.content}>
         <h3 style={styles.title}>{post.title}</h3>
         <p style={styles.description}>{post.description}</p>
-        <div style={styles.tutor}><strong>Instructor:</strong> {instructor}</div>
+        <div style={styles.tutor}>
+          <strong>Instructor:</strong>{' '}
+          {post.user && post.user.id ? (
+            post.user.id === localStorage.getItem('userId') ? (
+              <Link 
+                to="/userdashboard"
+                style={{
+                  color: '#0284c7',
+                  textDecoration: 'none',
+                  fontWeight: '500',
+                  transition: 'color 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.color = '#0369a1'}
+                onMouseOut={(e) => e.target.style.color = '#0284c7'}
+              >
+                {instructor}
+              </Link>
+            ) : (
+              <Link 
+                to={`/profile/${post.user.id}`}
+                style={{
+                  color: '#0284c7',
+                  textDecoration: 'none',
+                  fontWeight: '500',
+                  transition: 'color 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.color = '#0369a1'}
+                onMouseOut={(e) => e.target.style.color = '#0284c7'}
+              >
+                {instructor}
+              </Link>
+            )
+          ) : (
+            instructor
+          )}
+        </div>
 
         <div style={styles.iconRow}>
           <button onClick={toggleLike} style={styles.likeButton}>

@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import UserDashboard from "./pages/UserDashboard";
+import UserProfile from "./pages/UserProfile";
 import Posts from './pages/Posts/Posts';
 import PostDetail from './pages/Posts/PostDetail';
 import CreatePost from "./pages/Posts/CreatePost";
@@ -50,6 +51,8 @@ function App() {
         
         {/* User Management */}
         <Route path="/userdashboard" element={<UserDashboard />} />
+        <Route path="/profile/:userId" element={<UserProfile />} />
+        <Route path="/user-posts/:userId" element={<Posts />} />
 
         {/* New Routes */}
         <Route path="/feed" element={<Feed />} />

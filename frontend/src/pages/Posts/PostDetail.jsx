@@ -135,6 +135,32 @@ const PostDetail = () => {
 
         <h1 style={{ color: '#0d47a1', marginBottom: '10px' }}>{post?.title}</h1>
         <p style={{ fontSize: '14px', color: '#1565c0' }}><b>Category:</b> {post?.category}</p>
+        
+        {post?.user && (
+          <p style={{ fontSize: '14px', color: '#1565c0', marginBottom: '10px' }}>
+            <b>Author:</b>{' '}
+            {post.user.id === localStorage.getItem('userId') ? (
+              <Link 
+                to={`/userdashboard`} 
+                style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }}
+                onMouseOver={(e) => e.target.style.color = '#0d47a1'}
+                onMouseOut={(e) => e.target.style.color = '#1976d2'}
+              >
+                {post.user.username || `${post.user.firstName || ''} ${post.user.lastName || ''}`.trim() || 'User'}
+              </Link>
+            ) : (
+              <Link 
+                to={`/profile/${post.user.id}`} 
+                style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }}
+                onMouseOver={(e) => e.target.style.color = '#0d47a1'}
+                onMouseOut={(e) => e.target.style.color = '#1976d2'}
+              >
+                {post.user.username || `${post.user.firstName || ''} ${post.user.lastName || ''}`.trim() || 'User'}
+              </Link>
+            )}
+          </p>
+        )}
+        
         <p style={{ backgroundColor: '#f0f7ff', padding: '12px', borderRadius: '6px' }}>{post?.description}</p>
 
         {post?.mediaUrls?.length > 0 && (
@@ -209,8 +235,33 @@ const PostDetail = () => {
                 </>
               ) : (
                 <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div>
+                      {c.userId === localStorage.getItem('userId') ? (
+                        <Link
+                          to="/userdashboard"
+                          style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 'bold', transition: 'color 0.2s' }}
+                          onMouseOver={(e) => e.target.style.color = '#0d47a1'}
+                          onMouseOut={(e) => e.target.style.color = '#1976d2'}
+                        >
+                          {c.username || 'User'}
+                        </Link>
+                      ) : (
+                        <Link
+                          to={`/profile/${c.userId}`}
+                          style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 'bold', transition: 'color 0.2s' }}
+                          onMouseOver={(e) => e.target.style.color = '#0d47a1'}
+                          onMouseOut={(e) => e.target.style.color = '#1976d2'}
+                        >
+                          {c.username || 'User'}
+                        </Link>
+                      )}
+                      <small style={{ marginLeft: '10px', color: '#666' }}>
+                        {new Date(c.createdAt).toLocaleString()}
+                      </small>
+                    </div>
+                  </div>
                   <p>{c.content}</p>
-                  <small>{new Date(c.createdAt).toLocaleString()}</small>
                   <div style={{ marginTop: '10px' }}>
                     {canEditComment(c) && (
                       <button onClick={() => setEditingComment(c.id)} style={{ marginRight: '10px' }}>✏️ Edit</button>

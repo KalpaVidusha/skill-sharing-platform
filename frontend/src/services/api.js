@@ -122,14 +122,25 @@ const apiService = {
 
   // Users
   getUserProfile: (userId) => api.get(`/users/${userId}`),
+  getUserById: (userId) => api.get(`/users/${userId}`),
   updateUserProfile: (userId, userData) => api.put(`/users/${userId}`, userData),
   
-  // Follow/Unfollow functionality
-  followUser: (userId, userToFollowId) => 
-    api.post(`/users/${userId}/follow/${userToFollowId}`),
+  // Follow/Unfollow functionality with multiple implementation attempts
+  followUser: (targetUserId) => {
+    const currentUserId = localStorage.getItem('userId');
+    console.log(`Current user ${currentUserId} following user with ID: ${targetUserId}`);
+    
+    // Format: /{userId}/follow/{userToFollowId}
+    return api.post(`/users/${currentUserId}/follow/${targetUserId}`);
+  },
   
-  unfollowUser: (userId, userToUnfollowId) => 
-    api.post(`/users/${userId}/unfollow/${userToUnfollowId}`),
+  unfollowUser: (targetUserId) => {
+    const currentUserId = localStorage.getItem('userId');
+    console.log(`Current user ${currentUserId} unfollowing user with ID: ${targetUserId}`);
+    
+    // Format: /{userId}/unfollow/{userToUnfollowId}
+    return api.post(`/users/${currentUserId}/unfollow/${targetUserId}`);
+  },
   
   getFollowers: (userId) => 
     api.get(`/users/${userId}/followers`),

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, createRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import apiService from '../../services/api';
 import { formatDistanceToNow, format, parse, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
@@ -7,6 +7,7 @@ import { FaEdit, FaTrash, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSyncAl
 import { toast } from "react-toastify";
 
 const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters }) => {
+  const navigate = useNavigate();
   const [progressUpdates, setProgressUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,6 +16,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
   const [editingProgress, setEditingProgress] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const currentUserId = localStorage.getItem('userId');
+  const [showLoginModal, setShowLoginModal] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -1099,6 +1101,25 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
     }
   };
 
+  // Handle clicking on a user's profile
+  const handleProfileClick = (profileUserId) => {
+    // Check if user is logged in before allowing profile navigation
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+      return;
+    }
+    
+    // Navigate to the user's profile page
+    navigate(`/profile/${profileUserId}`);
+  };
+  
+  // Handle closing the login modal and redirecting to login
+  const handleCloseModal = () => {
+    setShowLoginModal(false);
+    navigate('/login');
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -1124,7 +1145,54 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
   }
 
   return (
-    <div>
+    <div className="relative w-full">
+      {/* Authentication Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleCloseModal}></div>
+
+            {/* Modal content */}
+            <div className="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Authentication Required</h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        You need to be logged in to view user profiles. This helps maintain a safe and interactive community for all our users.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button 
+                  type="button" 
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={handleCloseModal}
+                >
+                  Log In
+                </button>
+                <button 
+                  type="button" 
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setShowLoginModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Login Prompt for non-logged users */}
       {!currentUserId && !error && progressUpdates.length > 0 && (
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center">
@@ -1133,7 +1201,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
             <p className="text-sm text-blue-700 mt-1">Sign in to like and comment on progress updates.</p>
           </div>
           <Link 
-            to="/signin" 
+            to="/login" 
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium"
           >
             Sign In
@@ -1185,19 +1253,22 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
           <div key={progress.id} className="border border-gray-200 rounded-lg overflow-hidden">
             <div className="px-4 py-3 bg-gray-50 flex justify-between items-center">
               <div className="flex items-center">
-                <div className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-medium mr-2">
+                <div 
+                  className="w-10 h-10 bg-blue-500 rounded-full text-white flex items-center justify-center font-bold mr-3 cursor-pointer transition transform hover:scale-105"
+                  onClick={() => progress.user?.id && handleProfileClick(progress.user.id)}
+                >
                   {progress.user?.username?.charAt(0).toUpperCase() || 'U'}
                 </div>
-                <div>
-                  <Link 
-                    to={`/profile/${progress.user?.id}`}
-                    className="font-medium text-gray-900 hover:text-indigo-600"
+                <div className="flex flex-col">
+                  <div
+                    className="font-semibold text-blue-700 hover:text-blue-500 cursor-pointer"
+                    onClick={() => progress.user?.id && handleProfileClick(progress.user.id)}
                   >
                     {progress.user?.username || 'User'}
-                  </Link>
-                  <p className="text-xs text-gray-500">
-                    {progress.createdAt ? formatDistanceToNow(new Date(progress.createdAt), { addSuffix: true }) : 'Recently'}
-                  </p>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {formatDistanceToNow(new Date(progress.createdAt), { addSuffix: true })}
+                  </div>
                 </div>
               </div>
               
@@ -1271,17 +1342,28 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                     {comments[progress.id]?.length > 0 ? (
                       comments[progress.id].map(comment => (
                         <div key={comment.id} className="flex items-start space-x-2">
-                          <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium text-xs">
+                          <div 
+                            className="w-8 h-8 bg-indigo-500 rounded-full text-white flex items-center justify-center font-bold mr-2 cursor-pointer"
+                            onClick={() => comment.userId && handleProfileClick(comment.userId)}
+                          >
                             {comment.userName?.charAt(0).toUpperCase() || 'U'}
                           </div>
                           <div className="flex-1">
                             <div className="bg-gray-100 rounded-lg p-2">
                               <div className="flex justify-between items-start">
-                                <div className="font-medium text-sm text-gray-800">
-                                  {comment.userName || 'User'}
+                                <div className="flex items-baseline">
+                                  <span 
+                                    className="font-medium text-indigo-700 hover:text-indigo-500 cursor-pointer"
+                                    onClick={() => comment.userId && handleProfileClick(comment.userId)}
+                                  >
+                                    {comment.userName || 'User'}
+                                  </span>
                                   {currentUserId === comment.userId && (
                                     <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
                                   )}
+                                  <span className="text-xs text-gray-500 ml-2">
+                                    {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                                  </span>
                                 </div>
                                 <div className="flex space-x-2">
                                   {currentUserId === comment.userId && (
@@ -1337,8 +1419,6 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                               )}
                               
                               <div className="text-xs text-gray-500 mt-1 flex justify-between">
-                                <span>{comment.createdAt ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true }) : 'Recently'}</span>
-                                
                                 {/* Show reply count if there are replies or if replies are expanded */}
                                 {(commentReplies[comment.id]?.length > 0 || expandedReplies[comment.id]) && (
                                   <button 
@@ -1384,16 +1464,27 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                               <div className="mt-2 ml-8 space-y-2">
                                 {commentReplies[comment.id].map(reply => (
                                   <div key={reply.id} className="flex items-start space-x-2">
-                                    <div className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium text-xs">
+                                    <div 
+                                      className="w-7 h-7 bg-purple-500 rounded-full text-white flex items-center justify-center font-bold mr-2 cursor-pointer"
+                                      onClick={() => reply.userId && handleProfileClick(reply.userId)}
+                                    >
                                       {reply.userName?.charAt(0).toUpperCase() || 'U'}
                                     </div>
                                     <div className="flex-1 bg-gray-50 rounded-lg p-2">
                                       <div className="flex justify-between items-start">
-                                        <div className="font-medium text-sm text-gray-800">
-                                          {reply.userName || 'User'}
+                                        <div className="flex items-baseline">
+                                          <span 
+                                            className="font-medium text-purple-700 hover:text-purple-500 cursor-pointer"
+                                            onClick={() => reply.userId && handleProfileClick(reply.userId)}
+                                          >
+                                            {reply.userName || 'User'}
+                                          </span>
                                           {currentUserId === reply.userId && (
                                             <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
                                           )}
+                                          <span className="text-xs text-gray-500 ml-2">
+                                            {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true })}
+                                          </span>
                                         </div>
                                         {currentUserId === reply.userId && (
                                           <div className="flex space-x-2">
@@ -1438,9 +1529,6 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                                       ) : (
                                         <p className="text-sm text-gray-700 mt-1">{reply.content}</p>
                                       )}
-                                      <div className="text-xs text-gray-500 mt-1">
-                                        {reply.createdAt ? formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true }) : 'Recently'}
-                                      </div>
                                     </div>
                                   </div>
                                 ))}

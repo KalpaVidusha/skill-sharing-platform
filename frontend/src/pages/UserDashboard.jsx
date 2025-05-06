@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   FaPlus, FaUser, FaSignOutAlt, FaChartLine,
   FaFileAlt, FaComments, FaCompass, FaSearch, FaUsers,
@@ -1722,7 +1722,9 @@ const UserDashboard = () => {
                                         <div className="bg-gray-50 rounded-lg p-2">
                                           <div className="flex justify-between items-start">
                                             <div className="font-medium text-sm text-gray-800">
-                                              {comment.username || comment.userName || 'User'}
+                                              <Link to={`/profile/${comment.userId}`} className="hover:text-indigo-600 transition-colors">
+                                                {comment.username || comment.userName || 'User'}
+                                              </Link>
                                               {comment.userId === localStorage.getItem('userId') && (
                                                 <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
                                               )}
@@ -1834,7 +1836,9 @@ const UserDashboard = () => {
                                                 <div className="flex-1 bg-gray-50 rounded-lg p-2">
                                                   <div className="flex justify-between items-start">
                                                     <div className="font-medium text-sm text-gray-800">
-                                                      {reply.username || reply.userName || 'User'}
+                                                      <Link to={`/profile/${reply.userId}`} className="hover:text-indigo-600 transition-colors">
+                                                        {reply.username || reply.userName || 'User'}
+                                                      </Link>
                                                       {reply.userId === localStorage.getItem('userId') && (
                                                         <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
                                                       )}
