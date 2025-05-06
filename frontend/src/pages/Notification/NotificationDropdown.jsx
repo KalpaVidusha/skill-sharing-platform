@@ -88,24 +88,31 @@ const NotificationDropdown = () => {
   return (
     <div className="relative">
       <button 
-        className="relative p-2 text-gray-700 hover:text-indigo-700 focus:outline-none"
+        className="relative p-2 rounded-full bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-indigo-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+        aria-label="Notifications"
       >
         <FaBell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            {unreadCount}
+          <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs font-medium rounded-full w-5 h-5 flex items-center justify-center ring-2 ring-white">
+            {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
       
       {isOpen && (
-        <div ref={dropdownRef} className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg overflow-hidden z-50">
-          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+        <div 
+          ref={dropdownRef} 
+          className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl overflow-hidden z-50 border border-gray-100"
+          role="menu"
+        >
+          <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <h3 className="text-lg font-medium text-gray-800">Notifications</h3>
             {unreadCount > 0 && (
               <button 
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
                 onClick={handleMarkAllAsRead}
               >
                 Mark all as read
@@ -113,28 +120,36 @@ const NotificationDropdown = () => {
             )}
           </div>
           
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
             {notifications.length > 0 ? (
-              notifications.map(notification => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  onMarkAsRead={handleMarkAsRead}
-                />
-              ))
+              <ul className="divide-y divide-gray-100">
+                {notifications.map(notification => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onMarkAsRead={handleMarkAsRead}
+                  />
+                ))}
+              </ul>
             ) : (
-              <div className="p-4 text-center text-gray-500">
-                No new notifications
+              <div className="py-12 px-4 text-center">
+                <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                  <FaBell className="w-6 h-6 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-sm">No new notifications</p>
               </div>
             )}
           </div>
           
-          <div className="p-4 border-t border-gray-200 text-center">
+          <div className="p-3 border-t border-gray-100 bg-gray-50 text-center">
             <Link 
               to="/notifications" 
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-200 inline-flex items-center"
             >
               View all notifications
+              <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+              </svg>
             </Link>
           </div>
         </div>
