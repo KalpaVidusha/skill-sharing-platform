@@ -4,7 +4,6 @@ import { FaComment, FaHeart, FaRegHeart } from 'react-icons/fa';
 import apiService from '../../services/api';
 
 const PostCard = ({ post }) => {
-  const [isHovered, setIsHovered] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const [likedByCurrentUser, setLikedByCurrentUser] = useState(false);
@@ -14,18 +13,12 @@ const PostCard = ({ post }) => {
   const defaultImageUrl = 'https://via.placeholder.com/400x200?text=No+Image';
   const instructor = post.user ? `${post.user.firstName} ${post.user.lastName}` : 'Unknown';
   
-  // Function to determine if a URL is a video
   const isVideoUrl = (url) => {
     return url && (url.includes('/video/') || url.endsWith('.mp4') || url.endsWith('.mov'));
   };
 
-  // Function to get optimized image URL from Cloudinary
   const getOptimizedImageUrl = (url, width = 400) => {
     if (!url || !url.includes('cloudinary.com')) return url;
-    
-    // Transform cloudinary URL to get resized, optimized version
-    // Example: https://res.cloudinary.com/xyz/image/upload/v1234/folder/image.jpg
-    // Becomes: https://res.cloudinary.com/xyz/image/upload/c_scale,w_400,q_auto,f_auto/v1234/folder/image.jpg
     
     const parts = url.split('/upload/');
     if (parts.length !== 2) return url;
@@ -33,13 +26,11 @@ const PostCard = ({ post }) => {
     return `${parts[0]}/upload/c_scale,w_${width},q_auto,f_auto/${parts[1]}`;
   };
 
-  // Get the first media URL that's optimized
   const getMediaUrl = () => {
     if (!hasImage) return defaultImageUrl;
     
     const firstMedia = post.mediaUrls[0];
     if (isVideoUrl(firstMedia)) {
-      // For videos, get a thumbnail
       if (firstMedia.includes('cloudinary.com')) {
         const parts = firstMedia.split('/video/');
         if (parts.length === 2) {
@@ -49,7 +40,6 @@ const PostCard = ({ post }) => {
       return defaultImageUrl;
     }
     
-    // For images, get optimized version
     return getOptimizedImageUrl(firstMedia);
   };
 
@@ -65,11 +55,9 @@ const PostCard = ({ post }) => {
 
     const fetchLikeStatus = async () => {
       try {
-        // First check if user is logged in
         const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
         if (!isLoggedIn) return;
         
-        // Get user ID from localStorage
         const userId = localStorage.getItem('userId');
         if (userId) {
           setLikedByCurrentUser(post.likedUserIds?.includes(userId));
@@ -87,7 +75,6 @@ const PostCard = ({ post }) => {
 
   const toggleLike = async () => {
     try {
-      // Check if user is logged in first
       const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
       if (!isLoggedIn) {
         window.location.href = `/login?redirect=/posts/${post.id}`;
@@ -99,186 +86,51 @@ const PostCard = ({ post }) => {
       setLikedByCurrentUser(result.likedByCurrentUser);
     } catch (err) {
       console.error('Error toggling like:', err);
-      // If we get a 401 error, redirect to login
       if (err.status === 401) {
         window.location.href = `/login?redirect=/posts/${post.id}`;
       }
     }
   };
 
-  const styles = {
-    card: {
-      backgroundColor: '#ffffff',
-      borderRadius: '16px',
-      boxShadow: isHovered
-        ? '0 12px 24px rgba(0, 102, 204, 0.15)'
-        : '0 6px 18px rgba(0, 0, 0, 0.08)',
-      transition: 'all 0.3s ease',
-      transform: isHovered ? 'translateY(-8px)' : 'none',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      border: '1px solid #e0eaff'
-    },
-    imageContainer: {
-      height: '200px',
-      overflow: 'hidden',
-      position: 'relative',
-      backgroundColor: '#f0f7ff'
-    },
-    imagePlaceholder: {
-      display: !mediaLoaded ? 'flex' : 'none',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#e3f2fd'
-    },
-    image: {
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover',
-      transition: 'transform 0.3s ease',
-      transform: isHovered ? 'scale(1.03)' : 'scale(1)',
-      opacity: mediaLoaded ? 1 : 0
-    },
-    content: {
-      padding: '20px',
-      display: 'flex',
-      flexDirection: 'column',
-      flexGrow: 1
-    },
-    title: {
-      fontSize: '22px',
-      fontWeight: '700',
-      color: '#1e3a8a',
-      marginBottom: '10px'
-    },
-    description: {
-      fontSize: '14px',
-      color: '#555',
-      flexGrow: 1,
-      marginBottom: '10px'
-    },
-    tutor: {
-      marginBottom: '8px',
-      color: '#0369a1',
-      fontSize: '13px'
-    },
-    iconRow: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '15px',
-      marginTop: '10px',
-      fontSize: '14px',
-      fontWeight: '500',
-      color: '#3b82f6'
-    },
-    likeButton: {
-      border: 'none',
-      background: 'none',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      color: likedByCurrentUser ? '#ef4444' : '#64748b',
-      transition: 'color 0.2s ease',
-      fontSize: '14px'
-    },
-    commentContainer: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '2px',
-      color: '#64748b'
-    },
-    viewButton: {
-      display: 'inline-block',
-      padding: '10px 20px',
-      backgroundColor: '#3b82f6',
-      color: 'white',
-      textDecoration: 'none',
-      borderRadius: '8px',
-      marginTop: '15px',
-      textAlign: 'center',
-      fontWeight: '500',
-      transition: 'background-color 0.3s ease',
-      boxShadow: '0 4px 10px rgba(0, 102, 204, 0.15)'
-    }
-  };
-
   return (
-    <div
-      style={styles.card}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div style={styles.imageContainer}>
-        <div style={styles.imagePlaceholder}>
-          <div style={{ color: '#1976d2' }}>Loading...</div>
-        </div>
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-blue-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 h-full flex flex-col">
+      <div className="relative h-48 bg-blue-50 overflow-hidden flex-shrink-0">
+        {!mediaLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-blue-50">
+            <div className="text-indigo-600">Loading...</div>
+          </div>
+        )}
         <img
           src={getMediaUrl()}
           alt={post.title}
-          style={styles.image}
+          className={`w-full h-full object-cover transition-transform duration-300 hover:scale-105 ${mediaLoaded ? 'opacity-100' : 'opacity-0'}`}
           loading="lazy"
           onLoad={() => setMediaLoaded(true)}
         />
       </div>
 
-      <div style={styles.content}>
-        <h3 style={styles.title}>{post.title}</h3>
-        <p style={styles.description}>{post.description}</p>
-        <div style={styles.tutor}>
-          <strong>Instructor:</strong>{' '}
-          {post.user && post.user.id ? (
-            post.user.id === localStorage.getItem('userId') ? (
-              <Link 
-                to="/userdashboard"
-                style={{
-                  color: '#0284c7',
-                  textDecoration: 'none',
-                  fontWeight: '500',
-                  transition: 'color 0.2s'
-                }}
-                onMouseOver={(e) => e.target.style.color = '#0369a1'}
-                onMouseOut={(e) => e.target.style.color = '#0284c7'}
-              >
-                {instructor}
-              </Link>
-            ) : (
-              <Link 
-                to={`/profile/${post.user.id}`}
-                style={{
-                  color: '#0284c7',
-                  textDecoration: 'none',
-                  fontWeight: '500',
-                  transition: 'color 0.2s'
-                }}
-                onMouseOver={(e) => e.target.style.color = '#0369a1'}
-                onMouseOut={(e) => e.target.style.color = '#0284c7'}
-              >
-                {instructor}
-              </Link>
-            )
-          ) : (
-            instructor
-          )}
-        </div>
+      <div className="p-5 flex flex-col flex-grow">
+        <h3 className="text-xl font-bold text-indigo-900 mb-2 line-clamp-2">{post.title}</h3>
+        <p className="text-gray-600 text-sm mb-3 line-clamp-3">{post.description}</p>
+        <div className="text-sm text-indigo-700 mb-2"><strong>Instructor:</strong> {instructor}</div>
 
-        <div style={styles.iconRow}>
-          <button onClick={toggleLike} style={styles.likeButton}>
-            {likedByCurrentUser ? <FaHeart /> : <FaRegHeart />} {likeCount}
+        <div className="flex items-center gap-4 mt-3">
+          <button 
+            onClick={toggleLike} 
+            className={`flex items-center gap-1.5 ${likedByCurrentUser ? 'text-red-500' : 'text-gray-500'} hover:text-red-500 transition-colors duration-200`}
+          >
+            {likedByCurrentUser ? <FaHeart /> : <FaRegHeart />} <span>{likeCount}</span>
           </button>
-          <div style={styles.commentContainer}>
-            <FaComment style={{display: 'inline', marginRight: '4px', verticalAlign: 'middle'}} />
-            <span style={{display: 'inline', verticalAlign: 'middle'}}>{commentCount}</span>
+          <div className="flex items-center gap-1.5 text-gray-500">
+            <FaComment />
+            <span>{commentCount}</span>
           </div>
         </div>
 
-        <Link to={`/posts/${post.id}`} style={styles.viewButton}>
+        <Link 
+          to={`/posts/${post.id}`} 
+          className="mt-4 inline-block w-full text-center py-2.5 px-4 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 transition-colors duration-200 shadow-md mt-auto"
+        >
           View Course
         </Link>
       </div>

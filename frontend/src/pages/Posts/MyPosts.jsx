@@ -5,6 +5,7 @@ import PostCard from './PostCard';
 import Navbar from '../../components/Navbar';
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
+import { FiEdit, FiTrash2, FiPlusCircle } from 'react-icons/fi';
 
 const MyPosts = () => {
   const [posts, setPosts] = useState([]);
@@ -46,54 +47,75 @@ const MyPosts = () => {
           }
         },
         { label: 'No' }
-      ]
+      ],
+      overlayClassName: 'fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm'
     });
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center items-center h-screen bg-indigo-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-indigo-50">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8 text-blue-900">My Posts</h1>
-        
-        {error && <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt -28 py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-indigo-900">My Posts</h1>
+            <Link 
+              to="/add-post"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+            >
+              <FiPlusCircle className="text-lg" />
+              Create New Post
+            </Link>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {error && (
+            <div className="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+              {error}
+            </div>
+          )}
+
           {posts.length === 0 ? (
-            <div className="col-span-full text-center text-gray-600">
-              You haven't created any posts yet.
-              <Link to="/add-post" className="ml-2 text-blue-600 hover:underline">
-                Create your first post
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-indigo-100">
+              <p className="text-gray-600 mb-4">You haven't created any posts yet.</p>
+              <Link 
+                to="/add-post" 
+                className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors duration-200"
+              >
+                Create Your First Post
               </Link>
             </div>
           ) : (
-            posts.map(post => (
-              <div key={post.id} className="relative">
-                <PostCard post={post} />
-                <div className="absolute top-2 right-2 flex space-x-2">
-                  <Link
-                    to={`/edit-post/${post.id}`}
-                    className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition"
-                  >
-                    Edit
-                  </Link>
-                  <button
-                    onClick={() => handleDelete(post.id)}
-                    className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition"
-                  >
-                    Delete
-                  </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {posts.map(post => (
+                <div key={post.id} className="relative group">
+                  <PostCard post={post} />
+                  <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <Link
+                      to={`/edit-post/${post.id}`}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white p-2.5 rounded-lg shadow-sm transition-colors duration-200 flex items-center justify-center"
+                      title="Edit Post"
+                    >
+                      <FiEdit className="text-lg" />
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(post.id)}
+                      className="bg-red-600 hover:bg-red-700 text-white p-2.5 rounded-lg shadow-sm transition-colors duration-200 flex items-center justify-center"
+                      title="Delete Post"
+                    >
+                      <FiTrash2 className="text-lg" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       </div>
