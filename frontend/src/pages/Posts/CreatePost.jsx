@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaImage, FaTimesCircle, FaArrowLeft } from 'react-icons/fa';
 import apiService from '../../services/api';
 import Navbar from '../../components/Navbar';
 
@@ -113,168 +114,166 @@ const CreatePost = () => {
     };
   }, [previewUrls]);
 
-  const renderPreview = (file, url, index) => {
-    const isVideo = file.type.startsWith('video/');
-    
-    return (
-      <div key={index} style={{
-        position: "relative",
-        width: "120px",
-        height: "120px",
-        borderRadius: "10px",
-        overflow: "hidden",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.1)"
-      }}>
-        {isVideo ? (
-          <video 
-            src={url} 
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover"
-            }}
-            controls
-          />
-        ) : (
-          <img 
-            src={url} 
-            alt="Preview" 
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover"
-            }} 
-          />
-        )}
-        <button type="button" onClick={() => handleRemovePreview(index)} style={{
-          position: "absolute",
-          top: "5px",
-          right: "5px",
-          backgroundColor: "#fff",
-          borderRadius: "50%",
-          width: "24px",
-          height: "24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontWeight: "bold",
-          border: "1px solid #ddd",
-          cursor: "pointer"
-        }}>×</button>
-      </div>
-    );
-  };
-
   return (
     <div>
       <Navbar />
-      <div style={{
-        minHeight: "100vh",
-        background: "linear-gradient(to right, #e3f2fd, #fefefe)",
-        padding: "80px 20px 50px",
-        fontFamily: "'Poppins', sans-serif"
-      }}>
-        <div style={{
-          maxWidth: "900px",
-          margin: "0 auto",
-          backgroundColor: "#ffffff",
-          borderRadius: "16px",
-          padding: "40px",
-          boxShadow: "0 12px 30px rgba(0,0,0,0.1)"
-        }}>
-          <button onClick={() => navigate(-1)} style={{
-            background: "none",
-            border: "none",
-            color: "#1976d2",
-            fontWeight: 500,
-            fontSize: "16px",
-            cursor: "pointer",
-            marginBottom: "20px"
-          }}>← Back</button>
+      <div className="min-h-screen bg-gradient-to-r from-blue-50 to-white py-20 px-4">
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl p-8 shadow-lg">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="flex items-center text-indigo-600 hover:text-indigo-500 font-medium mb-6"
+          >
+            <FaArrowLeft className="mr-2" /> Back
+          </button>
 
-          <h2 style={{ color: "#0d47a1", marginBottom: "20px" }}>Create New Post</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Create New Post</h2>
 
-          {error && <div style={{
-            backgroundColor: "#ffebee",
-            color: "#c62828",
-            padding: "12px",
-            borderRadius: "6px",
-            marginBottom: "20px"
-          }}>{error}</div>}
+          {error && (
+            <div className="bg-red-50 text-red-700 p-4 rounded-md mb-6">
+              {error}
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label style={label}>Title</label>
-              <input name="title" value={formData.title} onChange={handleChange} style={input} required />
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Title
+              </label>
+              <input 
+                name="title" 
+                value={formData.title} 
+                onChange={handleChange} 
+                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                required 
+              />
             </div>
 
             <div>
-              <label style={label}>Category</label>
-              <select name="category" value={formData.category} onChange={handleChange} required style={input}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category
+              </label>
+              <select 
+                name="category" 
+                value={formData.category} 
+                onChange={handleChange} 
+                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                required
+              >
                 <option value="">Select Category</option>
                 {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
             </div>
 
             <div>
-              <label style={label}>Description</label>
-              <textarea name="description" value={formData.description} onChange={handleChange} style={{ ...input, height: "120px" }} required />
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea 
+                name="description" 
+                value={formData.description} 
+                onChange={handleChange} 
+                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 h-32"
+                required 
+              />
             </div>
 
-            <div>
-              <label style={label}>Upload Media (Images or Videos - Max 3 files, 10MB each)</label>
-              <input 
-                type="file" 
-                onChange={handleFileChange} 
-                multiple 
-                accept="image/*,video/*"
-                style={{ ...input, padding: "6px" }} 
-              />
+            <div className="flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Upload Media (Images or Videos - Max 3 files, 10MB each)
+              </label>
+              
+              {uploadedFiles.length === 0 ? (
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                  <div className="space-y-1 text-center">
+                    <FaImage className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="flex justify-center text-sm text-gray-600">
+                      <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                        <span>Upload files</span>
+                        <input 
+                          id="file-upload" 
+                          name="file-upload" 
+                          type="file" 
+                          className="sr-only" 
+                          onChange={handleFileChange}
+                          accept="image/*,video/*"
+                          multiple
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      PNG, JPG, GIF, MP4 up to 10MB
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-1">
+                  <div className="flex flex-wrap gap-4 mb-4">
+                    {previewUrls.map((url, index) => {
+                      const isVideo = uploadedFiles[index].type.startsWith('video/');
+                      return (
+                        <div key={index} className="relative rounded-md overflow-hidden border border-gray-300 h-32 w-32 flex items-center justify-center">
+                          {isVideo ? (
+                            <video 
+                              src={url} 
+                              className="max-h-full max-w-full object-cover"
+                              controls
+                            />
+                          ) : (
+                            <img 
+                              src={url} 
+                              alt="Preview" 
+                              className="max-h-full max-w-full object-cover"
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePreview(index)}
+                            className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          >
+                            <FaTimesCircle className="h-4 w-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    
+                    <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:bg-gray-50">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <FaImage className="h-8 w-8 text-gray-400" />
+                        <p className="text-xs text-gray-500 mt-1">Add more</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        onChange={handleFileChange}
+                        accept="image/*,video/*"
+                        multiple
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
               
               {uploadProgress > 0 && uploadProgress < 100 && (
-                <div style={{ marginTop: "10px" }}>
-                  <div style={{
-                    width: "100%",
-                    backgroundColor: "#e0e0e0",
-                    borderRadius: "4px",
-                    height: "8px",
-                    overflow: "hidden"
-                  }}>
-                    <div style={{
-                      width: `${uploadProgress}%`,
-                      backgroundColor: "#2196f3",
-                      height: "100%"
-                    }}></div>
+                <div className="mt-4">
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-indigo-600 h-full" 
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
                   </div>
-                  <p style={{ textAlign: "center", fontSize: "12px", marginTop: "5px" }}>
+                  <p className="text-center text-xs text-gray-500 mt-1">
                     Uploading: {uploadProgress}%
                   </p>
                 </div>
               )}
-              
-              {previewUrls.length > 0 && (
-                <div style={{
-                  display: "flex",
-                  gap: "15px",
-                  flexWrap: "wrap",
-                  marginTop: "15px"
-                }}>
-                  {previewUrls.map((url, index) => renderPreview(uploadedFiles[index], url, index))}
-                </div>
-              )}
             </div>
 
-            <button type="submit" disabled={isLoading} style={{
-              backgroundColor: isLoading ? "#90caf9" : "#2196f3",
-              color: "#fff",
-              padding: "14px",
-              fontSize: "16px",
-              border: "none",
-              borderRadius: "8px",
-              fontWeight: "600",
-              cursor: isLoading ? "not-allowed" : "pointer",
-              transition: "background-color 0.3s ease"
-            }}>
+            <button 
+              type="submit" 
+              disabled={isLoading} 
+              className={`w-full py-3 px-4 rounded-md text-white font-medium ${isLoading ? 'bg-indigo-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+            >
               {isLoading ? "Creating..." : "Create Post"}
             </button>
           </form>
@@ -282,24 +281,6 @@ const CreatePost = () => {
       </div>
     </div>
   );
-};
-
-const label = {
-  display: "block",
-  marginBottom: "6px",
-  fontWeight: 500,
-  color: "#0d47a1"
-};
-
-const input = {
-  width: "100%",
-  padding: "12px 16px",
-  borderRadius: "8px",
-  border: "1px solid #bbdefb",
-  backgroundColor: "#f0f7ff",
-  fontSize: "15px",
-  outline: "none",
-  transition: "border 0.3s ease"
 };
 
 export default CreatePost;
