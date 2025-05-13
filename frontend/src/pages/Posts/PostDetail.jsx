@@ -53,7 +53,13 @@ const PostDetail = () => {
         
         if (postData.mediaUrls?.length) {
           const loadingStates = {};
-          postData.mediaUrls.forEach((_, index) => {
+          postData.mediaUrls.forEach((url, index) => {
+            if (!isVideo(url)) {
+              const img = new Image();
+              img.src = url;
+              img.onload = () => handleMediaLoad(index);
+              img.onerror = () => handleMediaLoad(index);
+            }
             loadingStates[index] = true;
           });
           setMediaLoading(loadingStates);
@@ -66,6 +72,10 @@ const PostDetail = () => {
     };
 
     fetchData();
+    
+    return () => {
+      setMediaLoading({});
+    };
   }, [id]);
 
   useEffect(() => {
@@ -310,6 +320,7 @@ const PostDetail = () => {
                             className="w-full h-full object-cover"
                             onLoadedData={() => handleMediaLoad(originalIndex)}
                             onError={() => handleMediaLoad(originalIndex)}
+                            preload="metadata"
                           >
                             <source src={url} type={`video/${url.split('.').pop()}`} />
                           </video>
@@ -325,6 +336,7 @@ const PostDetail = () => {
                             className="w-full h-full object-cover"
                             onLoad={() => handleMediaLoad(originalIndex)}
                             onError={() => handleMediaLoad(originalIndex)}
+                            loading="lazy"
                           />
                           <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <FaExpand className="text-white text-2xl" />
