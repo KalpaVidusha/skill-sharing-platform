@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  FaArrowLeft, FaPencilAlt, FaTrash, FaHeart, FaRegHeart,
-  FaComment, FaTimes, FaChevronLeft, FaChevronRight,
-  FaPlayCircle, FaImage, FaExpand
+  FaArrowLeft, FaImage, FaPlayCircle, FaExpand,
+  FaChevronLeft, FaChevronRight, FaTimes
 } from 'react-icons/fa';
 import apiService from '../../services/api';
 import Navbar from '../../components/Navbar';
+import PostLikeComment from './PostLikeComment';
 
 const PostDetail = () => {
   const { id } = useParams();
@@ -14,16 +14,8 @@ const PostDetail = () => {
   const descriptionRef = useRef(null);
 
   const [post, setPost] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isPostOwner, setIsPostOwner] = useState(false);
-  const [error, setError] = useState('');
-  const [editingComment, setEditingComment] = useState(null);
-  const [likeCount, setLikeCount] = useState(0);
-  const [liked, setLiked] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [commentToDelete, setCommentToDelete] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isDescriptionLong, setIsDescriptionLong] = useState(false);
@@ -36,18 +28,11 @@ const PostDetail = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [postData, commentsData] = await Promise.all([
-          apiService.getPostById(id),
-          apiService.getCommentsByPost(id)
-        ]);
-
+        const postData = await apiService.getPostById(id);
         setPost(postData);
-        setComments(commentsData);
-        setLikeCount(postData.likeCount || 0);
         
         const userId = localStorage.getItem('userId');
         if (userId && postData.user?.id === userId) setIsPostOwner(true);
-        if (postData.likedUserIds?.includes(userId)) setLiked(true);
         
         setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
         
@@ -84,77 +69,6 @@ const PostDetail = () => {
       setIsDescriptionLong(isLong);
     }
   }, [post]);
-
-  const handleAddComment = async () => {
-    if (!isLoggedIn) return navigate(`/login`, { state: { returnTo: `/posts/${id}` } });
-    if (!newComment.trim()) return setError('Comment cannot be empty');
-    try {
-      await apiService.addComment({ postId: id, content: newComment });
-      setNewComment('');
-      setError('');
-      const data = await apiService.getCommentsByPost(id);
-      setComments(data);
-    } catch (err) {
-      console.error('Error adding comment:', err);
-      setError('Failed to add comment.');
-    }
-  };
-
-  const handleUpdateComment = async (commentId, content) => {
-    try {
-      await apiService.updateComment(commentId, { content });
-      const data = await apiService.getCommentsByPost(id);
-      setComments(data);
-      setEditingComment(null);
-    } catch (err) {
-      console.error('Error updating comment:', err);
-      setError('Failed to update comment.');
-    }
-  };
-
-  const confirmDeleteComment = (commentId) => {
-    setCommentToDelete(commentId);
-    setShowConfirm(true);
-  };
-
-  const cancelDelete = () => {
-    setCommentToDelete(null);
-    setShowConfirm(false);
-  };
-
-  const handleDeleteComment = async () => {
-    try {
-      await apiService.deleteComment(commentToDelete);
-      const data = await apiService.getCommentsByPost(id);
-      setComments(data);
-      setShowConfirm(false);
-      setCommentToDelete(null);
-    } catch (err) {
-      console.error('Error deleting comment:', err);
-      setError('Failed to delete comment.');
-    }
-  };
-
-  const handleToggleLike = async () => {
-    if (!isLoggedIn) return navigate(`/login`, { state: { returnTo: `/posts/${id}` } });
-    try {
-      const data = await apiService.toggleLike(id);
-      setLikeCount(data.likeCount);
-      setLiked(data.likedByCurrentUser);
-    } catch (err) {
-      console.error('Like error:', err);
-    }
-  };
-
-  const canEditComment = (comment) => {
-    const userId = localStorage.getItem('userId');
-    return isLoggedIn && comment.userId === userId;
-  };
-
-  const canDeleteComment = (comment) => {
-    const userId = localStorage.getItem('userId');
-    return isLoggedIn && (comment.userId === userId || isPostOwner);
-  };
 
   const navigateMedia = (direction) => {
     if (!post?.mediaUrls?.length) return;
@@ -349,130 +263,14 @@ const PostDetail = () => {
               </div>
             )}
 
-            <button 
-              onClick={handleToggleLike}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
-                liked 
-                  ? 'bg-indigo-600 text-white' 
-                  : 'bg-indigo-100 text-indigo-700'
-              } transition hover:shadow-md`}
-            >
-              {liked ? (
-                <FaHeart className="mr-2" />
-              ) : (
-                <FaRegHeart className="mr-2" />
-              )}
-              <span>{liked ? 'Liked' : 'Like'} ({likeCount})</span>
-            </button>
-
-            <div className="mt-12 border border-gray-200 rounded-xl p-6 bg-white">
-              <h3 className="flex items-center text-lg font-semibold text-gray-800 mb-4">
-                <FaComment className="mr-2 text-indigo-600" /> Leave a Comment
-              </h3>
-              <textarea
-                placeholder={isLoggedIn ? "Share your thoughts..." : "Please log in to leave a comment"}
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-32 resize-y"
-                disabled={!isLoggedIn}
-              />
-              {error && (
-                <p className="text-red-600 bg-red-50 p-2 rounded-md mt-2 text-sm border border-red-200">
-                  {error}
-                </p>
-              )}
-              <button
-                onClick={handleAddComment}
-                disabled={!isLoggedIn}
-                className={`mt-4 px-6 py-2 rounded-lg font-medium flex items-center ${
-                  isLoggedIn 
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                } transition`}
-              >
-                <FaPencilAlt className="mr-2" /> Post Comment
-              </button>
-            </div>
-
-            <div className="mt-12">
-              <h3 className="text-lg font-semibold text-gray-800 pb-3 border-b-2 border-indigo-200 flex items-center">
-                <FaComment className="mr-2 text-indigo-600" /> Comments ({comments.length})
-              </h3>
-              
-              {comments.length === 0 ? (
-                <div className="text-center p-8 bg-gray-50 rounded-lg mt-4 border border-gray-200">
-                  <p className="text-gray-600">No comments yet. Be the first to share your thoughts!</p>
-                </div>
-              ) : (
-                <div className="mt-6 space-y-4">
-                  {comments.map((c) => (
-                    <div 
-                      key={c.id} 
-                      className="bg-white p-5 rounded-lg border-l-4 border-indigo-500 shadow-sm"
-                    >
-                      {editingComment === c.id ? (
-                        <>
-                          <textarea
-                            value={c.content}
-                            onChange={(e) => {
-                              const updated = comments.map(comment =>
-                                comment.id === c.id ? { ...comment, content: e.target.value } : comment
-                              );
-                              setComments(updated);
-                            }}
-                            className="w-full p-4 border border-gray-300 rounded-lg mb-4 min-h-32 resize-y"
-                          />
-                          <div className="flex space-x-3">
-                            <button 
-                              onClick={() => handleUpdateComment(c.id, c.content)}
-                              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center"
-                            >
-                              <FaPencilAlt className="mr-2" /> Save
-                            </button>
-                            <button 
-                              onClick={() => setEditingComment(null)}
-                              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-gray-700 mb-3">{c.content}</p>
-                          <div className="flex justify-between items-center mt-4">
-                            <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                              Posted on {new Date(c.createdAt).toLocaleString()}
-                            </span>
-                            
-                            {(canEditComment(c) || canDeleteComment(c)) && (
-                              <div className="flex space-x-2">
-                                {canEditComment(c) && (
-                                  <button 
-                                    onClick={() => setEditingComment(c.id)}
-                                    className="text-xs flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200"
-                                  >
-                                    <FaPencilAlt className="mr-1" /> Edit
-                                  </button>
-                                )}
-                                {canDeleteComment(c) && (
-                                  <button 
-                                    onClick={() => confirmDeleteComment(c.id)}
-                                    className="text-xs flex items-center px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200"
-                                  >
-                                    <FaTrash className="mr-1" /> Delete
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Integration with PostLikeComment component */}
+            <PostLikeComment 
+              postId={id}
+              isLoggedIn={isLoggedIn}
+              isPostOwner={isPostOwner}
+              initialLikeCount={post?.likeCount || 0}
+              initialLiked={post?.likedUserIds?.includes(localStorage.getItem('userId')) || false}
+            />
           </div>
         </div>
 
@@ -557,33 +355,6 @@ const PostDetail = () => {
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {showConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                <FaTrash className="text-red-600 mr-2" /> Delete Comment
-              </h3>
-              <p className="text-gray-700 mb-6">
-                Are you sure you want to delete this comment? This action cannot be undone.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <button 
-                  onClick={cancelDelete}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleDeleteComment} 
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center"
-                >
-                  <FaTrash className="mr-2" /> Delete
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
