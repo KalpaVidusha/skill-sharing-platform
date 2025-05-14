@@ -35,13 +35,17 @@ const Login = () => {
     try {
       const response = await apiService.login(identifier, password);
       
-      // JWT authentication successful - apiService already stores token and user info
-      toast.success("Login successful 🎉");
-      
       // Notify components about the auth state change
       window.dispatchEvent(new Event('authStateChanged'));
       
-      setTimeout(() => navigate("/userdashboard"), 1200);
+      // Check if the user is an admin and redirect to admin dashboard
+      if (response.roles && response.roles.includes('ROLE_ADMIN')) {
+        toast.success('Admin login successful!');
+        setTimeout(() => navigate("/admin"), 1200);
+      } else {
+        toast.success('Login successful!');
+        setTimeout(() => navigate("/userdashboard"), 1200);
+      }
     } catch (err) {
       console.error("Login error:", err);
       

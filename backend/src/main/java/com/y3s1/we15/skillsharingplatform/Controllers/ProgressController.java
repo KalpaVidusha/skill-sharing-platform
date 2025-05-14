@@ -344,7 +344,7 @@ public class ProgressController {
             ProgressComment comment = new ProgressComment(
                 progressId,
                 user.getId(),
-                user.getUsername(),
+                user.getFirstName() + " " + user.getLastName(),
                 content
             );
             
@@ -353,7 +353,7 @@ public class ProgressController {
             // Send notification to progress owner if the commenter is not the owner
             if (!progress.getUser().getId().equals(user.getId())) {
                 String notificationContent = String.format("%s commented on your progress update: %s", 
-                    user.getUsername(), 
+                    user.getFirstName() + " " + user.getLastName(), 
                     content.length() > 50 ? content.substring(0, 47) + "..." : content);
                 
                 notificationService.createNotification(
@@ -416,7 +416,7 @@ public class ProgressController {
             ProgressComment reply = new ProgressComment(
                 progressId,
                 user.getId(),
-                user.getUsername(),
+                user.getFirstName() + " " + user.getLastName(),
                 content,
                 commentId  // Set the parent comment ID
             );
@@ -430,7 +430,7 @@ public class ProgressController {
             // Send notification to the parent comment owner if the replier is not the comment owner
             if (!parentComment.getUserId().equals(user.getId())) {
                 String notificationContent = String.format("%s replied to your comment: %s", 
-                    user.getUsername(), 
+                    user.getFirstName() + " " + user.getLastName(), 
                     content.length() > 50 ? content.substring(0, 47) + "..." : content);
                 
                 notificationService.createNotification(
@@ -447,7 +447,7 @@ public class ProgressController {
                 !progress.getUser().getId().equals(parentComment.getUserId())) {
                 
                 String notificationContent = String.format("%s replied to a comment on your progress update", 
-                    user.getUsername());
+                    user.getFirstName() + " " + user.getLastName());
                 
                 notificationService.createNotification(
                     progress.getUser().getId(),  // recipient (progress owner)

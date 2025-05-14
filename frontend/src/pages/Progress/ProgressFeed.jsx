@@ -3,8 +3,42 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import apiService from '../../services/api';
 import { formatDistanceToNow, format, parse, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
-import { FaEdit, FaTrash, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSyncAlt, FaSort, FaThumbsUp, FaRegThumbsUp, FaComment, FaRegComment, FaHeart, FaRegHeart, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSyncAlt, FaSort, FaThumbsUp, FaRegThumbsUp, FaComment, FaRegComment, FaHeart, FaRegHeart, FaCheck, FaTimes, FaImage } from 'react-icons/fa';
 import { toast } from "react-toastify";
+
+// Helper function to get the display name for a user
+const getDisplayName = (user) => {
+  if (!user) return "Unknown User";
+  
+  // Prioritize full name if available
+  if (user.firstName && user.lastName) {
+    return `${user.firstName} ${user.lastName}`;
+  } else if (user.firstName) {
+    return user.firstName;
+  } else if (user.lastName) {
+    return user.lastName;
+  } else {
+    return user.username || "Unknown User";
+  }
+};
+
+// Helper function to get initials for avatar
+const getUserInitials = (user) => {
+  if (!user) return "?";
+  
+  // Use first letter of first name and first letter of last name if available
+  if (user.firstName && user.lastName) {
+    return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+  } else if (user.firstName) {
+    return user.firstName.charAt(0).toUpperCase();
+  } else if (user.lastName) {
+    return user.lastName.charAt(0).toUpperCase();
+  } else if (user.username) {
+    return user.username.charAt(0).toUpperCase();
+  } else {
+    return "?";
+  }
+};
 
 const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters }) => {
   const navigate = useNavigate();
@@ -43,6 +77,10 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
   const [expandedReplies, setExpandedReplies] = useState({});
   const [replyText, setReplyText] = useState({});
   const [replyingTo, setReplyingTo] = useState(null);
+
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Update internal sort order when external changes
   useEffect(() => {
@@ -187,7 +225,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
     if (!progress.mediaUrl) return null;
     
     return (
-      <div className="mt-3 mb-4">
+      <div className="mt-3">
         <img 
           src={progress.mediaUrl.startsWith('http') ? progress.mediaUrl : `${process.env.PUBLIC_URL}${progress.mediaUrl}`} 
           alt="Progress media" 
@@ -289,16 +327,64 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
     }));
   };
 
+  // Handle file selection for edit form
+  const handleEditFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file type and size
+    const isValidType = file.type.startsWith('image/');
+    const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB limit
+    
+    if (!isValidType) {
+      toast.error("Only image files are allowed");
+      return;
+    }
+    
+    if (!isValidSize) {
+      toast.error("Images must be less than 5MB");
+      return;
+    }
+    
+    setUploadedFile(file);
+    
+    // Create and set preview URL
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+  };
+
+  // Remove file from edit form
+  const handleRemoveEditFile = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setUploadedFile(null);
+    setPreviewUrl(null);
+  };
+
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     
     try {
       if (!editingProgress) return;
       
-      // Create updated progress with new content
+      setIsSubmitting(true); // Start loading state
+      
+      let mediaUrl = editingProgress.mediaUrl; // Keep existing media URL by default
+      
+      // Upload new image if selected
+      if (uploadedFile) {
+        const uploadResponse = await apiService.uploadFiles([uploadedFile]);
+        if (uploadResponse && uploadResponse.urls && uploadResponse.urls.length > 0) {
+          mediaUrl = uploadResponse.urls[0];
+        }
+      }
+      
+      // Create updated progress with new content and media URL
       const updatedProgress = {
         ...editingProgress,
-        content: editFormData
+        content: editFormData,
+        mediaUrl: mediaUrl
       };
       
       await apiService.updateProgress(editingProgress.id, updatedProgress);
@@ -309,7 +395,8 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
           if (p.id === editingProgress.id) {
             return {
               ...p,
-              content: editFormData
+              content: editFormData,
+              mediaUrl: mediaUrl
             };
           }
           return p;
@@ -321,10 +408,13 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
       // Clear edit state
       setEditingProgress(null);
       setEditFormData({});
+      handleRemoveEditFile();
     } catch (error) {
       setError('Could not update progress');
       console.error(error);
       toast.error('Failed to update progress');
+    } finally {
+      setIsSubmitting(false); // End loading state
     }
   };
 
@@ -480,6 +570,71 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                   </div>
                 )}
                 
+                {/* Add photo upload section */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Update Photo (optional)
+                  </label>
+                  
+                  {/* Show current photo if exists */}
+                  {editingProgress.mediaUrl && !previewUrl && (
+                    <div className="mb-2 flex justify-center">
+                      <img 
+                        src={editingProgress.mediaUrl.startsWith('http') ? editingProgress.mediaUrl : `${process.env.PUBLIC_URL}${editingProgress.mediaUrl}`}
+                        alt="Current progress media"
+                        className="rounded-lg max-h-40 object-contain"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Show preview of new photo if selected */}
+                  {previewUrl && (
+                    <div className="mb-2 flex justify-center">
+                      <img 
+                        src={previewUrl}
+                        alt="New progress media preview"
+                        className="rounded-lg max-h-40 object-contain"
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                    <div className="space-y-1 text-center">
+                      <FaImage className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="flex justify-center text-sm text-gray-600">
+                        <label htmlFor="edit-file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                          <span>Upload a new photo</span>
+                          <input 
+                            id="edit-file-upload" 
+                            name="edit-file-upload" 
+                            type="file" 
+                            className="sr-only" 
+                            onChange={handleEditFileChange}
+                            accept="image/*"
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        PNG, JPG, GIF up to 5MB
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Remove photo button */}
+                  {(editingProgress.mediaUrl || previewUrl) && (
+                    <div className="flex justify-center mt-2">
+                      <button
+                        type="button"
+                        onClick={handleRemoveEditFile}
+                        className="text-sm text-red-600 hover:text-red-800"
+                      >
+                        Remove photo
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
                 {editingProgress.templateType === 'learning_goal' && (
                   <>
                     <div className="mb-4">
@@ -597,15 +752,27 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                   <button
                     type="button"
                     onClick={cancelEdit}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-indigo-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-indigo-700"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-indigo-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                   >
-                    Save Changes
+                    {isSubmitting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving changes...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
                   </button>
                 </div>
               </form>
@@ -775,6 +942,21 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
         ...prev,
         [progressId]: [...(prev[progressId] || []), createdComment]
       }));
+
+      // Initialize empty replies array for the new comment
+      setCommentReplies(prev => ({
+        ...prev,
+        [createdComment.id]: []
+      }));
+      
+      // Increment the progress update's comment count
+      setProgressUpdates(prev => 
+        prev.map(p => 
+          p.id === progressId 
+            ? { ...p, commentCount: (p.commentCount || 0) + 1 } 
+            : p
+        )
+      );
       
       // Clear comment input
       setCommentText(prev => ({
@@ -842,15 +1024,39 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
       
       await apiService.updateProgressComment(commentId, updatedComment);
       
-      // Update comments state with edited comment
-      setComments(prev => ({
-        ...prev,
-        [progressId]: prev[progressId].map(comment => 
-          comment.id === commentId 
-            ? { ...comment, content: editCommentText } 
-            : comment
-        )
-      }));
+      // Check if this is a reply by looking for it in commentReplies
+      let isReply = false;
+      let parentCommentId = null;
+      
+      // Search through all comment replies to find this comment
+      Object.entries(commentReplies).forEach(([parent, replies]) => {
+        if (replies.some(reply => reply.id === commentId)) {
+          isReply = true;
+          parentCommentId = parent;
+        }
+      });
+      
+      if (isReply && parentCommentId) {
+        // It's a reply - update it in the commentReplies state
+        setCommentReplies(prev => ({
+          ...prev,
+          [parentCommentId]: prev[parentCommentId].map(reply => 
+            reply.id === commentId 
+              ? { ...reply, content: editCommentText } 
+              : reply
+          )
+        }));
+      } else {
+        // It's a regular comment - update it in the comments state
+        setComments(prev => ({
+          ...prev,
+          [progressId]: prev[progressId].map(comment => 
+            comment.id === commentId 
+              ? { ...comment, content: editCommentText } 
+              : comment
+          )
+        }));
+      }
       
       // Exit edit mode
       setEditingComment(null);
@@ -1248,23 +1454,23 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="flex flex-col space-y-4">
         {currentProgressItems.map((progress) => (
-          <div key={progress.id} className="border border-gray-200 rounded-lg overflow-hidden">
+          <div key={progress.id} className="border border-gray-200 rounded-lg overflow-hidden max-w-2xl mx-auto w-full bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
             <div className="px-4 py-3 bg-gray-50 flex justify-between items-center">
               <div className="flex items-center">
                 <div 
                   className="w-10 h-10 bg-blue-500 rounded-full text-white flex items-center justify-center font-bold mr-3 cursor-pointer transition transform hover:scale-105"
                   onClick={() => progress.user?.id && handleProfileClick(progress.user.id)}
                 >
-                  {progress.user?.username?.charAt(0).toUpperCase() || 'U'}
+                  {getUserInitials(progress.user)}
                 </div>
                 <div className="flex flex-col">
                   <div
                     className="font-semibold text-blue-700 hover:text-blue-500 cursor-pointer"
                     onClick={() => progress.user?.id && handleProfileClick(progress.user.id)}
                   >
-                    {progress.user?.username || 'User'}
+                    {getDisplayName(progress.user)}
                   </div>
                   <div className="text-xs text-gray-500">
                     {formatDistanceToNow(new Date(progress.createdAt), { addSuffix: true })}
@@ -1346,7 +1552,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                             className="w-8 h-8 bg-indigo-500 rounded-full text-white flex items-center justify-center font-bold mr-2 cursor-pointer"
                             onClick={() => comment.userId && handleProfileClick(comment.userId)}
                           >
-                            {comment.userName?.charAt(0).toUpperCase() || 'U'}
+                            {getUserInitials({ firstName: comment.userName?.split(' ')[0] || '', lastName: comment.userName?.split(' ')[1] || '' })}
                           </div>
                           <div className="flex-1">
                             <div className="bg-gray-100 rounded-lg p-2">
@@ -1356,7 +1562,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                                     className="font-medium text-indigo-700 hover:text-indigo-500 cursor-pointer"
                                     onClick={() => comment.userId && handleProfileClick(comment.userId)}
                                   >
-                                    {comment.userName || 'User'}
+                                    {comment.userName || 'Unknown User'}
                                   </span>
                                   {currentUserId === comment.userId && (
                                     <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
@@ -1468,7 +1674,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                                       className="w-7 h-7 bg-purple-500 rounded-full text-white flex items-center justify-center font-bold mr-2 cursor-pointer"
                                       onClick={() => reply.userId && handleProfileClick(reply.userId)}
                                     >
-                                      {reply.userName?.charAt(0).toUpperCase() || 'U'}
+                                      {getUserInitials({ firstName: reply.userName?.split(' ')[0] || '', lastName: reply.userName?.split(' ')[1] || '' })}
                                     </div>
                                     <div className="flex-1 bg-gray-50 rounded-lg p-2">
                                       <div className="flex justify-between items-start">
@@ -1477,7 +1683,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                                             className="font-medium text-purple-700 hover:text-purple-500 cursor-pointer"
                                             onClick={() => reply.userId && handleProfileClick(reply.userId)}
                                           >
-                                            {reply.userName || 'User'}
+                                            {reply.userName || 'Unknown User'}
                                           </span>
                                           {currentUserId === reply.userId && (
                                             <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
@@ -1546,7 +1752,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                   {currentUserId ? (
                     <div className="flex space-x-2 mt-3">
                       <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium">
-                        {localStorage.getItem('username')?.charAt(0).toUpperCase() || 'U'}
+                        {getUserInitials({ firstName: localStorage.getItem('username')?.split(' ')[0], lastName: localStorage.getItem('username')?.split(' ')[1] })}
                       </div>
                       <div className="flex-1">
                         <textarea

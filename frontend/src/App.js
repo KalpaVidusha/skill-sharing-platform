@@ -19,8 +19,13 @@ import Courses from "./pages/Courses";
 import Progress from "./pages/Progress/ProgressAll";
 import OAuthSuccess from "./pages/OAuthSuccess";
 import NotificationsPage from './pages/Notification/NotificationsPage';
+import AdminDashboard from './pages/Admin/AdminDashboard';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { LearningPlans, LearningPlanDetails } from './pages/LearningPlans';
+import ProgreesOfUserdashboard from './pages/Progress/ProgreesOfUserdashboard';
+import FollowList from './components/FollowList';
+import UserSearch from './components/UserSearch';
 
 function App() {
   return (
@@ -51,8 +56,17 @@ function App() {
         
         {/* User Management */}
         <Route path="/userdashboard" element={<UserDashboard />} />
+        <Route path="/userdashboard/followers" element={<UserDashboard />} />
+        <Route path="/userdashboard/following" element={<UserDashboard />} />
+        <Route path="/userdashboard/find-users" element={<UserDashboard />} />
         <Route path="/profile/:userId" element={<UserProfile />} />
         <Route path="/user-posts/:userId" element={<Posts />} />
+        <Route path="/userdashboard/progress" element={<ProgreesOfUserdashboard />} />
+
+        {/* Direct Routes for Followers, Following, and User Search */}
+        <Route path="/followers" element={<FollowList type="followers" />} />
+        <Route path="/following" element={<FollowList type="following" />} />
+        <Route path="/find-users" element={<UserSearch />} />
 
         {/* New Routes */}
         <Route path="/feed" element={<Feed />} />
@@ -63,13 +77,19 @@ function App() {
 
         {/*Monetization and reward management */}
         <Route path="/monetization/form" element={<MonetizationRequest />} />
-        <Route path="/monetize" element={<MonetizationForm />} />
-        <Route path="/Applications" element={<Applications />} />
-        <Route path="/edit/:id" element={<EditRequest />} />
+        <Route path="/userdashboard/monetize" element={<MonetizationForm />} />
+        <Route path="/userdashboard/Applications" element={<Applications />} />
+        <Route path="/userdashboard/Applications/edit/:id" element={<EditRequest />} />
         
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminDashboard />} />
         
         {/* Optional: Category Filter */}
         <Route path="/category/:categoryName" element={<Home />} />
+
+        {/* Learning Plans */}
+        <Route path="/learning-plans" element={<LearningPlans />} />
+        <Route path="/learning-plans/:id" element={<LearningPlanDetails />} />
       </Routes>
     </Router>
   );

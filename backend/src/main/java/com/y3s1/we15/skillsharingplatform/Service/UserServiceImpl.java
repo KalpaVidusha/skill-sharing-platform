@@ -3,6 +3,8 @@ package com.y3s1.we15.skillsharingplatform.Service;
 import com.y3s1.we15.skillsharingplatform.Models.UserModel;
 import com.y3s1.we15.skillsharingplatform.Repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -197,5 +199,18 @@ public class UserServiceImpl implements UserService {
             .skip(pageable.getOffset())
             .limit(pageable.getPageSize())
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public String getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            String username = authentication.getName();
+            UserModel user = findByUsername(username);
+            if (user != null) {
+                return user.getId();
+            }
+        }
+        throw new RuntimeException("User not authenticated");
     }
 }

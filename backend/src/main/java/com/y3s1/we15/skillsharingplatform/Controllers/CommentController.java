@@ -59,8 +59,9 @@ public class CommentController {
         // Send notification to post owner when someone comments on their post
         Optional<Post> post = postService.getPostById(comment.getPostId());
         if (post.isPresent() && !post.get().getUser().getId().equals(user.getId())) {
-            String content = String.format("%s %s commented on your post: %s", 
-                user.getFirstName(), user.getLastName(), post.get().getTitle());
+            String content = String.format("%s commented on your post: %s", 
+                user.getFirstName() + " " + user.getLastName(), 
+                post.get().getTitle());
             notificationService.createNotification(
                 post.get().getUser().getId(),
                 user.getId(),
