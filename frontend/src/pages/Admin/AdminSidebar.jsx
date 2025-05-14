@@ -80,13 +80,13 @@ const AdminSidebar = ({ activeTab = "dashboard" }) => {
             id: "dashboard", 
             icon: <FaTachometerAlt className="text-lg" />, 
             label: "Dashboard", 
-            action: () => navigateWithTabUpdate("/admin/dashboard", "dashboard") 
+            action: () => navigateWithTabUpdate("/admin", "dashboard") 
           },
           { 
             id: "users", 
             icon: <FaUsers className="text-lg" />, 
             label: "Users Management", 
-            action: () => navigateWithTabUpdate("/admin/userManagement", "users") 
+            action: () => navigateWithTabUpdate("/admin/user-management", "users") 
           },
           { 
             id: "posts", 

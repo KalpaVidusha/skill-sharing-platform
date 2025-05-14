@@ -20,6 +20,7 @@ import Progress from "./pages/Progress/ProgressAll";
 import OAuthSuccess from "./pages/OAuthSuccess";
 import NotificationsPage from './pages/Notification/NotificationsPage';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import UserManagement from './pages/Admin/UserManagement';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { LearningPlans, LearningPlanDetails } from './pages/LearningPlans';
@@ -83,6 +84,7 @@ function App() {
         
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/user-management" element={<UserManagement />} />
         
         {/* Optional: Category Filter */}
         <Route path="/category/:categoryName" element={<Home />} />

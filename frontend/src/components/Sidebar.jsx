@@ -141,15 +141,62 @@ const Sidebar = ({ defaultActiveTab = "profile", userId }) => {
       {/* Navigation Items */}
       <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
         {[
-          { id: "profile", icon: <FaUser className="text-lg" />, label: "Profile", action: () => navigateWithTabUpdate("/userdashboard", "profile") },
-          { id: "followers", icon: <FaUsers className="text-lg" />, label: `Followers (${userData.followers})`, action: () => navigate("/followers", { state: { userId } }) },
-          { id: "following", icon: <FaUsers className="text-lg" />, label: `Following (${userData.following})`, action: () => navigate("/following", { state: { userId } }) },
-          { id: "findUsers", icon: <FaSearch className="text-lg" />, label: "Find Users", action: () => navigate("/find-users") },
-          { id: "explore", icon: <FaCompass className="text-lg" />, label: "Explore", action: () => navigateWithTabUpdate("/", "explore") },
-          { id: "myposts", icon: <FaFileAlt className="text-lg" />, label: "My Posts", action: () => navigateWithTabUpdate("/my-posts", "myposts") },
-          { id: "addpost", icon: <FaPlusCircle className="text-lg" />, label: "Create Post", action: handleAddPost },
-          { id: "progress_tracker", icon: <FaChartLine className="text-lg" />, label: "My Progress", action: () => navigateWithTabUpdate("/userdashboard/progress", "progress_tracker") },
-          { id: "monetization", icon: <FaCoins className="text-lg" />, label: "Monetization", action: () => navigateWithTabUpdate("/userdashboard/monetize", "monetization") },
+          { 
+            id: "profile", 
+            icon: <FaUser className="text-lg" />, 
+            label: "Profile", 
+            action: () => navigateWithTabUpdate("/userdashboard", "profile") 
+          },
+          { 
+            id: "followers", 
+            icon: <FaUsers className="text-lg" />, 
+            label: `Followers (${userData.followers})`, 
+            action: () => navigate("/followers", 
+              { state: { userId } }) 
+          },
+          { 
+            id: "following", 
+            icon: <FaUsers className="text-lg" />, 
+            label: `Following (${userData.following})`, 
+            action: () => navigate("/following", 
+              { state: { userId } }) 
+            },
+          { 
+            id: "findUsers", 
+            icon: <FaSearch className="text-lg" />, 
+            label: "Find Users", 
+            action: () => navigate("/find-users") 
+          },
+          { 
+            id: "explore", 
+            icon: <FaCompass className="text-lg" />, 
+            label: "Explore", 
+            action: () => navigateWithTabUpdate("/", "explore") 
+          },
+          { 
+            id: "myposts", 
+            icon: <FaFileAlt className="text-lg" />, 
+            
+            label: "My Posts", action: () => navigateWithTabUpdate("/my-posts", "myposts") 
+          },
+          { 
+            id: "addpost", 
+            icon: <FaPlusCircle className="text-lg" />, 
+            label: "Create Post", action: handleAddPost 
+          },
+          { 
+            id: "progress_tracker", 
+            icon: <FaChartLine className="text-lg" />, 
+            label: "My Progress", 
+            action: () => navigateWithTabUpdate("/userdashboard/progress", "progress_tracker") 
+          },
+          { 
+            id: "monetization", 
+            icon: <FaCoins className="text-lg" />, 
+            label: "Monetization", 
+            action: () => navigateWithTabUpdate("/userdashboard/monetize", "monetization") 
+          },
+          
         ].map((item) => (
           <button 
             key={item.id}
