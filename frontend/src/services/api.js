@@ -2,6 +2,64 @@ import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8081/api";
 
+// Helper function to derive recent chats from messages
+const fetchDerivedRecentChats = async (currentUserId) => {
+  try {
+    console.log("Generating derived recent chats list...");
+    
+    // First get all users
+    const usersResponse = await api.get("/users");
+    const allUsers = Array.isArray(usersResponse) ? usersResponse : [];
+    
+    // Filter out current user
+    const otherUsers = allUsers.filter(user => user.id !== currentUserId);
+    
+    if (otherUsers.length === 0) {
+      console.log("No other users found to chat with");
+      return [];
+    }
+    
+    // For each user, try to get chat history
+    const recentChats = [];
+    
+    // Use Promise.all for parallel processing
+    const chatPromises = otherUsers.map(async (user) => {
+      try {
+        const messages = await api.get(
+          `/chat/messages/${currentUserId}?otherUserId=${user.id}`
+        );
+        
+        if (Array.isArray(messages) && messages.length > 0) {
+          // Get the most recent message
+          const lastMessage = messages[messages.length - 1];
+          
+          recentChats.push({
+            userId: user.id,
+            username: user.username,
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            profilePicture: user.profilePicture || "",
+            lastMessage: lastMessage.content,
+            timestamp: lastMessage.createdAt || new Date(),
+            isRead: true
+          });
+        }
+      } catch (err) {
+        console.log(`No messages with user ${user.username}`);
+      }
+    });
+    
+    // Wait for all promises to resolve
+    await Promise.all(chatPromises);
+    
+    console.log("Derived recent chats:", recentChats);
+    return recentChats;
+  } catch (error) {
+    console.error("Error generating derived recent chats:", error);
+    return [];
+  }
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -53,6 +111,12 @@ const apiService = {
           localStorage.setItem("username", data.username);
           localStorage.setItem("email", data.email);
           localStorage.setItem("isLoggedIn", "true");
+          
+          // Store user roles if available
+          if (data.roles) {
+            localStorage.setItem("userRoles", JSON.stringify(data.roles));
+          }
+          
           return data;
         } else if (data.token) {
           localStorage.setItem("token", data.token);
@@ -60,6 +124,12 @@ const apiService = {
           localStorage.setItem("username", data.username);
           localStorage.setItem("email", data.email);
           localStorage.setItem("isLoggedIn", "true");
+          
+          // Store user roles if available
+          if (data.roles) {
+            localStorage.setItem("userRoles", JSON.stringify(data.roles));
+          }
+          
           return data;
         }
         throw new Error("No authentication token received");
@@ -108,6 +178,7 @@ const apiService = {
     localStorage.removeItem("username");
     localStorage.removeItem("email");
     localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userRoles");
     
     // Force clear any browser cache for authenticated routes
     if (window.history && window.history.pushState) {
@@ -122,14 +193,25 @@ const apiService = {
 
   // Users
   getUserProfile: (userId) => api.get(`/users/${userId}`),
+  getUserById: (userId) => api.get(`/users/${userId}`),
   updateUserProfile: (userId, userData) => api.put(`/users/${userId}`, userData),
   
-  // Follow/Unfollow functionality
-  followUser: (userId, userToFollowId) => 
-    api.post(`/users/${userId}/follow/${userToFollowId}`),
+  // Follow/Unfollow functionality with multiple implementation attempts
+  followUser: (targetUserId) => {
+    const currentUserId = localStorage.getItem('userId');
+    console.log(`Current user ${currentUserId} following user with ID: ${targetUserId}`);
+    
+    // Format: /{userId}/follow/{userToFollowId}
+    return api.post(`/users/${currentUserId}/follow/${targetUserId}`);
+  },
   
-  unfollowUser: (userId, userToUnfollowId) => 
-    api.post(`/users/${userId}/unfollow/${userToUnfollowId}`),
+  unfollowUser: (targetUserId) => {
+    const currentUserId = localStorage.getItem('userId');
+    console.log(`Current user ${currentUserId} unfollowing user with ID: ${targetUserId}`);
+    
+    // Format: /{userId}/unfollow/{userToUnfollowId}
+    return api.post(`/users/${currentUserId}/unfollow/${targetUserId}`);
+  },
   
   getFollowers: (userId) => 
     api.get(`/users/${userId}/followers`),
@@ -184,12 +266,143 @@ const apiService = {
   createProgress: (progressData) => api.post("/progress", progressData),
   updateProgress: (progressId, progressData) => api.put(`/progress/${progressId}`, progressData),
   deleteProgress: (progressId) => api.delete(`/progress/${progressId}`),
+  
+  // Progress Likes
+  likeProgress: (progressId) => api.post(`/progress/${progressId}/like`),
+  unlikeProgress: (progressId) => api.delete(`/progress/${progressId}/like`),
+  
+  // Progress Comments
+  getProgressComments: (progressId) => api.get(`/progress/${progressId}/comments`),
+    
+  addProgressComment: (progressId, commentData) => {
+    console.log(`Adding comment to progress ${progressId}:`, commentData);
+    return api.post(`/progress/${progressId}/comments`, commentData)
+      .catch(error => {
+        console.error(`Error adding comment to progress ${progressId}:`, error);
+        throw error;
+      });
+  },
+  updateProgressComment: (commentId, commentData) => api.put(`/progress/comments/${commentId}`, commentData),
+  deleteProgressComment: (commentId) => api.delete(`/progress/comments/${commentId}`),
+  
+  // Comment Replies
+  getCommentReplies: (commentId) => api.get(`/progress/comments/${commentId}/replies`),
+  addCommentReply: (commentId, replyData) => {
+    console.log(`Adding reply to comment ${commentId}:`, replyData);
+    return api.post(`/progress/comments/${commentId}/replies`, replyData)
+      .catch(error => {
+        console.error(`Error adding reply to comment ${commentId}:`, error);
+        throw error;
+      });
+  },
 
   // Notifications
   getNotifications: () => api.get(`/notifications?t=${new Date().getTime()}`),
   getUnreadNotifications: () => api.get(`/notifications/unread?t=${new Date().getTime()}`),
   markNotificationAsRead: (notificationId) => api.put(`/notifications/${notificationId}/read`),
   markAllNotificationsAsRead: () => api.put("/notifications/read-all"),
+  
+  // Admin API
+  admin: {
+    getAllUsers: () => api.get("/admin/users"),
+    deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
+    promoteUserToAdmin: (userId) => api.put(`/admin/users/${userId}/promote`),
+    demoteAdminToUser: (userId) => api.put(`/admin/users/${userId}/demote`),
+    deleteAllPosts: () => api.delete("/admin/posts"),
+    deleteAllProgress: () => api.delete("/admin/progress"),
+    deleteAllComments: () => api.delete("/admin/comments"),
+    // Individual item management
+    deletePost: (postId) => api.delete(`/admin/posts/${postId}`),
+    deleteProgressRecord: (progressId) => api.delete(`/admin/progress/${progressId}`),
+    deleteComment: (commentId) => api.delete(`/admin/comments/${commentId}`)
+  },
+  
+  // Helper function to check if user is admin
+  isUserAdmin: () => {
+    const userRoles = localStorage.getItem("userRoles");
+    if (!userRoles) {
+      return false;
+    }
+    
+    try {
+      const roles = JSON.parse(userRoles);
+      return roles.includes("ROLE_ADMIN");
+    } catch (error) {
+      console.error("Error parsing user roles:", error);
+      return false;
+    }
+  },
+
+  // Chat API functions
+  getChatUsers: () => {
+    // This should return all available users to chat with
+    const currentUserId = localStorage.getItem('userId');
+    return api.get("/users")
+      .then(response => {
+        // Filter out the current user from the list
+        return Array.isArray(response) 
+          ? response.filter(user => user.id !== currentUserId)
+          : [];
+      })
+      .catch(error => {
+        console.error("Error fetching chat users:", error);
+        return [];
+      });
+  },
+  getMessages: (userId) => {
+    const currentUserId = localStorage.getItem('userId');
+    return api.get(`/chat/messages/${currentUserId}?otherUserId=${userId}`);
+  },
+  sendMessage: (recipientId, content) => {
+    const senderId = localStorage.getItem('userId');
+    // Prevent sending messages to self
+    if (senderId === recipientId) {
+      console.error("Cannot send message to yourself");
+      return Promise.reject(new Error("Cannot send message to yourself"));
+    }
+    return api.post("/chat/messages", null, {
+      params: {
+        senderId,
+        recipientId,
+        content
+      }
+    });
+  },
+  editMessage: (messageId, content) => api.put(`/chat/messages/${messageId}`, null, {
+    params: { content }
+  }),
+  deleteMessage: (messageId) => api.delete(`/chat/messages/${messageId}`),
+  getRecentChats: () => {
+    const currentUserId = localStorage.getItem('userId');
+    // Explicitly log the API call for debugging
+    console.log(`Fetching recent chats for user ${currentUserId}`);
+    
+    // Try the dedicated endpoint first
+    return api.get(`/chat/users/${currentUserId}/recent`)
+      .then(data => {
+        console.log("Raw recent chats data:", data);
+        if (data && Array.isArray(data) && data.length > 0) {
+          // Filter out any self-chat entries
+          return data.filter(chat => chat.userId !== currentUserId);
+        }
+        
+        // If empty or not in expected format, fallback to derived recent chats
+        console.log("No data from recent chats endpoint, falling back to messages");
+        return fetchDerivedRecentChats(currentUserId);
+      })
+      .catch(error => {
+        console.error("Error fetching recent chats:", error);
+        // Fallback to derived recent chats on error
+        return fetchDerivedRecentChats(currentUserId);
+      });
+  },
+
+  // Learning Plans
+  createLearningPlan: (planData, userId) => api.post(`/learning-plans?userId=${userId}`, planData),
+  getLearningPlansByUser: (userId) => api.get(`/learning-plans/user/${userId}`),
+  getLearningPlanById: (planId) => api.get(`/learning-plans/${planId}`),
+  updateLearningPlan: (planId, planData) => api.put(`/learning-plans/${planId}`, planData),
+  deleteLearningPlan: (planId) => api.delete(`/learning-plans/${planId}`),
 };
 
 export default apiService;

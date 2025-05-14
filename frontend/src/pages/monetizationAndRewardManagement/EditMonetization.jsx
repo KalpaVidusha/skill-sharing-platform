@@ -722,7 +722,7 @@ const EditMonetization = () => {
       setUpdateStatus("Request updated successfully!");
 
       setTimeout(() => {
-        navigate("/applications");
+        navigate("/userdashboard/Applications");
       }, 1500);
 
     } catch (err) {
@@ -756,7 +756,7 @@ const EditMonetization = () => {
         <div className="p-6 text-center text-red-700 bg-red-100 border border-red-300 rounded shadow-lg">
           <p className="mb-3 font-semibold">Error loading request details:</p>
           <p>{fetchError}</p>
-          <button onClick={() => navigate('/applications')} className="px-4 py-2 mt-4 text-sm text-white transition bg-blue-600 rounded hover:bg-blue-700">
+          <button onClick={() => navigate('/userdashboard/Applications')} className="px-4 py-2 mt-4 text-sm text-white transition bg-blue-600 rounded hover:bg-blue-700">
             Back to List
           </button>
         </div>
@@ -812,7 +812,7 @@ const EditMonetization = () => {
             </button>
             <button
               type="button"
-              onClick={() => navigate("/Applications")}
+              onClick={() => navigate("/userdashboard/Applications")}
               className="w-full py-2 font-semibold text-white transition-all duration-300 bg-gradient-to-r from-red-600 to-blue-700 shadow-lg hover:shadow-xl hover:from-red-700 hover:to-red-800 rounded-xl active:scale-[0.98]"
             >
               Back
