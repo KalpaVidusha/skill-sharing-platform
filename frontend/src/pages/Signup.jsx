@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import apiService from "../services/api";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const Signup = () => {
   const [username, setUsername] = useState("");
@@ -74,9 +75,9 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
-      <div className="flex items-center justify-center p-4 py-8 pt-28">
+      <div className="flex items-center justify-center p-4 py-8 pt-28 flex-grow">
         <div className={`w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-500 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="p-8">
             {/* Logo Header */}
@@ -261,6 +262,7 @@ const Signup = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import {
   FaUser, FaChartLine, FaFileAlt, FaUsers, FaThumbsUp, FaComment
 } from "react-icons/fa";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import apiService from "../services/api";
 import { toast } from "react-toastify";
 import ProgressFeed from "./Progress/ProgressFeed";
@@ -306,9 +307,9 @@ const UserProfile = () => {
   }
 
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      <div className="flex min-h-screen pt-20 font-sans text-blue-900 bg-gradient-to-r from-blue-100 to-white">
+      <div className="flex flex-grow min-h-screen pt-20 font-sans text-blue-900 bg-gradient-to-r from-blue-100 to-white">
         <div className="container max-w-6xl px-4 py-8 mx-auto">
           <div className="flex flex-col md:flex-row gap-8">
             {/* Profile Sidebar */}
@@ -518,6 +519,7 @@ const UserProfile = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

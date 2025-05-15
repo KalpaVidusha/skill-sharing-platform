@@ -104,7 +104,7 @@ const AdminSidebar = ({ activeTab = "dashboard" }) => {
             id: "progress", 
             icon: <FaChartLine className="text-lg" />, 
             label: "Progress Management", 
-            action: () => navigateWithTabUpdate("/admin/dashboard", "progress") 
+            action: () => navigateWithTabUpdate("/admin/progress-management", "progress") 
           },
           { 
             id: "settings", 

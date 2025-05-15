@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaUser, FaUsers, FaSearch, FaCompass, FaFileAlt, FaPlusCircle, FaChartLine, FaCoins, FaSignOutAlt, FaBrain, FaArrowRight } from "react-icons/fa";
+import { FaUser, FaUsers, FaSearch, FaCompass, FaFileAlt, FaPlusCircle, FaChartLine, FaCoins, FaSignOutAlt, FaBrain, FaArrowRight, FaGraduationCap } from "react-icons/fa";
 import Swal from 'sweetalert2';
 import apiService from "../services/api";
 import FollowList from "./FollowList";
@@ -76,6 +76,8 @@ const Sidebar = ({ defaultActiveTab = "profile", userId }) => {
       setActiveTab('following');
     } else if (path.includes('/find-users')) {
       setActiveTab('findUsers');  
+    } else if (path.includes('/learning-plans')) {
+      setActiveTab('learning_plans');
     } else if (path.includes('/userdashboard')) {
       setActiveTab('profile');
     } else if (path.includes('/monetize')) {
@@ -183,6 +185,12 @@ const Sidebar = ({ defaultActiveTab = "profile", userId }) => {
             id: "addpost", 
             icon: <FaPlusCircle className="text-lg" />, 
             label: "Create Post", action: handleAddPost 
+          },
+          { 
+            id: "learning_plans", 
+            icon: <FaGraduationCap className="text-lg" />, 
+            label: "Learning Plans", 
+            action: () => navigateWithTabUpdate("/userdashboard/learning-plans", "learning_plans") 
           },
           { 
             id: "progress_tracker", 
