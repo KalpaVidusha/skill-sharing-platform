@@ -6,6 +6,7 @@ import apiService from "../../services/api";
 import Swal from 'sweetalert2';
 import Navbar from "../../components/Navbar";
 import Sidebar from "../../components/Sidebar";
+import Footer from "../../components/Footer"; 
 
 const ProgreesOfUserdashboard = (props) => {
   // Always call useNavigate hook unconditionally

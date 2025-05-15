@@ -7,6 +7,7 @@ import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import { FiEdit, FiTrash2, FiPlusCircle } from 'react-icons/fi';
 import Sidebar from '../../components/Sidebar';
+import Footer from '../../components/Footer';
 
 const MyPosts = () => {
   const [posts, setPosts] = useState([]);
@@ -129,6 +130,7 @@ const MyPosts = () => {
           </div>
         </main>
       </div>
+      <Footer />
     </div>
   );
 };

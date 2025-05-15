@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 import ProgressForm from './ProgressForm';
 import ProgressFeed from './ProgressFeed';
 import { FaSyncAlt } from 'react-icons/fa';
@@ -169,6 +170,7 @@ const ProgressAll = () => {
           )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

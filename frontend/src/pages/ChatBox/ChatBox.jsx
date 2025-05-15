@@ -159,7 +159,7 @@ const ChatBox = ({ isOpen, onClose }) => {
       if (otherUsers.length === 0) {
         console.log("No other users found for fallback method");
         // Last resort - show hardcoded example data so UI isn't empty
-        useHardcodedRecentChats();
+        setHardcodedRecentChats();
         return;
       }
       
@@ -202,20 +202,20 @@ const ChatBox = ({ isOpen, onClose }) => {
       } else {
         console.log("No recent chats generated, using hardcoded data");
         // Last resort - show hardcoded example data
-        useHardcodedRecentChats();
+        setHardcodedRecentChats();
       }
       
     } catch (error) {
       console.error("Error in fallback method:", error);
       // Last resort - show hardcoded example data
-      useHardcodedRecentChats();
+      setHardcodedRecentChats();
     } finally {
       if (setLoadingState) setLoading(false);
     }
   };
   
   // Use hardcoded example data when all else fails
-  const useHardcodedRecentChats = () => {
+  const setHardcodedRecentChats = () => {
     console.log("Using hardcoded example recent chats");
     
     // Create hardcoded chats

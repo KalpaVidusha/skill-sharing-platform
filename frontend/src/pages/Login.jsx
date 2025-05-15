@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import apiService from "../services/api";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const Login = () => {
   const [identifier, setIdentifier] = useState("");
@@ -226,6 +227,8 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import apiService from '../../services/api';
 import Navbar from '../../components/Navbar';
 import Sidebar from '../../components/Sidebar';
 import { FaPlus, FaGraduationCap, FaTimes } from 'react-icons/fa';
+import Footer from '../../components/Footer';
 
 const LearningPlans = () => {
   const [plans, setPlans] = useState([]);
@@ -107,8 +108,13 @@ const LearningPlans = () => {
                 </h2>
               </div>
               
-              <div className="max-h-[500px] overflow-y-auto pr-2">
-                <LearningPlanList plans={plans} onSelect={setSelectedPlan} />
+              {/* Option 1: Space control + Option 2: Gradient fade + Mobile padding */}
+              <div className="relative">
+                <div className="space-y-4 pr-2 pb-4">
+                  <LearningPlanList plans={plans} onSelect={setSelectedPlan} />
+                </div>
+                {/* Subtle fade effect at bottom - only shows when content overflows */}
+                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
               </div>
             </div>
           )}
@@ -139,6 +145,7 @@ const LearningPlans = () => {
           </div>
         </div>
       )}
+      <Footer />
     </div>
   );
 };
