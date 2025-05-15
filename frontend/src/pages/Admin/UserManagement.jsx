@@ -6,6 +6,8 @@ import { FaArrowLeft, FaUser, FaExclamationCircle, FaCheckCircle, FaSearch, FaAr
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
@@ -22,11 +24,32 @@ const UserManagement = () => {
     fetchUsers();
   }, [navigate]);
 
+  // Apply search filter whenever users or searchQuery changes
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredUsers(users);
+    } else {
+      const query = searchQuery.toLowerCase().trim();
+      const filtered = users.filter(user => 
+        (user.username && user.username.toLowerCase().includes(query)) ||
+        (user.email && user.email.toLowerCase().includes(query)) ||
+        (getUserFullName(user) && getUserFullName(user).toLowerCase().includes(query))
+      );
+      setFilteredUsers(filtered);
+    }
+  }, [users, searchQuery]);
+
+  // Helper function to get user's full name from different possible fields
+  const getUserFullName = (user) => {  
+    return `${user.firstName} ${user.lastName}`;
+  };
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const userData = await apiService.admin.getAllUsers();
       setUsers(userData);
+      setFilteredUsers(userData);
       setError(null);
     } catch (err) {
       setError(err.message || 'Failed to fetch users');
@@ -80,7 +103,7 @@ const UserManagement = () => {
 
   // Navigate to user profile
   const navigateToUserProfile = (userId) => {
-    navigate(`/users/${userId}`);
+    navigate(`/profile/${userId}`);
   };
 
   // Clear success message after 5 seconds
@@ -92,6 +115,11 @@ const UserManagement = () => {
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -150,15 +178,16 @@ const UserManagement = () => {
           
           {/* Users Table */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-800">All Users ({users.length})</h2>
-              <div className="relative">
+            <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <h2 className="text-xl font-semibold text-gray-800">All Users ({filteredUsers.length} of {users.length})</h2>
+              <div className="relative w-full sm:w-64">
                 <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search users..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name, username or email..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
                 />
               </div>
             </div>
@@ -167,6 +196,10 @@ const UserManagement = () => {
               <div className="p-8 flex flex-col items-center justify-center">
                 <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p className="text-gray-600">Loading user data...</p>
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-gray-600">No users match your search criteria.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -191,7 +224,7 @@ const UserManagement = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((user) => (
+                    {filteredUsers.map((user) => (
                       <tr key={user.id} className={isUserAdmin(user) ? 'bg-blue-50/30 hover:bg-blue-50' : 'hover:bg-gray-50'}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -200,13 +233,13 @@ const UserManagement = () => {
                                 <img className="h-10 w-10 rounded-full" src={user.profilePicture} alt="" />
                               ) : (
                                 <span className="text-blue-600 font-medium">
-                                  {user.fullName?.charAt(0) || user.username?.charAt(0) || 'U'}
+                                  {getUserFullName(user).charAt(0) || 'U'}
                                 </span>
                               )}
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
-                                {user.fullName || 'Not provided'}
+                                {getUserFullName(user)}
                               </div>
                               <div className="text-sm text-gray-500">
                                 ID: {user.id}
@@ -269,11 +302,11 @@ const UserManagement = () => {
             )}
             
             {/* Pagination */}
-            {users.length > 0 && (
+            {filteredUsers.length > 0 && (
               <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                 <div className="text-sm text-gray-500">
-                  Showing <span className="font-medium">1</span> to <span className="font-medium">10</span> of{' '}
-                  <span className="font-medium">{users.length}</span> users
+                  Showing <span className="font-medium">{Math.min(filteredUsers.length, 1)}</span> to <span className="font-medium">{Math.min(filteredUsers.length, 10)}</span> of{' '}
+                  <span className="font-medium">{filteredUsers.length}</span> users
                 </div>
                 <div className="flex space-x-2">
                   <button
