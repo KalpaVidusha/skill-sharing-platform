@@ -30,9 +30,29 @@ const NotificationItem = ({ notification, onMarkAsRead }) => {
       }
     }
 
-    // Navigate to the post that generated this notification
+    // Navigate based on the notification type and destination
     if (notification.postId) {
-      navigate(`/posts/${notification.postId}`);
+      // Check if this is a post or progress notification
+      if (notification.type === 'LIKE' || notification.type === 'COMMENT') {
+        // For progress notifications, we need to navigate to the user dashboard
+        // If the notification's content contains "progress", it's likely about a progress update
+        if (notification.content.toLowerCase().includes('progress')) {
+          navigate(`/user-dashboard`);
+          // After navigation, we want to switch to the progress tab
+          setTimeout(() => {
+            const progressTabElement = document.querySelector('[data-tab="progress"]');
+            if (progressTabElement) {
+              progressTabElement.click();
+            }
+          }, 500);
+        } else {
+          // For post-related notifications
+          navigate(`/posts/${notification.postId}`);
+        }
+      } else {
+        // Default case - navigate to post
+        navigate(`/posts/${notification.postId}`);
+      }
     }
   };
 

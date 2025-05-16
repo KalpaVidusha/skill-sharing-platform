@@ -91,10 +91,11 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -119,6 +120,10 @@ public class WebSecurityConfig {
                     .requestMatchers("/api/posts/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/progress").permitAll() // Allow public access to GET progress updates
                     .requestMatchers(HttpMethod.GET, "/api/progress/templates").permitAll() // Allow public access to GET progress templates
+                    .requestMatchers(HttpMethod.GET, "/api/progress/{progressId}/comments").permitAll() // Allow public access to GET progress comments
+                    .requestMatchers(HttpMethod.GET, "/api/progress/*/comments").permitAll() // Alternative pattern for path variables
+                    // Secure admin endpoints - only accessible to users with ROLE_ADMIN
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
             );
         

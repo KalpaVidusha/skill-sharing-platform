@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaSearch, FaSignInAlt, FaUserPlus, FaUser, FaBars, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaSignInAlt, FaUserPlus, FaUser, FaBars, FaTimes, FaEnvelope } from 'react-icons/fa';
 import { FiBook, FiHome, FiLogOut } from 'react-icons/fi';
 import NotificationDropdown from '../pages/Notification/NotificationDropdown';
+import ChatBox from '../pages/ChatBox/ChatBox';
 
 export const authStateChanged = new Event('authStateChanged');
 
@@ -13,6 +14,7 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -91,14 +93,19 @@ const Navbar = () => {
             {/* Logo and primary navigation */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-2">
-                <div className="relative">
-                  <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-indigo-800 rounded-full shadow-md">
-                    <div className="absolute inset-1 bg-white/30 rounded-full"></div>
+                <div className="flex items-center space-x-3 my-0">
+                  <div className="relative">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-800 rounded-full shadow-md flex items-center justify-center">
+                      <div className="absolute inset-0 rounded-full border-2 border-white/10"></div>
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
                   </div>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text text-transparent">
+                    SkillSphere
+                  </span>
                 </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text text-transparent">
-                  SkillSphere
-                </span>
               </Link>
               
               <div className="hidden md:ml-10 md:flex md:items-center md:space-x-6">
@@ -155,6 +162,12 @@ const Navbar = () => {
                     <span className="text-sm font-medium">{username}</span>
                   </Link>
                   <NotificationDropdown />
+                  <button
+                    onClick={() => setIsChatOpen(true)}
+                    className="relative p-2 rounded-full bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-indigo-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  >
+                    <FaEnvelope className="w-5 h-5" />
+                  </button>
                   <button
                     onClick={() => setShowLogoutModal(true)}
                     className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 transition-all duration-200 shadow-sm hover:shadow-md flex items-center"
@@ -245,6 +258,22 @@ const Navbar = () => {
           </div>
         </div>
       )}
+
+      {/* Mobile menu */}
+      <div className={`md:hidden ${isMenuOpen ? 'block' : 'hidden'}`}>
+        {/* ... existing mobile menu code ... */}
+        {isLoggedIn && (
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center"
+          >
+            <FaEnvelope className="mr-2" /> Messages
+          </button>
+        )}
+      </div>
+
+      {/* Chat Box */}
+      <ChatBox isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </>
   );
 };

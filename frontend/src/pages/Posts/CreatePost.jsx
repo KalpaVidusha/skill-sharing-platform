@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaImage, FaTimesCircle, FaArrowLeft } from 'react-icons/fa';
 import apiService from '../../services/api';
 import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 
 const CreatePost = () => {
   const navigate = useNavigate();
@@ -115,9 +116,9 @@ const CreatePost = () => {
   }, [previewUrls]);
 
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-r from-blue-50 to-white py-20 px-4">
+      <div className="flex-grow min-h-screen bg-gradient-to-r from-blue-50 to-white py-20 px-4">
         <div className="max-w-4xl mx-auto bg-white rounded-2xl p-8 shadow-lg">
           <button 
             onClick={() => navigate(-1)} 
@@ -279,6 +280,7 @@ const CreatePost = () => {
           </form>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

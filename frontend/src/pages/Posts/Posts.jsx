@@ -5,6 +5,7 @@ import apiService from '../../services/api';
 import PostCard from './PostCard';
 import SearchFilter from '../../components/SearchFilter';
 import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 
 const Posts = () => {
   const navigate = useNavigate();
@@ -44,19 +45,20 @@ const Posts = () => {
 
   if (loading) {
     return (
-      <div>
+      <div className="flex flex-col min-h-screen">
         <Navbar />
-        <div className="min-h-screen bg-gradient-to-r from-blue-50 to-white flex justify-center items-center">
+        <div className="flex-grow min-h-screen bg-gradient-to-r from-blue-50 to-white flex justify-center items-center">
           <div className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin"></div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-r from-blue-50 to-white py-20 px-4">
+      <div className="flex-grow min-h-screen bg-gradient-to-r from-blue-50 to-white py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-semibold text-gray-800 mb-2">Explore Shared Skills</h1>
@@ -94,6 +96,7 @@ const Posts = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 import ProgressForm from './ProgressForm';
 import ProgressFeed from './ProgressFeed';
 import { FaSyncAlt } from 'react-icons/fa';
@@ -64,12 +65,12 @@ const ProgressAll = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-r from-blue-100 to-white">
       <Navbar />
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-24">
-        <div className="bg-white shadow-md rounded-lg p-6 mb-8">
+        <div className="bg-white shadow-lg rounded-lg p-6 mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Learning Progress
+            Add Your Learning Progress
           </h1>
           <div className="border-b border-gray-200 mb-6"></div>
           
@@ -169,6 +170,7 @@ const ProgressAll = () => {
           )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
