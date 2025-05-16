@@ -24,4 +24,7 @@ public interface UserService {
     List<UserModel> getFollowers(String userId);
     List<UserModel> getFollowing(String userId);
     List<UserModel> searchUsers(String query, int page, int size);
+    
+    // Get current user ID
+    String getCurrentUserId();
 }

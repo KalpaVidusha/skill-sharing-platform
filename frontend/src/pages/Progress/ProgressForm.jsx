@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import apiService from '../../services/api';
 import { formatDistanceToNow, format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parse } from 'date-fns';
-import { FaCalendarAlt, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaCalendarAlt, FaChevronLeft, FaChevronRight, FaImage, FaTimesCircle } from 'react-icons/fa';
 import { toast } from "react-toastify";
 
 const ProgressForm = ({ onSubmitSuccess }) => {
@@ -16,6 +16,8 @@ const ProgressForm = ({ onSubmitSuccess }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const calendarRef = useRef(null);
 
   useEffect(() => {
@@ -29,8 +31,13 @@ const ProgressForm = ({ onSubmitSuccess }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      
+      // Clean up object URL when component unmounts
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
     };
-  }, []);
+  }, [previewUrl]);
 
   useEffect(() => {
     // Check authentication status
@@ -92,6 +99,11 @@ const ProgressForm = ({ onSubmitSuccess }) => {
         newValues[field] = '';
       });
       setFieldValues(newValues);
+      
+      // Reset file upload if changing from or to a template that doesn't support images
+      if (templateType !== 'completed_tutorial' && templateType !== 'new_skill') {
+        handleRemoveFile();
+      }
     }
   };
 
@@ -198,6 +210,42 @@ const ProgressForm = ({ onSubmitSuccess }) => {
     }));
   };
 
+  // Handle file selection
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file type and size
+    const isValidType = file.type.startsWith('image/');
+    const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB limit
+    
+    if (!isValidType) {
+      setError("Only image files are allowed");
+      return;
+    }
+    
+    if (!isValidSize) {
+      setError("Images must be less than 5MB");
+      return;
+    }
+    
+    setError(null);
+    setUploadedFile(file);
+    
+    // Create and set preview URL
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+  };
+  
+  // Remove file
+  const handleRemoveFile = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setUploadedFile(null);
+    setPreviewUrl(null);
+  };
+
   // Preview the formatted progress update
   const getPreview = () => {
     if (!selectedTemplate || !templates[selectedTemplate]) return '';
@@ -227,10 +275,21 @@ const ProgressForm = ({ onSubmitSuccess }) => {
     setSuccess(false);
     
     try {
+      let mediaUrl = '';
+      
+      // Upload image if selected
+      if (uploadedFile) {
+        const uploadResponse = await apiService.uploadFiles([uploadedFile]);
+        if (uploadResponse && uploadResponse.urls && uploadResponse.urls.length > 0) {
+          mediaUrl = uploadResponse.urls[0];
+        }
+      }
+      
       // Prepare data for API
       const progressData = {
         templateType: selectedTemplate,
-        content: fieldValues
+        content: fieldValues,
+        mediaUrl: mediaUrl
       };
       
       await apiService.createProgress(progressData);
@@ -242,17 +301,18 @@ const ProgressForm = ({ onSubmitSuccess }) => {
         newValues[field] = '';
       });
       setFieldValues(newValues);
+      handleRemoveFile(); // Clear file upload
       
       setSuccess(true);
       
       // Show success toast
       toast.success('Progress added successfully!');
       
-      // Notify parent component
+      // Call the callback if provided
       if (onSubmitSuccess) {
         onSubmitSuccess();
       }
-
+      
       // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccess(false);
@@ -277,69 +337,62 @@ const ProgressForm = ({ onSubmitSuccess }) => {
             {field.charAt(0).toUpperCase() + field.slice(1)}
           </label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <input 
+              type="text"
+              id={field}
+              value={fieldValues[field] || ''}
+              onChange={(e) => handleInputChange(field, e.target.value)}
+              onClick={() => setShowCalendar(true)}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer"
+              placeholder="Select a date"
+              readOnly
+              required
+            />
+            <div className="absolute right-0 top-0 bottom-0 flex items-center px-3 pointer-events-none">
               <FaCalendarAlt className="text-gray-400" />
             </div>
-            <input
-              id={field}
-              type="text"
-              value={fieldValues[field] || ''}
-              readOnly
-              placeholder="YYYY-MM-DD"
-              className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer"
-              required
-              onClick={() => setShowCalendar(!showCalendar)}
-            />
             
-            {/* Custom Calendar */}
             {showCalendar && (
-              <div
+              <div 
                 ref={calendarRef}
-                className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-md shadow-lg p-2"
-                style={{ width: '240px' }}
+                className="absolute z-10 mt-1 bg-white rounded-md shadow-lg p-2 border border-gray-200 w-64"
               >
-                {/* Calendar header */}
                 <div className="flex justify-between items-center mb-2">
                   <button 
-                    type="button" 
+                    type="button"
                     onClick={prevMonth}
-                    className="p-1 rounded hover:bg-gray-100"
+                    className="text-gray-600 hover:text-gray-800"
                   >
                     <FaChevronLeft />
                   </button>
-                  <div className="font-semibold text-center">
+                  <div className="text-sm font-semibold">
                     {format(currentMonth, 'MMMM yyyy')}
                   </div>
                   <button 
-                    type="button" 
+                    type="button"
                     onClick={nextMonth}
-                    className="p-1 rounded hover:bg-gray-100"
+                    className="text-gray-600 hover:text-gray-800"
                   >
                     <FaChevronRight />
                   </button>
                 </div>
-                
-                {/* Calendar days */}
                 {renderCalendarDays()}
               </div>
             )}
-          </div>
-          <div className="mt-1 text-xs text-gray-500">
-            Click to open the date picker
           </div>
         </div>
       );
     }
     
-    // Default text input for other fields
+    // For all other fields, render a standard text input
     return (
       <div key={field}>
         <label htmlFor={field} className="block text-sm font-medium text-gray-700 mb-1">
           {field.charAt(0).toUpperCase() + field.slice(1)}
         </label>
         <input
-          id={field}
           type="text"
+          id={field}
           value={fieldValues[field] || ''}
           onChange={(e) => handleInputChange(field, e.target.value)}
           className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -348,7 +401,7 @@ const ProgressForm = ({ onSubmitSuccess }) => {
       </div>
     );
   };
-
+  
   // If not logged in, show login prompt
   if (!isLoggedIn) {
     return (
@@ -383,7 +436,7 @@ const ProgressForm = ({ onSubmitSuccess }) => {
       </div>
     );
   }
-
+  
   return (
     <div className="bg-white rounded-lg w-full mb-4">
       
@@ -428,6 +481,60 @@ const ProgressForm = ({ onSubmitSuccess }) => {
             
             {selectedTemplate && templates[selectedTemplate]?.fields?.map((field) => renderField(field))}
             
+            {/* Image upload section - only for completed_tutorial and new_skill templates */}
+            {selectedTemplate && (selectedTemplate === 'completed_tutorial' || selectedTemplate === 'new_skill') && (
+              <div className="flex flex-col items-center">
+                <label className="block text-sm font-medium text-gray-700 mb-1 self-start">
+                  Add a photo (optional)
+                </label>
+                
+                {!uploadedFile ? (
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md w-full">
+                    <div className="space-y-1 text-center">
+                      <FaImage className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="flex justify-center text-sm text-gray-600">
+                        <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                          <span>Upload a photo</span>
+                          <input 
+                            id="file-upload" 
+                            name="file-upload" 
+                            type="file" 
+                            className="sr-only" 
+                            onChange={handleFileChange}
+                            accept="image/*"
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        PNG, JPG, GIF up to 5MB
+                      </p>
+                      <p className="text-xs text-gray-500 italic">
+                        If no image is provided, a random GIF will be added automatically
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-1 relative w-full">
+                    <div className="relative rounded-md overflow-hidden border border-gray-300 h-48 w-full flex items-center justify-center">
+                      <img 
+                        src={previewUrl} 
+                        alt="Preview" 
+                        className="max-h-full max-w-full object-contain"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveFile}
+                        className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <FaTimesCircle className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {selectedTemplate && (
               <div className="w-full p-3 bg-gray-50 rounded-md">
                 <p className="font-medium mb-1">Preview:</p>
@@ -435,15 +542,17 @@ const ProgressForm = ({ onSubmitSuccess }) => {
               </div>
             )}
             
-            <button 
-              type="submit" 
-              className={`px-4 py-2 rounded-md text-white font-medium ${
-                loading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
-              }`}
-              disabled={loading || !selectedTemplate}
-            >
-              {loading ? 'Posting...' : 'Post Progress'}
-            </button>
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                  loading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+                }`}
+              >
+                {loading ? 'Sharing...' : 'Share Progress'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

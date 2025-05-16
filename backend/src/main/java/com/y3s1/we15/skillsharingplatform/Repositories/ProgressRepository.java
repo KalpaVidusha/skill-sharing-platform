@@ -11,5 +11,6 @@ import java.util.List;
 public interface ProgressRepository extends MongoRepository<Progress, String> {
     List<Progress> findByUser(UserModel user);
     List<Progress> findByUserId(String userId);
+    List<Progress> findByUserIdOrderByCreatedAtDesc(String userId);
     List<Progress> findAllByOrderByCreatedAtDesc();
 } 
