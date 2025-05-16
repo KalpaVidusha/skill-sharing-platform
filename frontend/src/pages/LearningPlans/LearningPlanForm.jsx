@@ -184,7 +184,7 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
 
   return (
     <div className="px-6"> {/* Added padding container */}
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl mx-auto">
         {/* Form Header */}
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">
