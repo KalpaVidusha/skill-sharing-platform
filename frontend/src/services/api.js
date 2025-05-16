@@ -196,6 +196,15 @@ const apiService = {
   getUserById: (userId) => api.get(`/users/${userId}`),
   updateUserProfile: (userId, userData) => api.put(`/users/${userId}`, userData),
   
+  // Password verification and change
+  verifyPassword: (userId, currentPassword) => {
+    return api.post(`/users/${userId}/verify-password`, { password: currentPassword });
+  },
+  
+  changePassword: (userId, passwordData) => {
+    return api.post(`/users/${userId}/change-password`, passwordData);
+  },
+  
   // Follow/Unfollow functionality with multiple implementation attempts
   followUser: (targetUserId) => {
     const currentUserId = localStorage.getItem('userId');
@@ -218,6 +227,19 @@ const apiService = {
   
   getFollowing: (userId) => 
     api.get(`/users/${userId}/following`),
+  
+  // Add isFollowing check function
+  isFollowing: (currentUserId, targetUserId) => {
+    console.log(`Checking if user ${currentUserId} is following user ${targetUserId}`);
+    return api.get(`/users/${currentUserId}/following/${targetUserId}`)
+      .then(response => {
+        return { isFollowing: response.isFollowing || false };
+      })
+      .catch(error => {
+        console.error("Error checking follow status:", error);
+        return { isFollowing: false };
+      });
+  },
   
   searchUsers: (query, page = 0, size = 10) => 
     api.get(`/users/search`, { params: { query, page, size } }),

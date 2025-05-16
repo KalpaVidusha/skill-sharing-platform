@@ -53,7 +53,7 @@ const LearningPlanList = ({ plans, onSelect }) => {
                 
                 {/* Progress bar with indicator */}
                 <div className="space-y-1.5">
-                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
                     <div 
                       className="h-2 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full transition-all duration-700 ease-out"
                       style={{ width: `${percentComplete}%` }}

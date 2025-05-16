@@ -412,4 +412,91 @@ public class UserController {
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    
+    @PostMapping("/{userId}/verify-password")
+    public ResponseEntity<?> verifyPassword(
+            @PathVariable String userId, 
+            @RequestBody Map<String, String> passwordData) {
+        try {
+            // Get the current password from request body
+            String currentPassword = passwordData.get("password");
+            if (currentPassword == null || currentPassword.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                    new MessageResponse("Password is required"));
+            }
+            
+            // Get the user by ID
+            Optional<UserModel> userOpt = userService.getUserById(userId);
+            if (!userOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    new MessageResponse("User not found"));
+            }
+            
+            // Verify the password
+            UserModel user = userOpt.get();
+            boolean passwordMatches = passwordEncoder.matches(currentPassword, user.getPassword());
+            
+            if (passwordMatches) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "Password verified successfully");
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    new MessageResponse("Current password is incorrect"));
+            }
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new MessageResponse("Error verifying password: " + e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/{userId}/change-password")
+    public ResponseEntity<?> changePassword(
+            @PathVariable String userId, 
+            @RequestBody Map<String, String> passwordData) {
+        try {
+            // Get current and new passwords from request body
+            String currentPassword = passwordData.get("currentPassword");
+            String newPassword = passwordData.get("newPassword");
+            
+            // Validate input
+            if (currentPassword == null || currentPassword.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                    new MessageResponse("Current password is required"));
+            }
+            
+            if (newPassword == null || newPassword.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                    new MessageResponse("New password is required"));
+            }
+            
+            // Get the user by ID
+            Optional<UserModel> userOpt = userService.getUserById(userId);
+            if (!userOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    new MessageResponse("User not found"));
+            }
+            
+            // Verify the current password
+            UserModel user = userOpt.get();
+            boolean passwordMatches = passwordEncoder.matches(currentPassword, user.getPassword());
+            
+            if (!passwordMatches) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    new MessageResponse("Current password is incorrect"));
+            }
+            
+            // Update to the new password
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userService.updateUser(user);
+            
+            return ResponseEntity.ok(new MessageResponse("Password changed successfully"));
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new MessageResponse("Error changing password: " + e.getMessage()));
+        }
+    }
 }

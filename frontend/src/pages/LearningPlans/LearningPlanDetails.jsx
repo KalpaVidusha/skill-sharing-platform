@@ -5,6 +5,7 @@ import LearningPlanForm from './LearningPlanForm';
 import Navbar from '../../components/Navbar';
 import Sidebar from '../../components/Sidebar';
 import Footer from '../../components/Footer';
+import { FaLink } from 'react-icons/fa';
 const ProgressBar = ({ percent }) => (
   <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
     <div
@@ -23,6 +24,7 @@ const LearningPlanDetails = () => {
   const [updating, setUpdating] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const userId = localStorage.getItem('userId');
 
   useEffect(() => {
@@ -42,18 +44,30 @@ const LearningPlanDetails = () => {
     const updatedPlan = { ...plan, topics: updatedTopics };
     apiService.updateLearningPlan(plan.id, updatedPlan)
       .then(res => setPlan(res.data || res))
-      .catch(() => setError('Failed to update task'))
+      .catch((err) => {
+        // Handle permission error
+        if (err.response && err.response.status === 403) {
+          setError("You don't have permission to update this learning plan");
+        } else {
+          setError('Failed to update task');
+        }
+      })
       .finally(() => setUpdating(false));
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this plan? This action cannot be undone.')) return;
     setDeleting(true);
     try {
       await apiService.deleteLearningPlan(plan.id);
       navigate('/userdashboard/learning-plans');
-    } catch {
-      setError('Failed to delete plan');
+    } catch (err) {
+      // Handle permission error
+      if (err.response && err.response.status === 403) {
+        setError("You don't have permission to delete this learning plan");
+      } else {
+        setError('Failed to delete plan');
+      }
+      setShowDeleteModal(false);
     } finally {
       setDeleting(false);
     }
@@ -67,7 +81,13 @@ const LearningPlanDetails = () => {
       setShowEdit(false);
       return response;
     } catch (err) {
-      setError('Failed to update plan');
+      // Handle permission error
+      if (err.response && err.response.status === 403) {
+        setError("You don't have permission to edit this learning plan");
+      } else {
+        setError('Failed to update plan');
+      }
+      setShowEdit(false);
       throw err;
     } finally {
       setUpdating(false);
@@ -157,39 +177,31 @@ const LearningPlanDetails = () => {
                   </p>
                 </div>
                 
-                <div className="absolute right-8 top-8 flex gap-3">
-                  <button
-                    onClick={() => setShowEdit(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 shadow-md hover:shadow-blue-200/50 disabled:opacity-70"
-                    disabled={updating}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Edit Plan
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 shadow-md hover:shadow-red-200/50 disabled:opacity-70"
-                    disabled={deleting}
-                  >
-                    {deleting ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <div className="absolute right-8 top-8 flex gap-2">
+                  {userId === plan.user.id && (
+                    <>
+                      <button
+                        onClick={() => setShowEdit(true)}
+                        className="px-3 py-1.5 text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:shadow-md transition-all flex items-center gap-1.5 disabled:opacity-70"
+                        disabled={updating}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
-                        Deleting...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteModal(true)}
+                        className="px-3 py-1.5 text-sm bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:shadow-md transition-all flex items-center gap-1.5 disabled:opacity-70"
+                        disabled={deleting}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                        Delete Plan
-                      </>
-                    )}
-                  </button>
+                        Delete
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -206,7 +218,7 @@ const LearningPlanDetails = () => {
                   </div>
                   <span className="text-xl font-bold text-blue-600">{percent}%</span>
                 </div>
-                <div className="w-full bg-gray-200/50 rounded-full h-3">
+                <div className="w-full bg-blue-100 rounded-full h-3">
                   <div
                     className="bg-gradient-to-r from-blue-500 to-indigo-600 h-3 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${percent}%` }}
@@ -245,7 +257,9 @@ const LearningPlanDetails = () => {
                         <div className="flex justify-between items-start">
                           <h3
                             className={`text-xl font-semibold leading-7 ${
-                              topic.completed ? 'text-green-700' : 'text-gray-800'
+                              topic.completed 
+                                ? 'text-green-700 line-through decoration-2 decoration-green-700/70' 
+                                : 'text-gray-800'
                             }`}
                           >
                             {topic.name}
@@ -348,33 +362,93 @@ const LearningPlanDetails = () => {
 
       {/* Edit Modal */}
       {showEdit && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30"
-          onClick={() => setShowEdit(false)}
-        >
-          <div 
-            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative flex flex-col"
-            style={{maxHeight: '90vh'}}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
-              onClick={() => setShowEdit(false)}
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setShowEdit(false)}></div>
+
+            {/* This element is to trick the browser into centering the modal contents */}
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div 
+              className="inline-block overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:max-w-lg sm:w-full"
+              onClick={(e) => e.stopPropagation()}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <h2 className="text-xl font-bold mb-4 text-blue-700">Edit Learning Plan</h2>
-            <div className="overflow-y-auto flex-grow">
-            <LearningPlanForm
-              onSubmit={handleEdit}
-              initialData={{
-                title: plan.title,
-                description: plan.description,
-                topics: plan.topics
-              }}
-            />
+              <button
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+                onClick={() => setShowEdit(false)}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <div className="px-4 pt-5 pb-4 bg-white sm:p-6">
+                <h2 className="text-xl font-bold mb-4 text-blue-700">Edit Learning Plan</h2>
+                <div className="overflow-y-auto max-h-[80vh]">
+                  <LearningPlanForm
+                    onSubmit={handleEdit}
+                    initialData={{
+                      title: plan.title,
+                      description: plan.description,
+                      topics: plan.topics
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setShowDeleteModal(false)}></div>
+
+            {/* This element is to trick the browser into centering the modal contents */}
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            {/* Modal content */}
+            <div className="inline-block overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:max-w-lg sm:w-full">
+              <div className="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-red-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="w-6 h-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg font-medium leading-6 text-gray-900">Delete Learning Plan</h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500 mb-2">
+                        Are you sure you want to delete this learning plan? This action cannot be undone.
+                      </p>
+                      <p className="text-sm font-medium text-gray-800">
+                        Plan Title: <span className="text-red-600">{plan.title}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button 
+                  type="button" 
+                  className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+                <button 
+                  type="button" 
+                  className="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -388,7 +462,7 @@ const LearningPlanDetails = () => {
 function ResourceLink({ url }) {
   return (
     <div className="flex items-start group">
-      <span className="text-blue-400 mr-2 mt-1.5">•</span>
+      <FaLink className="text-blue-400 mr-2 mt-1.5 flex-shrink-0" size={12} />
       <a 
         href={url.startsWith('http') ? url : `https://${url}`}
         target="_blank" 
