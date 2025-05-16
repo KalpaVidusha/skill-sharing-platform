@@ -20,6 +20,7 @@ import OAuthSuccess from "./pages/OAuthSuccess";
 import NotificationsPage from './pages/Notification/NotificationsPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import AdminDashboard from './pages/monetizationAndRewardManagement/AdminDashboard';
 
 function App() {
   return (
@@ -63,6 +64,7 @@ function App() {
         <Route path="/monetize" element={<MonetizationForm />} />
         <Route path="/Applications" element={<Applications />} />
         <Route path="/edit/:id" element={<EditRequest />} />
+        <Route path="AdminDashboard" element={<AdminDashboard />} />
         
         
         {/* Optional: Category Filter */}
