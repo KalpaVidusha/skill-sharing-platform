@@ -59,6 +59,13 @@ public class PostService {
         postRepository.deleteById(id);
     }
 
+    /**
+     * Check if the user is the owner of the post
+     * 
+     * @param postId the post ID
+     * @param userId the user ID
+     * @return true if the user is the owner, false otherwise
+     */
     public boolean isPostOwner(String postId, String userId) {
         return postRepository.findById(postId)
                 .map(post -> {

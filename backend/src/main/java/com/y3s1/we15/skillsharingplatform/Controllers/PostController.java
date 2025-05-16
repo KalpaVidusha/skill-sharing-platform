@@ -7,6 +7,7 @@ import com.y3s1.we15.skillsharingplatform.Service.PostService;
 import com.y3s1.we15.skillsharingplatform.Service.UserService;
 import com.y3s1.we15.skillsharingplatform.Service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -57,12 +58,31 @@ public class PostController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Post> updatePost(@PathVariable String id, @RequestBody Post postDetails) {
+        // Get current authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String username = authentication.getName();
+        UserModel currentUser = userService.findByUsername(username);
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Get post and verify ownership
         Optional<Post> optionalPost = postService.getPostById(id);
         if (!optionalPost.isPresent()) {
             return ResponseEntity.notFound().build();
         }
         Post post = optionalPost.get();
 
+        // Check if current user is the post owner
+        if (post.getUser() == null || !post.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(null); // Return 403 Forbidden if not the owner
+        }
+
+        // Update the post
         post.setTitle(postDetails.getTitle());
         post.setDescription(postDetails.getDescription());
         post.setCategory(postDetails.getCategory());
@@ -74,9 +94,27 @@ public class PostController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(@PathVariable String id) {
+        // Get current authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String username = authentication.getName();
+        UserModel currentUser = userService.findByUsername(username);
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Get post and verify ownership
         Optional<Post> optionalPost = postService.getPostById(id);
         if (!optionalPost.isPresent()) {
             return ResponseEntity.notFound().build();
+        }
+        Post post = optionalPost.get();
+
+        // Check if current user is the post owner
+        if (post.getUser() == null || !post.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // Return 403 Forbidden if not the owner
         }
         
         postService.deletePost(id);
