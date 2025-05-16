@@ -152,84 +152,20 @@ const FollowList = ({ type, userId: propUserId }) => {
   
   const handleCloseModal = () => {
     setShowLoginModal(false);
-    // Navigate to login page
     navigate('/login');
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-r from-blue-50 to-white">
+      <div>
         <Navbar />
-        <div className="flex min-h-screen pt-20 font-sans">
-          {/* Sidebar - Skeleton Loading */}
-          <div className="sticky top-20 h-[calc(100vh-5rem)] self-start w-72">
-            <div className="h-full p-6 bg-white border-r border-gray-200">
-              <div className="animate-pulse space-y-6">
-                <div className="h-10 bg-gray-200 rounded-lg w-3/4"></div>
-                <div className="space-y-4">
-                  {[...Array(8)].map((_, i) => (
-                    <div key={i} className="h-10 bg-gray-100 rounded-lg"></div>
-                  ))}
-                </div>
-                <div className="h-10 bg-gray-100 rounded-lg mt-auto"></div>
-              </div>
-            </div>
+        <div className="flex min-h-screen pt-20 font-sans bg-gradient-to-r from-blue-50 to-white">
+          <div className="sticky top-20 h-[calc(100vh-5rem)] self-start">
+            <Sidebar defaultActiveTab={type === "followers" ? "followers" : "following"} userId={userId} />
           </div>
-  
-          {/* Main Content - Animated Loading */}
           <main className="flex-1 p-8 overflow-y-auto">
-            <div className="max-w-4xl mx-auto">
-              {/* Loading Header */}
-              <div className="mb-8 animate-pulse">
-                <div className="h-8 bg-gray-200 rounded-full w-1/3 mb-2"></div>
-                <div className="h-4 bg-gray-100 rounded-full w-1/4"></div>
-              </div>
-  
-              {/* Animated User Cards */}
-              <div className="space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div 
-                    key={i}
-                    className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300"
-                  >
-                    <div className="flex items-center space-x-4 animate-pulse">
-                      {/* Avatar Skeleton */}
-                      <div className="relative">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-gray-300 rounded-full border-2 border-white"></div>
-                      </div>
-                      
-                      {/* User Info Skeleton */}
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded-full w-2/3"></div>
-                        <div className="h-3 bg-gray-100 rounded-full w-1/2"></div>
-                        <div className="flex space-x-2">
-                          <div className="h-3 bg-gray-100 rounded-full w-1/4"></div>
-                          <div className="h-3 bg-gray-100 rounded-full w-1/4"></div>
-                        </div>
-                      </div>
-                      
-                      {/* Button Skeleton */}
-                      <div className="h-10 bg-gray-100 rounded-full w-24"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-  
-              {/* Loading Animation */}
-              <div className="flex justify-center mt-10">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                </div>
-              </div>
-  
-              {/* Loading Text */}
-              <div className="mt-6 text-center text-gray-500">
-                <p>Loading your {type} data...</p>
-                <p className="text-sm mt-1">This will just take a moment</p>
-              </div>
+            <div className="flex items-center justify-center h-64">
+              <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
             </div>
           </main>
         </div>

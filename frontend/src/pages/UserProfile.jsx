@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  FaUser, FaChartLine, FaFileAlt, FaUsers, FaThumbsUp, FaComment
+  FaUser, FaChartLine, FaFileAlt, FaUsers, FaThumbsUp, FaComment, 
+  FaUserPlus, FaUserMinus, FaCalendarAlt, FaEnvelope, FaEye
 } from "react-icons/fa";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -20,6 +21,7 @@ const UserProfile = () => {
     email: "",
     memberSince: "",
     posts: 0,
+    progressCount: 0,
     likesReceived: 0,
     comments: 0,
     followers: 0,
@@ -33,6 +35,31 @@ const UserProfile = () => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
   const [showLoginModal, setShowLoginModal] = useState(false);
 
+  // Helper to store follow state in localStorage
+  const storeFollowState = useCallback((targetUserId, isFollowed) => {
+    try {
+      const followDataKey = `follow_status_${currentUserId}`;
+      let followData = JSON.parse(localStorage.getItem(followDataKey) || '{}');
+      followData[targetUserId] = isFollowed;
+      localStorage.setItem(followDataKey, JSON.stringify(followData));
+      console.log(`Stored follow state for ${targetUserId}: ${isFollowed}`);
+    } catch (error) {
+      console.error("Error storing follow state:", error);
+    }
+  }, [currentUserId]);
+
+  // Helper to get follow state from localStorage
+  const getStoredFollowState = useCallback((targetUserId) => {
+    try {
+      const followDataKey = `follow_status_${currentUserId}`;
+      const followData = JSON.parse(localStorage.getItem(followDataKey) || '{}');
+      return followData[targetUserId] === true;
+    } catch (error) {
+      console.error("Error getting stored follow state:", error);
+      return false;
+    }
+  }, [currentUserId]);
+
   // Check if the profile is the current user's profile or if the user is logged in
   useEffect(() => {
     if (userId === currentUserId) {
@@ -44,9 +71,55 @@ const UserProfile = () => {
       setLoading(false);
     } else {
       fetchUserData();
-      checkFollowStatus();
     }
   }, [userId, currentUserId, navigate, isLoggedIn]);
+  
+  // Separate useEffect for handling follow status
+  useEffect(() => {
+    if (isLoggedIn && currentUserId && userId && currentUserId !== userId) {
+      // First check localStorage for a cached follow state
+      const storedFollowState = getStoredFollowState(userId);
+      console.log(`Initial follow state from localStorage: ${storedFollowState}`);
+      setIsFollowing(storedFollowState);
+      
+      // Then verify with the server
+      checkFollowStatus();
+    }
+  }, [userId, currentUserId, isLoggedIn, getStoredFollowState]);
+  
+  // Listen for follow status changes from other components
+  useEffect(() => {
+    const handleFollowStatusChange = (event) => {
+      const { action, targetUserId } = event.detail;
+      
+      // Only update if the event is related to this profile user
+      if (targetUserId === userId) {
+        console.log(`Follow event received: ${action} for user ${targetUserId}`);
+        const newFollowState = action === 'follow';
+        setIsFollowing(newFollowState);
+        storeFollowState(targetUserId, newFollowState);
+        
+        // Update follower count
+        apiService.getFollowers(userId).then(response => {
+          if (response && response.count !== undefined) {
+            setUserData(prev => ({
+              ...prev,
+              followers: response.count
+            }));
+          }
+        }).catch(err => {
+          console.error("Error refreshing followers after event:", err);
+        });
+      }
+    };
+    
+    window.addEventListener('followStatusChanged', handleFollowStatusChange);
+    
+    // Cleanup on unmount
+    return () => {
+      window.removeEventListener('followStatusChanged', handleFollowStatusChange);
+    };
+  }, [userId, storeFollowState]);
 
   const fetchUserData = async () => {
     try {
@@ -73,6 +146,18 @@ const UserProfile = () => {
         console.error("Error fetching user posts:", postError);
       }
       
+      // Fetch user's progress updates
+      let progressUpdates = [];
+      try {
+        const progressResponse = await apiService.getAllProgress(userId);
+        
+        if (progressResponse && Array.isArray(progressResponse)) {
+          progressUpdates = progressResponse;
+        }
+      } catch (progressError) {
+        console.error("Error fetching user progress:", progressError);
+      }
+      
       // Fetch followers and following counts
       let followersCount = 0;
       let followingCount = 0;
@@ -91,16 +176,27 @@ const UserProfile = () => {
         console.error("Error fetching follow data:", followError);
       }
       
-      // Calculate total comments from all posts
+      // Calculate total interactions across posts and progress
       let totalComments = 0;
       let totalLikes = 0;
       try {
+        // Count from posts
         for (const post of userPosts) {
           if (post.commentCount) {
             totalComments += post.commentCount;
           }
           if (post.likeCount) {
             totalLikes += post.likeCount;
+          }
+        }
+        
+        // Count from progress updates
+        for (const progress of progressUpdates) {
+          if (progress.commentCount) {
+            totalComments += progress.commentCount;
+          }
+          if (progress.likeCount) {
+            totalLikes += progress.likeCount;
           }
         }
       } catch (error) {
@@ -111,8 +207,9 @@ const UserProfile = () => {
         name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User',
         username: user.username || 'User',
         email: user.email || '',
-        memberSince: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Jan 2024',
+        memberSince: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Apr 2025',
         posts: userPosts.length,
+        progressCount: progressUpdates.length,
         likesReceived: totalLikes,
         comments: totalComments,
         followers: followersCount,
@@ -126,6 +223,7 @@ const UserProfile = () => {
         }))
       });
       
+      checkFollowStatus();
       setLoading(false);
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -136,16 +234,83 @@ const UserProfile = () => {
 
   const checkFollowStatus = async () => {
     try {
-      if (!currentUserId) return;
+      if (!currentUserId || !userId) return;
       
-      const following = await apiService.getFollowing(currentUserId);
+      console.log(`Checking follow status: Current user ${currentUserId} -> Profile user ${userId}`);
       
-      if (following && following.users) {
-        const isUserFollowed = following.users.some(u => u.id === userId);
-        setIsFollowing(isUserFollowed);
+      // IMPORTANT: First check if this user is in the followingIds array from localStorage
+      // This is the approach used in UserSearch.jsx that works reliably
+      const followDataKey = `follow_status_${currentUserId}`;
+      const followData = JSON.parse(localStorage.getItem(followDataKey) || '{}');
+      
+      if (followData[userId] === true) {
+        console.log(`User ${userId} is followed according to localStorage`);
+        setIsFollowing(true);
+        return;
       }
+      
+      // Method 1: Direct API call to check follow status
+      try {
+        const response = await apiService.isFollowing(currentUserId, userId);
+        
+        if (response && typeof response.isFollowing === 'boolean') {
+          console.log(`Follow status direct check: ${response.isFollowing ? 'Following' : 'Not following'}`);
+          setIsFollowing(response.isFollowing);
+          storeFollowState(userId, response.isFollowing);
+          return;
+        }
+      } catch (directCheckError) {
+        console.error("Direct follow status check failed:", directCheckError);
+      }
+      
+      // Method 2: Check user's following list
+      try {
+        const followingResponse = await apiService.getFollowing(currentUserId);
+        
+        if (followingResponse && followingResponse.following) {
+          // Check if userId exists in the following list
+          const isUserInFollowingList = followingResponse.following.some(user => 
+            (typeof user === 'object' && user.id === userId) || 
+            (typeof user === 'string' && user === userId)
+          );
+          
+          console.log(`Follow status from following list: ${isUserInFollowingList ? 'Following' : 'Not following'}`);
+          setIsFollowing(isUserInFollowingList);
+          storeFollowState(userId, isUserInFollowingList);
+          return;
+        }
+      } catch (followingError) {
+        console.error("Following list check failed:", followingError);
+      }
+      
+      // Method 3: Check if user is in followers list of target user
+      try {
+        const followersResponse = await apiService.getFollowers(userId);
+        
+        if (followersResponse && followersResponse.users) {
+          const isCurrentUserFollower = followersResponse.users.some(user => 
+            (typeof user === 'object' && user.id === currentUserId) || 
+            (typeof user === 'string' && user === currentUserId)
+          );
+          
+          console.log(`Follow status from followers list: ${isCurrentUserFollower ? 'Following' : 'Not following'}`);
+          setIsFollowing(isCurrentUserFollower);
+          storeFollowState(userId, isCurrentUserFollower);
+          return;
+        }
+      } catch (followersError) {
+        console.error("Followers list check failed:", followersError);
+      }
+      
+      // If all methods fail, default to stored state or false
+      const storedState = getStoredFollowState(userId);
+      console.log(`Using stored follow state: ${storedState ? 'Following' : 'Not following'}`);
+      setIsFollowing(storedState);
+      
     } catch (error) {
-      console.error("Error checking follow status:", error);
+      console.error("Error in checkFollowStatus:", error);
+      // Fall back to stored state if available
+      setIsFollowing(getStoredFollowState(userId));
     }
   };
 
@@ -166,32 +331,66 @@ const UserProfile = () => {
     setFollowLoading(true);
     
     try {
-      console.log(`Current user: ${currentUserId}, Profile user: ${userId}, isFollowing: ${isFollowing}`);
+      const actionType = isFollowing ? 'unfollow' : 'follow';
+      console.log(`Attempting to ${actionType} user ${userId}`);
+      
+      // Optimistic UI update
+      setIsFollowing(prevState => !prevState);
       
       if (isFollowing) {
-        console.log(`Attempting to unfollow user ${userId}`);
         const result = await apiService.unfollowUser(userId);
         console.log("Unfollow result:", result);
-        setIsFollowing(false);
+        
+        if (result && result.success === false) {
+          // Revert on failure
+          setIsFollowing(true);
+          throw new Error(result.message || "Failed to unfollow user");
+        }
+        
+        // Update localStorage
+        storeFollowState(userId, false);
+        
         toast.info(`You have unfollowed ${userData.name}`);
+        
+        // Dispatch custom event
+        window.dispatchEvent(new CustomEvent('followStatusChanged', {
+          detail: { action: 'unfollow', targetUserId: userId }
+        }));
       } else {
-        console.log(`Attempting to follow user ${userId}`);
         const result = await apiService.followUser(userId);
         console.log("Follow result:", result);
-        setIsFollowing(true);
+        
+        if (result && result.success === false) {
+          // Revert on failure
+          setIsFollowing(false);
+          throw new Error(result.message || "Failed to follow user");
+        }
+        
+        // Update localStorage
+        storeFollowState(userId, true);
+        
         toast.success(`You are now following ${userData.name}`);
-      }
-      
-      // Refresh follower count
-      const followersResponse = await apiService.getFollowers(userId);
-      console.log("Updated followers:", followersResponse);
-      
-      if (followersResponse && followersResponse.count) {
-        setUserData(prev => ({
-          ...prev,
-          followers: followersResponse.count
+        
+        // Dispatch custom event
+        window.dispatchEvent(new CustomEvent('followStatusChanged', {
+          detail: { action: 'follow', targetUserId: userId }
         }));
       }
+      
+      // Refresh follower count regardless of follow/unfollow
+      try {
+        const followersResponse = await apiService.getFollowers(userId);
+        
+        if (followersResponse && followersResponse.count !== undefined) {
+          setUserData(prev => ({
+            ...prev,
+            followers: followersResponse.count
+          }));
+        }
+      } catch (refreshError) {
+        console.error("Error refreshing follower count:", refreshError);
+      }
+      
     } catch (error) {
       console.error("Error updating follow status:", error);
       const errorMessage = error.message || "Unknown error";
@@ -309,214 +508,319 @@ const UserProfile = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      <div className="flex flex-grow min-h-screen pt-20 font-sans text-blue-900 bg-gradient-to-r from-blue-100 to-white">
+      <div className="flex flex-grow min-h-screen pt-20 font-sans bg-gradient-to-r from-blue-100 to-white">
         <div className="container max-w-6xl px-4 py-8 mx-auto">
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Profile Sidebar */}
-            <div className="w-full md:w-1/3">
-              <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-                <div className="flex flex-col items-center mb-6">
-                  <div className="h-24 w-24 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 flex items-center justify-center text-3xl font-bold text-white mb-4">
-                    {userData.name.charAt(0).toUpperCase()}
+          {/* Profile Header Section */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-blue-50">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+              <div className="h-28 w-28 md:h-32 md:w-32 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 flex items-center justify-center text-4xl font-bold text-white border-4 border-white shadow-md">
+                {userData.name.charAt(0).toUpperCase()}
+              </div>
+              
+              <div className="flex flex-col md:flex-row justify-between items-center md:items-start flex-grow gap-4">
+                <div className="text-center md:text-left">
+                  <h1 className="text-3xl font-bold text-gray-800">{userData.name}</h1>
+                  <p className="text-md text-blue-600">@{userData.username}</p>
+                  
+                  <div className="flex items-center gap-2 mt-2 justify-center md:justify-start">
+                    <FaCalendarAlt className="text-gray-500" />
+                    <span className="text-sm text-gray-600">Joined {userData.memberSince}</span>
                   </div>
-                  <h2 className="text-2xl font-semibold">{userData.name}</h2>
-                  <p className="text-gray-600">@{userData.username}</p>
-                  <p className="text-sm text-gray-500 mt-1">Member since {userData.memberSince}</p>
+                  
+                  {userData.email && (
+                    <div className="flex items-center gap-2 mt-1 justify-center md:justify-start">
+                      <FaEnvelope className="text-gray-500" />
+                      <span className="text-sm text-gray-600">{userData.email}</span>
+                    </div>
+                  )}
                 </div>
                 
                 {currentUserId && currentUserId !== userId && (
-                  <button
-                    onClick={handleFollow}
-                    disabled={followLoading}
-                    className={`w-full py-2 px-4 rounded-lg ${
-                      isFollowing 
-                        ? 'bg-red-600 hover:bg-red-700'
-                        : 'bg-blue-600 hover:bg-blue-700'
-                    } text-white font-medium transition-colors mb-4 flex justify-center items-center`}
-                  >
-                    {followLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        {isFollowing ? 'Unfollowing...' : 'Following...'}
-                      </>
-                    ) : (
-                      isFollowing ? 'Unfollow' : 'Follow'
-                    )}
-                  </button>
+                  <div className="flex flex-col items-center md:items-end gap-2">
+                    <button
+                      onClick={handleFollow}
+                      disabled={followLoading}
+                      className={`py-2.5 px-6 rounded-full flex items-center gap-2 text-sm font-semibold transition-all shadow-sm
+                        ${isFollowing 
+                          ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                    >
+                      {followLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-b-transparent border-white"></div>
+                          <span>{isFollowing ? 'Unfollowing...' : 'Following...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          {isFollowing ? (
+                            <>
+                              <FaUserMinus className="text-xs" />
+                              <span>Unfollow</span>
+                            </>
+                          ) : (
+                            <>
+                              <FaUserPlus className="text-xs" />
+                              <span>Follow</span>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </button>
+                    
+                    {/* <Link to={`/chat/${userId}`} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                      Send Message
+                    </Link> */}
+                  </div>
                 )}
-                
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <div className="text-xl font-semibold">{userData.followers}</div>
-                    <div className="text-sm text-gray-600">Followers</div>
-                  </div>
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <div className="text-xl font-semibold">{userData.following}</div>
-                    <div className="text-sm text-gray-600">Following</div>
-                  </div>
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <div className="text-xl font-semibold">{userData.posts}</div>
-                    <div className="text-sm text-gray-600">Posts</div>
-                  </div>
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <div className="text-xl font-semibold">{userData.likesReceived}</div>
-                    <div className="text-sm text-gray-600">Likes</div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Activity Summary */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-xl font-semibold border-b pb-2 mb-4">Activity Summary</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-blue-100 rounded-full">
-                      <FaFileAlt className="text-blue-600 text-lg" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold">{userData.posts}</div>
-                      <div className="text-sm text-gray-600">Posts Created</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-green-100 rounded-full">
-                      <FaThumbsUp className="text-green-600 text-lg" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold">{userData.likesReceived}</div>
-                      <div className="text-sm text-gray-600">Likes Received</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-yellow-100 rounded-full">
-                      <FaComment className="text-yellow-600 text-lg" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold">{userData.comments}</div>
-                      <div className="text-sm text-gray-600">Comments</div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
             
-            {/* Main Content */}
-            <div className="w-full md:w-2/3">
-              {/* Tabs Navigation */}
-              <div className="flex border-b border-gray-200 mb-6">
-                <button 
-                  onClick={() => handleTabChange('overview')}
-                  className={`px-4 py-2 font-medium text-sm ${
-                    activeTab === 'overview' 
-                      ? 'text-blue-600 border-b-2 border-blue-600' 
-                      : 'text-gray-500 hover:text-blue-600'
-                  }`}
-                >
-                  Overview
-                </button>
-                <button 
-                  onClick={() => handleTabChange('posts')}
-                  className={`px-4 py-2 font-medium text-sm ${
-                    activeTab === 'posts' 
-                      ? 'text-blue-600 border-b-2 border-blue-600' 
-                      : 'text-gray-500 hover:text-blue-600'
-                  }`}
-                >
-                  Posts
-                </button>
-                <button 
-                  onClick={() => handleTabChange('progress')}
-                  className={`px-4 py-2 font-medium text-sm ${
-                    activeTab === 'progress' 
-                      ? 'text-blue-600 border-b-2 border-blue-600' 
-                      : 'text-gray-500 hover:text-blue-600'
-                  }`}
-                >
-                  Progress Updates
-                </button>
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 text-center shadow-sm">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600/10 mb-2">
+                  <FaFileAlt className="text-blue-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{userData.posts}</div>
+                <div className="text-sm text-gray-600">Posts</div>
               </div>
               
-              {/* Tab Content */}
-              {activeTab === 'overview' && (
-                <>
-                  <h3 className="mb-4 text-xl font-semibold border-b pb-2">Recent Posts</h3>
-                  
-                  {userData.recentPosts.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-                      No posts yet
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {userData.recentPosts.map(post => (
-                        <div key={post.id} className="bg-white rounded-lg shadow p-4 transition hover:shadow-md">
-                          <Link to={`/posts/${post.id}`} className="block">
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 text-center shadow-sm">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-600/10 mb-2">
+                  <FaChartLine className="text-green-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{userData.progressCount}</div>
+                <div className="text-sm text-gray-600">Progress Updates</div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 text-center shadow-sm">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-purple-600/10 mb-2">
+                  <FaThumbsUp className="text-purple-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{userData.likesReceived}</div>
+                <div className="text-sm text-gray-600">Likes</div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-4 text-center shadow-sm">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-amber-600/10 mb-2">
+                  <FaComment className="text-amber-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{userData.comments}</div>
+                <div className="text-sm text-gray-600">Comments</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Tabs Navigation */}
+          <div className="bg-white rounded-xl shadow-md mb-8">
+            <div className="flex overflow-x-auto scrollbar-hide">
+              <button 
+                onClick={() => handleTabChange('overview')}
+                className={`px-6 py-4 font-medium text-sm whitespace-nowrap ${
+                  activeTab === 'overview' 
+                    ? 'text-blue-600 border-b-2 border-blue-600' 
+                    : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                } transition-colors`}
+              >
+                Overview
+              </button>
+              <button 
+                onClick={() => handleTabChange('posts')}
+                className={`px-6 py-4 font-medium text-sm whitespace-nowrap ${
+                  activeTab === 'posts' 
+                    ? 'text-blue-600 border-b-2 border-blue-600' 
+                    : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                } transition-colors`}
+              >
+                Posts
+              </button>
+              <button 
+                onClick={() => handleTabChange('progress')}
+                className={`px-6 py-4 font-medium text-sm whitespace-nowrap ${
+                  activeTab === 'progress' 
+                    ? 'text-blue-600 border-b-2 border-blue-600' 
+                    : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                } transition-colors`}
+              >
+                Progress Updates
+              </button>
+            </div>
+          </div>
+          
+          {/* Main Content */}
+          {activeTab === 'overview' && (
+            <div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Recent Posts Section */}
+                <div className="lg:col-span-2">
+                  <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+                    <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                      <FaFileAlt className="mr-2 text-blue-500" />
+                      Recent Posts
+                    </h2>
+                    
+                    {userData.recentPosts.length === 0 ? (
+                      <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 mb-3">
+                          <FaEye className="text-gray-400 text-lg" />
+                        </div>
+                        <p className="text-lg font-medium mb-1">No posts yet</p>
+                        <p className="text-sm">This user hasn't created any posts</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {userData.recentPosts.map(post => (
+                          <Link 
+                            key={post.id} 
+                            to={`/posts/${post.id}`}
+                            className="block bg-white rounded-lg hover:bg-blue-50 border border-gray-100 p-4 transition-all hover:shadow-md"
+                          >
                             <div className="flex items-center gap-3 mb-2">
                               {getPostIcon(post.category)}
-                              <h4 className="font-semibold text-lg hover:text-blue-600 transition">{post.title}</h4>
+                              <h4 className="font-semibold text-lg text-gray-800 hover:text-blue-600 transition">{post.title}</h4>
                             </div>
-                            <p className="text-gray-600 text-sm mb-2">
-                              {post.summary || post.content?.substring(0, 100) || "No content"}
-                              {(post.summary?.length > 100 || post.content?.length > 100) && "..."}
+                            <p className="text-gray-600 text-sm">
+                              {post.summary || post.content?.substring(0, 120) || "No content"}
+                              {(post.summary?.length > 120 || post.content?.length > 120) && "..."}
                             </p>
                           </Link>
+                        ))}
+                        
+                        <div className="text-center mt-6">
+                          <Link
+                            to={`/user-posts/${userId}`}
+                            className="inline-block px-5 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 shadow-sm transition-all text-sm font-medium"
+                          >
+                            View All Posts
+                          </Link>
                         </div>
-                      ))}
-                      
-                      <div className="text-center mt-4">
-                        <Link
-                          to={`/user-posts/${userId}`}
-                          className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
-                        >
-                          View All Posts
-                        </Link>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                   
-                  <div className="mt-8">
-                    <h3 className="mb-4 text-xl font-semibold border-b pb-2">Recent Progress</h3>
+                  {/* Recent Progress */}
+                  <div className="bg-white rounded-xl shadow-md p-6">
+                    <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                      <FaChartLine className="mr-2 text-green-500" />
+                      Recent Progress
+                    </h2>
+                    
                     <ProgressFeed userId={userId} limit={3} hideFilters={true} />
                     
-                    <div className="text-center mt-4">
+                    <div className="text-center mt-6">
                       <button 
                         onClick={() => handleTabChange('progress')}
-                        className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+                        className="inline-block px-5 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 shadow-sm transition-all text-sm font-medium"
                       >
                         View All Progress Updates
                       </button>
                     </div>
                   </div>
-                </>
-              )}
-              
-              {activeTab === 'posts' && (
-                <>
-                  <h3 className="mb-4 text-xl font-semibold border-b pb-2">All Posts</h3>
-                  {userData.recentPosts.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-                      No posts yet
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <Link 
-                        to={`/user-posts/${userId}`}
-                        className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                      >
-                        View All Posts
+                </div>
+                
+                {/* Sidebar Stats */}
+                <div className="lg:col-span-1">
+                  {/* Following Info */}
+                  <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Network</h3>
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <Link to={`/followers/${userId}`} className="bg-blue-50 hover:bg-blue-100 transition-colors p-3 rounded-lg">
+                        <div className="text-xl font-semibold text-blue-800">{userData.followers}</div>
+                        <div className="text-sm text-gray-600">Followers</div>
+                      </Link>
+                      <Link to={`/following/${userId}`} className="bg-blue-50 hover:bg-blue-100 transition-colors p-3 rounded-lg">
+                        <div className="text-xl font-semibold text-blue-800">{userData.following}</div>
+                        <div className="text-sm text-gray-600">Following</div>
                       </Link>
                     </div>
-                  )}
-                </>
-              )}
+                  </div>
+                  
+                  {/* Activity Summary */}
+                  <div className="bg-white rounded-xl shadow-md p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Activity Summary</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-blue-100 rounded-full">
+                          <FaFileAlt className="text-blue-600 text-lg" />
+                        </div>
+                        <div>
+                          <div className="text-lg font-semibold">{userData.posts}</div>
+                          <div className="text-sm text-gray-600">Posts Created</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-green-100 rounded-full">
+                          <FaChartLine className="text-green-600 text-lg" />
+                        </div>
+                        <div>
+                          <div className="text-lg font-semibold">{userData.progressCount}</div>
+                          <div className="text-sm text-gray-600">Progress Updates</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-purple-100 rounded-full">
+                          <FaThumbsUp className="text-purple-600 text-lg" />
+                        </div>
+                        <div>
+                          <div className="text-lg font-semibold">{userData.likesReceived}</div>
+                          <div className="text-sm text-gray-600">Likes Received</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-amber-100 rounded-full">
+                          <FaComment className="text-amber-600 text-lg" />
+                        </div>
+                        <div>
+                          <div className="text-lg font-semibold">{userData.comments}</div>
+                          <div className="text-sm text-gray-600">Comments</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {activeTab === 'posts' && (
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <FaFileAlt className="mr-2 text-blue-500" /> 
+                All Posts
+              </h2>
               
-              {activeTab === 'progress' && (
-                <>
-                  <h3 className="mb-4 text-xl font-semibold border-b pb-2">Progress Updates</h3>
-                  <ProgressFeed userId={userId} hideFilters={false} />
-                </>
+              {userData.recentPosts.length === 0 ? (
+                <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 mb-3">
+                    <FaEye className="text-gray-400 text-lg" />
+                  </div>
+                  <p className="text-lg font-medium mb-1">No posts yet</p>
+                  <p className="text-sm">This user hasn't created any posts</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Link 
+                    to={`/user-posts/${userId}`}
+                    className="inline-block px-5 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 shadow-sm transition-all text-sm font-medium"
+                  >
+                    View All Posts
+                  </Link>
+                </div>
               )}
             </div>
-          </div>
+          )}
+          
+          {activeTab === 'progress' && (
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <FaChartLine className="mr-2 text-green-500" />
+                Progress Updates
+              </h2>
+              
+              <ProgressFeed userId={userId} hideFilters={false} />
+            </div>
+          )}
         </div>
       </div>
       <Footer />

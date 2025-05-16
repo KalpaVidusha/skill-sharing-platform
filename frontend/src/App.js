@@ -1,37 +1,62 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+//user
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import UserDashboard from "./pages/UserDashboard";
 import UserProfile from "./pages/UserProfile";
+import ProgreesOfUserdashboard from './pages/Userdashboard/Progress/ProgreesOfUserdashboard';
+import FollowList from './components/FollowList';
+import UserSearch from './components/UserSearch';
+import Settings from './pages/Userdashboard/Settings';
+
+//posts
 import Posts from './pages/Posts/Posts';
 import PostDetail from './pages/Posts/PostDetail';
 import CreatePost from "./pages/Posts/CreatePost";
 import MyPosts from "./pages/Posts/MyPosts";
 import EditPost from "./pages/Posts/EditPost";
+
+//Monetization
 import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import EditRequest from "./pages/monetizationAndRewardManagement/EditMonetization"; // This will be the edit page
 import Applications from "./pages/monetizationAndRewardManagement/Applications";
+
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
+
+//progress
 import Progress from "./pages/Progress/ProgressAll";
+
+//OAuth
 import OAuthSuccess from "./pages/OAuthSuccess";
+
+//Notifications
 import NotificationsPage from './pages/Notification/NotificationsPage';
+
+//Admin
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import UserManagement from './pages/Admin/UserManagement';
 import ProgressManagement from './pages/Admin/ProgressManagement';
+
+//Learning Plans
+import { LearningPlans, LearningPlanDetails } from './pages/LearningPlans';
+
+//Toast
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { LearningPlans, LearningPlanDetails } from './pages/LearningPlans';
-import ProgreesOfUserdashboard from './pages/Progress/ProgreesOfUserdashboard';
-import FollowList from './components/FollowList';
-import UserSearch from './components/UserSearch';
+
+
+//ScrollToTop
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <ToastContainer 
         position="top-center" 
         autoClose={3000} 
@@ -64,6 +89,7 @@ function App() {
         <Route path="/profile/:userId" element={<UserProfile />} />
         <Route path="/user-posts/:userId" element={<Posts />} />
         <Route path="/userdashboard/progress" element={<ProgreesOfUserdashboard />} />
+        <Route path="/userdashboard/settings" element={<Settings />} />
 
         {/* Direct Routes for Followers, Following, and User Search */}
         <Route path="/followers" element={<FollowList type="followers" />} />
