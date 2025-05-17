@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaImage, FaTimesCircle, FaArrowLeft } from 'react-icons/fa';
 import apiService from '../../services/api';
@@ -19,6 +19,9 @@ const CreatePost = () => {
   const [previewUrls, setPreviewUrls] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
+  const dropAreaRef = useRef(null);
 
   const categories = ['Programming', 'Design', 'Business', 'Photography', 'Music', 'Cooking', 'Fitness', 'Language', 'Other'];
 
@@ -38,11 +41,13 @@ const CreatePost = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
+  // Process files with validation
+  const processFiles = (files) => {
+    // Convert FileList to Array
+    const filesArray = Array.from(files);
     
     // Validate file types and sizes
-    const validFiles = files.filter(file => {
+    const validFiles = filesArray.filter(file => {
       const isValidType = /^(image\/|video\/)/.test(file.type);
       const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
       
@@ -60,22 +65,75 @@ const CreatePost = () => {
     });
     
     if (validFiles.length === 0) return;
-    if (validFiles.length > 3) {
+    
+    // Check total number of files
+    if (uploadedFiles.length + validFiles.length > 3) {
       setError("Maximum 3 files allowed");
       return;
     }
     
     setError(null);
-    setUploadedFiles(validFiles);
-    setPreviewUrls(validFiles.map(file => URL.createObjectURL(file)));
+    
+    // Add new files to the existing ones
+    setUploadedFiles(prev => [...prev, ...validFiles]);
+    
+    // Create and add new preview URLs
+    const newPreviewUrls = validFiles.map(file => URL.createObjectURL(file));
+    setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+  };
+
+  // Handle file input change
+  const handleFileChange = (e) => {
+    processFiles(e.target.files);
+  };
+
+  // Handle drag events
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Only set isDragging to false if we're leaving the drop area itself
+    // not when leaving a child element of the drop area
+    if (e.currentTarget === dropAreaRef.current) {
+      setIsDragging(false);
+    }
+  };
+  
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    }
   };
 
   const handleRemovePreview = (index) => {
+    // Create copies of the arrays
     const newFiles = [...uploadedFiles];
     const newPreviews = [...previewUrls];
+    
+    // Revoke the object URL to avoid memory leaks
     URL.revokeObjectURL(newPreviews[index]);
+    
+    // Remove the items at the specified index
     newFiles.splice(index, 1);
     newPreviews.splice(index, 1);
+    
+    // Update state
     setUploadedFiles(newFiles);
     setPreviewUrls(newPreviews);
   };
@@ -89,7 +147,12 @@ const CreatePost = () => {
     try {
       let mediaUrls = [];
       if (uploadedFiles.length > 0) {
+        // Show some initial progress
+        setUploadProgress(10);
+        
         const uploadResponse = await apiService.uploadFiles(uploadedFiles);
+        setUploadProgress(100);
+        
         mediaUrls = uploadResponse.urls || [];
       }
       
@@ -104,11 +167,13 @@ const CreatePost = () => {
     } catch (err) {
       setError("Failed to create post. Please try again.");
       console.error("Error creating post:", err);
+      setUploadProgress(0);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Clean up object URLs when component unmounts
   useEffect(() => {
     return () => {
       previewUrls.forEach(url => URL.revokeObjectURL(url));
@@ -184,14 +249,24 @@ const CreatePost = () => {
               </label>
               
               {uploadedFiles.length === 0 ? (
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                <div 
+                  ref={dropAreaRef}
+                  className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
+                    isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 border-dashed'
+                  } rounded-md transition-colors duration-200`}
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
                   <div className="space-y-1 text-center">
-                    <FaImage className="mx-auto h-12 w-12 text-gray-400" />
+                    <FaImage className={`mx-auto h-12 w-12 ${isDragging ? 'text-indigo-500' : 'text-gray-400'}`} />
                     <div className="flex justify-center text-sm text-gray-600">
                       <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
                         <span>Upload files</span>
                         <input 
                           id="file-upload" 
+                          ref={fileInputRef}
                           name="file-upload" 
                           type="file" 
                           className="sr-only" 
@@ -238,19 +313,32 @@ const CreatePost = () => {
                       );
                     })}
                     
-                    <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:bg-gray-50">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <FaImage className="h-8 w-8 text-gray-400" />
-                        <p className="text-xs text-gray-500 mt-1">Add more</p>
+                    {uploadedFiles.length < 3 && (
+                      <div 
+                        ref={dropAreaRef}
+                        className={`flex flex-col items-center justify-center w-32 h-32 border-2 ${
+                          isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 border-dashed'
+                        } rounded-md cursor-pointer hover:bg-gray-50 transition-colors duration-200`}
+                        onDragEnter={handleDragEnter}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current.click()}
+                      >
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <FaImage className={`h-8 w-8 ${isDragging ? 'text-indigo-500' : 'text-gray-400'}`} />
+                          <p className="text-xs text-gray-500 mt-1">Add more</p>
+                          <input 
+                            type="file" 
+                            ref={fileInputRef}
+                            className="hidden" 
+                            onChange={handleFileChange}
+                            accept="image/*,video/*"
+                            multiple
+                          />
+                        </div>
                       </div>
-                      <input 
-                        type="file" 
-                        className="hidden" 
-                        onChange={handleFileChange}
-                        accept="image/*,video/*"
-                        multiple
-                      />
-                    </label>
+                    )}
                   </div>
                 </div>
               )}
