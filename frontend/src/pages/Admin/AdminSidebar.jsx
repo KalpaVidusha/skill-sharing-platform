@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { 
   FaUsers, 
@@ -18,6 +18,11 @@ import apiService from "../../services/api";
 const AdminSidebar = ({ activeTab = "dashboard" }) => {
   const [currentTab, setCurrentTab] = useState(activeTab);
   const navigate = useNavigate();
+  
+  // Update currentTab when activeTab prop changes
+  useEffect(() => {
+    setCurrentTab(activeTab);
+  }, [activeTab]);
   
   // Update activeTab when navigating to a page
   const navigateWithTabUpdate = (path, tabId) => {
@@ -92,13 +97,13 @@ const AdminSidebar = ({ activeTab = "dashboard" }) => {
             id: "posts", 
             icon: <FaFileAlt className="text-lg" />, 
             label: "Posts Management", 
-            action: () => navigateWithTabUpdate("/admin/dashboard", "posts") 
+            action: () => navigateWithTabUpdate("/admin/post-management", "posts") 
           },
           { 
             id: "comments", 
             icon: <FaComments className="text-lg" />, 
             label: "Comments Management", 
-            action: () => navigateWithTabUpdate("/admin/dashboard", "comments") 
+            action: () => navigateWithTabUpdate("/admin/comment-management", "comments") 
           },
           { 
             id: "progress", 

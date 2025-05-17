@@ -41,6 +41,8 @@ import NotificationsPage from './pages/Notification/NotificationsPage';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import UserManagement from './pages/Admin/UserManagement';
 import ProgressManagement from './pages/Admin/ProgressManagement';
+import PostManagement from './pages/Admin/PostManagement';
+import CommentManagement from './pages/Admin/CommentManagement';
 import AdminProtectedRoute from './pages/Admin/AdminProtectedRoute';
 
 //Learning Plans
@@ -200,6 +202,16 @@ function App() {
         <Route path="/admin/progress-management" element={
           <AdminProtectedRoute>
             <ProgressManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/post-management" element={
+          <AdminProtectedRoute>
+            <PostManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/comment-management" element={
+          <AdminProtectedRoute>
+            <CommentManagement />
           </AdminProtectedRoute>
         } />
         
