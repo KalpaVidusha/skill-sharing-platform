@@ -74,7 +74,7 @@ const Login = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
       
-      <div className="flex flex-1 items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="flex flex-1 items-center justify-center p-4 pt-24 bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className={`w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-700 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="p-8">
           <div className="text-center mb-8">

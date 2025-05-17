@@ -19,13 +19,31 @@ const EditPost = () => {
   const [previewUrls, setPreviewUrls] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   const categories = ['Programming', 'Design', 'Business', 'Photography', 'Music', 'Cooking', 'Fitness', 'Language', 'Other'];
 
   useEffect(() => {
+    // Get current user ID
+    const currentUserId = localStorage.getItem('userId');
+    if (!currentUserId) {
+      // If not logged in, redirect to login
+      navigate('/login', { state: { from: `/edit-post/${id}` } });
+      return;
+    }
+
     const fetchPost = async () => {
       try {
         const post = await apiService.getPostById(id);
+        
+        // Check if the current user is the post owner
+        if (post.user && post.user.id !== currentUserId) {
+          setError('You are not authorized to edit this post');
+          setIsAuthorized(false);
+          return;
+        }
+        
+        setIsAuthorized(true);
         setFormData({
           title: post.title,
           description: post.description,
@@ -33,17 +51,25 @@ const EditPost = () => {
           mediaUrls: post.mediaUrls || []
         });
       } catch (err) {
-        setError('Post not found');
+        console.error('Error fetching post:', err);
+        setError('Post not found or you do not have permission to edit it');
       } finally {
         setLoading(false);
       }
     };
     
     fetchPost();
-  }, [id]);
+  }, [id, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Double-check authorization before submitting
+    if (!isAuthorized) {
+      setError('You are not authorized to edit this post');
+      return;
+    }
+    
     setIsSubmitting(true);
     setError(null);
     
@@ -71,7 +97,11 @@ const EditPost = () => {
       navigate(`/posts/${id}`);
     } catch (err) {
       console.error('Failed to update post:', err);
-      setError('Failed to update post. Please try again.');
+      if (err.status === 403) {
+        setError('You do not have permission to edit this post');
+      } else {
+        setError('Failed to update post. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -164,6 +194,39 @@ const EditPost = () => {
               100% { transform: rotate(360deg); }
             }
           `}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // If not authorized, show error page
+  if (!isAuthorized && !loading) {
+    return (
+      <div>
+        <Navbar />
+        <div className="min-h-screen bg-gradient-to-r from-blue-50 to-white pt-28 pb-20 px-4">
+          <div className="max-w-4xl mx-auto bg-white rounded-2xl p-8 shadow-lg">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="flex items-center text-indigo-600 hover:text-indigo-500 font-medium mb-6"
+            >
+              <FaArrowLeft className="mr-2" /> Back
+            </button>
+
+            <div className="bg-red-50 text-red-700 p-6 rounded-md flex flex-col items-center justify-center">
+              <svg className="w-12 h-12 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+              <p className="text-center">You are not authorized to edit this post. Only the post owner can edit it.</p>
+              <button 
+                onClick={() => navigate('/posts')} 
+                className="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+              >
+                Go to Posts
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );

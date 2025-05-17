@@ -3,12 +3,13 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import ProgressForm from './ProgressForm';
 import ProgressFeed from './ProgressFeed';
-import { FaSyncAlt } from 'react-icons/fa';
+import { FaSyncAlt, FaTimesCircle, FaShareAlt } from 'react-icons/fa';
 
 const ProgressAll = () => {
   const [refreshFeed, setRefreshFeed] = useState(false);
   const [activeTab, setActiveTab] = useState('global');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   
   // Separate sort orders for each tab
   const [globalSortOrder, setGlobalSortOrder] = useState('newest');
@@ -37,6 +38,7 @@ const ProgressAll = () => {
   // Callback when form submits successfully
   const handleProgressSubmitted = () => {
     setRefreshFeed(prev => !prev); // Toggle to trigger re-fetch
+    setShowForm(false); // Hide the form after successful submission
   };
 
   // Handle tab change - resets the view
@@ -64,17 +66,47 @@ const ProgressAll = () => {
     setRefreshFeed(prev => !prev);
   };
 
+  // Function to toggle the form visibility
+  const toggleForm = () => {
+    setShowForm(prev => !prev);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-r from-blue-100 to-white">
       <Navbar />
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-24">
         <div className="bg-white shadow-lg rounded-lg p-6 mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Add Your Learning Progress
-          </h1>
-          <div className="border-b border-gray-200 mb-6"></div>
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Add Your Learning Progress
+            </h1>
+            {!showForm ? (
+              <button
+                onClick={toggleForm}
+                className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+              >
+                <FaShareAlt className="mr-2" /> Share
+              </button>
+            ) : (
+              <button 
+                onClick={toggleForm}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FaTimesCircle size={20} />
+              </button>
+            )}
+          </div>
           
-          <ProgressForm onSubmitSuccess={handleProgressSubmitted} />
+          <div 
+            className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              showForm ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+            }`}
+          >
+            <div className="border-b border-gray-200 my-4"></div>
+            <div className="transform transition-transform duration-500 ease-in-out">
+              <ProgressForm onSubmitSuccess={handleProgressSubmitted} />
+            </div>
+          </div>
         </div>
         
         <div className="mt-6">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaUser, FaUsers, FaSearch, FaCompass, FaFileAlt, FaPlusCircle, FaChartLine, FaCoins, FaSignOutAlt, FaBrain, FaArrowRight, FaGraduationCap } from "react-icons/fa";
+import { FaUser, FaUsers, FaSearch, FaCompass, FaFileAlt, FaPlusCircle, FaChartLine, FaCoins, FaSignOutAlt, FaBrain, FaArrowRight, FaGraduationCap, FaCog } from "react-icons/fa";
 import Swal from 'sweetalert2';
 import apiService from "../services/api";
 import FollowList from "./FollowList";
@@ -62,28 +62,41 @@ const Sidebar = ({ defaultActiveTab = "profile", userId }) => {
     
     fetchUserData();
     
-    // Set active tab based on current URL path
-    const path = window.location.pathname;
-    if (path.includes('/userdashboard/progress')) {
-      setActiveTab('progress_tracker');
-    } else if (path.includes('/my-posts')) {
-      setActiveTab('myposts');
-    } else if (path === '/') {
-      setActiveTab('explore');
-    } else if (path.includes('/followers')) {
-      setActiveTab('followers');
-    } else if (path.includes('/following')) {
-      setActiveTab('following');
-    } else if (path.includes('/find-users')) {
-      setActiveTab('findUsers');  
-    } else if (path.includes('/learning-plans')) {
-      setActiveTab('learning_plans');
-    } else if (path.includes('/userdashboard')) {
-      setActiveTab('profile');
-    } else if (path.includes('/monetize')) {
-      setActiveTab('monetization');
+    // Set active tab based on defaultActiveTab prop first, or URL path as fallback
+    if (defaultActiveTab) {
+      setActiveTab(defaultActiveTab);
+    } else {
+      // Set based on current URL path - check most specific paths first
+      const path = window.location.pathname;
+      
+      // First priority - check specific userdashboard routes
+      if (path.includes('/userdashboard/progress')) {
+        setActiveTab('progress_tracker');
+      } else if (path.includes('/userdashboard/settings')) {
+        setActiveTab('settings');
+      } else if (path.includes('/userdashboard/monetize')) {
+        setActiveTab('monetization');
+      } else if (path.includes('/userdashboard/learning-plans')) {
+        setActiveTab('learning_plans');
+      } 
+      // Second priority - check other specific routes
+      else if (path.includes('/my-posts')) {
+        setActiveTab('myposts');
+      } else if (path.includes('/followers')) {
+        setActiveTab('followers');
+      } else if (path.includes('/following')) {
+        setActiveTab('following');
+      } else if (path.includes('/find-users')) {
+        setActiveTab('findUsers');  
+      } 
+      // Last priority - check most general routes
+      else if (path === '/') {
+        setActiveTab('explore');
+      } else if (path.includes('/userdashboard')) {
+        setActiveTab('profile');
+      }
     }
-  }, [userId]);
+  }, [userId, defaultActiveTab]);
   
   // Update activeTab when navigating to a page
   const navigateWithTabUpdate = (path, tabId) => {
@@ -135,10 +148,10 @@ const Sidebar = ({ defaultActiveTab = "profile", userId }) => {
     <aside className="flex flex-col w-72 h-full max-h-[calc(100vh-5rem)] overflow-y-auto gap-6 p-6 bg-gradient-to-b from-blue-700 to-blue-600 shadow-xl">
       {/* Logo/Branding */}
       <div className="flex items-center gap-3 mb-8 pl-2">
-        <div className="p-2 bg-white/10 rounded-lg">
+        {/* <div className="p-2 bg-white/10 rounded-lg">
           <FaBrain className="text-2xl text-blue-200" />
-        </div>
-        <h2 className="text-2xl font-bold text-white tracking-tight">SkillSphere</h2>
+        </div> */}
+        <h2 className="text-2xl font-bold text-white tracking-tight"></h2>
       </div>
       {/* Navigation Items */}
       <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
@@ -203,6 +216,12 @@ const Sidebar = ({ defaultActiveTab = "profile", userId }) => {
             icon: <FaCoins className="text-lg" />, 
             label: "Monetization", 
             action: () => navigateWithTabUpdate("/userdashboard/monetize", "monetization") 
+          },
+          { 
+            id: "settings", 
+            icon: <FaCog className="text-lg" />, 
+            label: "Settings", 
+            action: () => navigateWithTabUpdate("/userdashboard/settings", "settings") 
           },
           
         ].map((item) => (

@@ -1,7 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import apiService from '../../services/api';
 import AdminSidebar from './AdminSidebar';
+import { 
+  FaUsers, 
+  FaChartLine, 
+  FaCommentAlt, 
+  FaHeart, 
+  FaFileAlt, 
+  FaGraduationCap,
+  FaArrowUp,
+  FaArrowDown,
+  FaCalendarAlt
+} from 'react-icons/fa';
+
+// Lazy load chart components to avoid React 19 initialization issues
+const ChartComponent = lazy(() => import('./ChartComponent'));
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
@@ -9,9 +23,20 @@ const AdminDashboard = () => {
   const [progress, setProgress] = useState([]);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [timeRange, setTimeRange] = useState('week');
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalPosts: 0,
+    totalProgress: 0,
+    totalComments: 0,
+    totalLikes: 0,
+    newUsersToday: 0,
+    postsThisWeek: 0,
+    engagementRate: 0
+  });
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,498 +46,454 @@ const AdminDashboard = () => {
       return;
     }
 
-    // Fetch data based on active tab
-    fetchData(activeTab);
-  }, [navigate, activeTab]);
+    // Fetch all data for the dashboard
+    fetchDashboardData();
+  }, [navigate, timeRange]);
 
-  const fetchData = async (tab) => {
+  const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      switch(tab) {
-        case 'users':
-          const userData = await apiService.admin.getAllUsers();
-          setUsers(userData);
-          break;
-        case 'posts':
-          const postsData = await apiService.getAllPosts();
-          setPosts(postsData);
-          break;
-        case 'progress':
-          const progressData = await apiService.getAllProgress();
-          setProgress(progressData);
-          break;
-        case 'comments':
-          // Get comments from all posts
-          const allPosts = await apiService.getAllPosts();
-          const commentsPromises = allPosts.map(post => 
-            apiService.getCommentsByPost(post.id)
-              .then(comments => comments.map(comment => ({
-                ...comment,
-                postTitle: post.title || 'Unknown Post'
-              })))
-              .catch(() => [])
-          );
-          const allCommentsArrays = await Promise.all(commentsPromises);
-          const allComments = allCommentsArrays.flat();
-          setComments(allComments);
-          break;
-        default:
-          break;
-      }
+      // Fetch all required data
+      const userData = await apiService.admin.getAllUsers();
+      const postsData = await apiService.getAllPosts();
+      const progressData = await apiService.getAllProgress();
+      
+      // Fetch comments from all posts
+      const commentsPromises = postsData.map(post => 
+        apiService.getCommentsByPost(post.id)
+          .catch(() => [])
+      );
+      const allCommentsArrays = await Promise.all(commentsPromises);
+      const allComments = allCommentsArrays.flat();
+      
+      // Calculate total likes
+      const totalLikes = postsData.reduce((total, post) => total + (post.likeCount || 0), 0);
+      
+      // Update state with fetched data
+      setUsers(userData);
+      setPosts(postsData);
+      setProgress(progressData);
+      setComments(allComments);
+      
+      // Calculate dashboard statistics
+      calculateStats(userData, postsData, progressData, allComments, totalLikes);
+      
       setError(null);
     } catch (err) {
-      setError(err.message || `Failed to fetch ${tab}`);
-      console.error(`Error fetching ${tab}:`, err);
+      setError('Failed to fetch dashboard data');
+      console.error('Error fetching dashboard data:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      return;
+  const calculateStats = (users, posts, progress, comments, likes) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const oneWeekAgo = new Date(now);
+    oneWeekAgo.setDate(now.getDate() - 7);
+    
+    // Calculate new users today
+    const newUsersToday = users.filter(user => {
+      const createdAt = new Date(user.createdAt || user.registeredAt);
+      return createdAt >= today;
+    }).length;
+    
+    // Calculate posts this week
+    const postsThisWeek = posts.filter(post => {
+      const createdAt = new Date(post.createdAt || post.timestamp);
+      return createdAt >= oneWeekAgo;
+    }).length;
+    
+    // Calculate engagement rate
+    const engagementRate = posts.length > 0 ? 
+      ((comments.length + likes) / posts.length).toFixed(1) : 0;
+    
+    setStats({
+      totalUsers: users.length,
+      totalPosts: posts.length,
+      totalProgress: progress.length,
+      totalComments: comments.length,
+      totalLikes: likes,
+      newUsersToday,
+      postsThisWeek,
+      engagementRate
+    });
+  };
+
+  // Generate date labels for charts
+  const getLabels = () => {
+    const labels = [];
+    const now = new Date();
+    
+    switch(timeRange) {
+      case 'week':
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date(now);
+          date.setDate(date.getDate() - i);
+          labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+        }
+        break;
+      case 'month':
+        for (let i = 0; i < 4; i++) {
+          const date = new Date(now);
+          date.setDate(date.getDate() - (i * 7));
+          labels.push(`Week ${i+1}`);
+        }
+        break;
+      case 'year':
+        for (let i = 0; i < 12; i++) {
+          const date = new Date(now);
+          date.setMonth(date.getMonth() - i);
+          labels.push(date.toLocaleDateString('en-US', { month: 'short' }));
+        }
+        labels.reverse();
+        break;
+      default:
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date(now);
+          date.setDate(date.getDate() - i);
+          labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+        }
     }
     
-    try {
-      await apiService.admin.deleteUser(userId);
-      setSuccessMessage('User deleted successfully');
-      fetchData('users');
-    } catch (err) {
-      setError(err.message || 'Failed to delete user');
-      console.error('Error deleting user:', err);
-    }
+    return labels;
   };
 
-  const handlePromoteUser = async (userId) => {
-    try {
-      await apiService.admin.promoteUserToAdmin(userId);
-      setSuccessMessage('User promoted to admin successfully');
-      fetchData('users');
-    } catch (err) {
-      setError(err.message || 'Failed to promote user');
-      console.error('Error promoting user:', err);
-    }
+  // Generate sample data for charts
+  // In a real app, this would come from your analytics API
+  const generateSampleData = (min, max, count) => {
+    return Array.from({ length: count }, () => 
+      Math.floor(Math.random() * (max - min + 1)) + min
+    );
   };
 
-  const handleDemoteAdmin = async (userId) => {
-    try {
-      await apiService.admin.demoteAdminToUser(userId);
-      setSuccessMessage('Admin demoted to user successfully');
-      fetchData('users');
-    } catch (err) {
-      setError(err.message || 'Failed to demote admin');
-      console.error('Error demoting admin:', err);
+  // Chart data preparation
+  const chartData = {
+    userActivity: {
+      labels: getLabels(),
+      datasets: [
+        {
+          label: 'New Users',
+          data: generateSampleData(3, 10, getLabels().length),
+          borderColor: 'rgb(79, 70, 229)',
+          backgroundColor: 'rgba(79, 70, 229, 0.1)',
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: 'Active Users',
+          data: generateSampleData(20, 40, getLabels().length),
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.4,
+          fill: true
+        }
+      ]
+    },
+    contentCreation: {
+      labels: getLabels(),
+      datasets: [
+        {
+          label: 'Posts',
+          data: generateSampleData(4, 12, getLabels().length),
+          borderColor: 'rgb(16, 185, 129)',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: 'Progress Updates',
+          data: generateSampleData(10, 20, getLabels().length),
+          borderColor: 'rgb(245, 158, 11)',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          tension: 0.4,
+          fill: true
+        }
+      ]
+    },
+    engagement: {
+      labels: getLabels(),
+      datasets: [
+        {
+          label: 'Comments',
+          data: generateSampleData(5, 15, getLabels().length),
+          backgroundColor: 'rgba(59, 130, 246, 0.7)',
+        },
+        {
+          label: 'Likes',
+          data: generateSampleData(15, 30, getLabels().length),
+          backgroundColor: 'rgba(239, 68, 68, 0.7)',
+        }
+      ]
+    },
+    contentCategories: {
+      labels: ['Programming', 'Design', 'Photography', 'Writing', 'Music', 'Other'],
+      datasets: [
+        {
+          data: generateSampleData(10, 30, 6),
+          backgroundColor: [
+            'rgba(79, 70, 229, 0.8)',
+            'rgba(59, 130, 246, 0.8)',
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(239, 68, 68, 0.8)',
+            'rgba(245, 158, 11, 0.8)',
+            'rgba(107, 114, 128, 0.8)'
+          ],
+          borderWidth: 0,
+        }
+      ]
     }
   };
-
-  const handleDeleteAllPosts = async () => {
-    if (!window.confirm('Are you sure you want to delete ALL posts? This action cannot be undone.')) {
-      return;
-    }
-    
-    try {
-      await apiService.admin.deleteAllPosts();
-      setSuccessMessage('All posts deleted successfully');
-      if (activeTab === 'posts') {
-        fetchData('posts');
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to delete all posts');
-      console.error('Error deleting posts:', err);
-    }
-  };
-
-  const handleDeleteAllProgress = async () => {
-    if (!window.confirm('Are you sure you want to delete ALL progress records? This action cannot be undone.')) {
-      return;
-    }
-    
-    try {
-      await apiService.admin.deleteAllProgress();
-      setSuccessMessage('All progress records deleted successfully');
-      if (activeTab === 'progress') {
-        fetchData('progress');
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to delete all progress records');
-      console.error('Error deleting progress records:', err);
-    }
-  };
-
-  const handleDeleteAllComments = async () => {
-    if (!window.confirm('Are you sure you want to delete ALL comments? This action cannot be undone.')) {
-      return;
-    }
-    
-    try {
-      await apiService.admin.deleteAllComments();
-      setSuccessMessage('All comments deleted successfully');
-      if (activeTab === 'comments') {
-        fetchData('comments');
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to delete all comments');
-      console.error('Error deleting comments:', err);
-    }
-  };
-
-  const handleDeletePost = async (postId) => {
-    if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-      return;
-    }
-    
-    try {
-      await apiService.admin.deletePost(postId);
-      setSuccessMessage('Post deleted successfully');
-      fetchData('posts');
-    } catch (err) {
-      setError(err.message || 'Failed to delete post');
-      console.error('Error deleting post:', err);
-    }
-  };
-
-  const handleDeleteProgress = async (progressId) => {
-    if (!window.confirm('Are you sure you want to delete this progress record? This action cannot be undone.')) {
-      return;
-    }
-    
-    try {
-      await apiService.admin.deleteProgressRecord(progressId);
-      setSuccessMessage('Progress record deleted successfully');
-      fetchData('progress');
-    } catch (err) {
-      setError(err.message || 'Failed to delete progress record');
-      console.error('Error deleting progress record:', err);
-    }
-  };
-
-  const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
-      return;
-    }
-    
-    try {
-      await apiService.admin.deleteComment(commentId);
-      setSuccessMessage('Comment deleted successfully');
-      fetchData('comments');
-    } catch (err) {
-      setError(err.message || 'Failed to delete comment');
-      console.error('Error deleting comment:', err);
-    }
-  };
-
-  // Helper function to check if a user is an admin
-  const isUserAdmin = (user) => {
-    return user.role && user.role.includes('ROLE_ADMIN');
-  };
-
-  // Clear success message after 5 seconds
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => {
-        setSuccessMessage('');
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Admin Sidebar */}
-      <AdminSidebar activeTab={activeTab} />
+    <div className="flex h-screen bg-gray-50">
+      {/* Admin Sidebar - Fixed position */}
+      <div className="fixed left-0 top-0 h-screen bg-white z-10 shadow-md">
+        <AdminSidebar activeTab={activeTab} />
+      </div>
       
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-            <Link 
-              to="/userdashboard" 
-              className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded focus:outline-none"
-            >
-              Back to User Dashboard
-            </Link>
+      {/* Main Content - Add left margin to make space for fixed sidebar */}
+      <div className="flex-1 overflow-auto ml-72">
+        <div className="p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Analytics Dashboard</h1>
+              <p className="text-gray-500 mt-1">Monitor platform performance and user engagement</p>
+            </div>
+            
+            <div className="flex items-center space-x-4 mt-4 md:mt-0">
+              <div className="bg-white rounded-lg shadow p-2 flex items-center">
+                <FaCalendarAlt className="text-gray-400 mr-2" />
+                <select 
+                  value={timeRange} 
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="border-0 focus:ring-0 text-sm font-medium"
+                >
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last Month</option>
+                  <option value="year">Last Year</option>
+                </select>
+              </div>
+              
+              <Link 
+                to="/userdashboard" 
+                className="bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 py-2 px-4 rounded-lg shadow-sm text-sm font-medium"
+              >
+                Back to User Dashboard
+              </Link>
+            </div>
           </div>
           
-          {/* Display error message if there is one */}
+          {/* Error message */}
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-              <strong className="font-bold">Error: </strong>
-              <span className="block sm:inline">{error}</span>
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
+              <p>{error}</p>
             </div>
           )}
           
-          {/* Display success message if there is one */}
-          {successMessage && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-              <strong className="font-bold">Success: </strong>
-              <span className="block sm:inline">{successMessage}</span>
-            </div>
-          )}
-          
-          {/* Global actions section */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4">Global Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 border rounded-lg bg-white shadow-sm">
-                <h3 className="font-medium text-lg mb-2">Posts Management</h3>
-                <p className="text-gray-600 mb-4">Delete all posts from the platform.</p>
-                <button 
-                  onClick={handleDeleteAllPosts}
-                  className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded focus:outline-none"
-                >
-                  Delete All Posts
-                </button>
-              </div>
-              
-              <div className="p-4 border rounded-lg bg-white shadow-sm">
-                <h3 className="font-medium text-lg mb-2">Progress Management</h3>
-                <p className="text-gray-600 mb-4">Delete all progress records from the platform.</p>
-                <button 
-                  onClick={handleDeleteAllProgress}
-                  className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded focus:outline-none"
-                >
-                  Delete All Progress
-                </button>
-              </div>
-              
-              <div className="p-4 border rounded-lg bg-white shadow-sm">
-                <h3 className="font-medium text-lg mb-2">Comments Management</h3>
-                <p className="text-gray-600 mb-4">Delete all comments from the platform.</p>
-                <button 
-                  onClick={handleDeleteAllComments}
-                  className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded focus:outline-none"
-                >
-                  Delete All Comments
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          {/* Navigation tabs */}
-          <div className="mb-6">
-            <div className="border-b border-gray-200">
-              <nav className="flex -mb-px">
-                <button
-                  onClick={() => setActiveTab('users')}
-                  className={`mr-8 py-4 px-1 text-center border-b-2 font-medium text-sm ${
-                    activeTab === 'users'
-                      ? 'border-red-500 text-red-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Users
-                </button>
-                <button
-                  onClick={() => setActiveTab('posts')}
-                  className={`mr-8 py-4 px-1 text-center border-b-2 font-medium text-sm ${
-                    activeTab === 'posts'
-                      ? 'border-red-500 text-red-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Posts
-                </button>
-                <button
-                  onClick={() => setActiveTab('progress')}
-                  className={`mr-8 py-4 px-1 text-center border-b-2 font-medium text-sm ${
-                    activeTab === 'progress'
-                      ? 'border-red-500 text-red-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Progress
-                </button>
-                <button
-                  onClick={() => setActiveTab('comments')}
-                  className={`mr-8 py-4 px-1 text-center border-b-2 font-medium text-sm ${
-                    activeTab === 'comments'
-                      ? 'border-red-500 text-red-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Comments
-                </button>
-              </nav>
-            </div>
-          </div>
-          
-          {/* Content based on active tab */}
           {loading ? (
-            <div className="flex justify-center my-10">
-              <p className="text-gray-500">Loading data...</p>
+            <div className="flex justify-center items-center h-96">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
             </div>
           ) : (
-            <div>
-              {/* Users tab */}
-              {activeTab === 'users' && (
-                <div>
-                  <h2 className="text-2xl font-semibold mb-4">User Management</h2>
-                  <div className="overflow-x-auto bg-white rounded-lg shadow">
-                    <table className="min-w-full bg-white border border-gray-200">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th className="text-left py-3 px-4 font-semibold text-sm">ID</th>
-                          <th className="text-left py-3 px-4 font-semibold text-sm">Username</th>
-                          <th className="text-left py-3 px-4 font-semibold text-sm">Email</th>
-                          <th className="text-left py-3 px-4 font-semibold text-sm">Role</th>
-                          <th className="text-left py-3 px-4 font-semibold text-sm">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {users.map((user) => (
-                          <tr key={user.id} className={isUserAdmin(user) ? 'bg-blue-50' : ''}>
-                            <td className="py-3 px-4">{user.id}</td>
-                            <td className="py-3 px-4">{user.username}</td>
-                            <td className="py-3 px-4">{user.email}</td>
-                            <td className="py-3 px-4">
-                              {isUserAdmin(user) ? (
-                                <span className="bg-blue-100 text-blue-800 py-1 px-2 rounded-full text-xs">
-                                  Admin
-                                </span>
-                              ) : (
-                                <span className="bg-gray-100 text-gray-800 py-1 px-2 rounded-full text-xs">
-                                  User
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex space-x-2">
-                                {isUserAdmin(user) ? (
-                                  <button
-                                    onClick={() => handleDemoteAdmin(user.id)}
-                                    className="bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-2 rounded text-xs"
-                                  >
-                                    Demote to User
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => handlePromoteUser(user.id)}
-                                    className="bg-green-500 hover:bg-green-600 text-white py-1 px-2 rounded text-xs"
-                                  >
-                                    Promote to Admin
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handleDeleteUser(user.id)}
-                                  className="bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded text-xs"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+            <>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {/* Users Card */}
+                <div className="bg-white rounded-xl shadow p-6">
+                  <div className="flex items-center">
+                    <div className="p-3 rounded-full bg-indigo-100 mr-4">
+                      <FaUsers className="h-6 w-6 text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Total Users</p>
+                      <h3 className="text-2xl font-bold text-gray-800">{stats.totalUsers}</h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {stats.newUsersToday} new today
+                      </p>
+                    </div>
                   </div>
                 </div>
-              )}
-
-              {/* Posts tab */}
-              {activeTab === 'posts' && (
-                <div>
-                  <h2 className="text-2xl font-semibold mb-4">Posts Management</h2>
-                  {posts.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {posts.map((post) => (
-                        <div key={post.id} className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                          <div className="p-4">
-                            <h3 className="font-medium text-lg mb-1 truncate">{post.title}</h3>
-                            <p className="text-sm text-gray-500 mb-2">
-                              By {post.author?.username || 'Unknown'} • {new Date(post.timestamp || post.createdAt || Date.now()).toLocaleDateString()}
-                            </p>
-                            <p className="text-gray-700 mb-4 line-clamp-3">{post.content}</p>
-                            <div className="flex justify-between items-center">
-                              <Link
-                                to={`/posts/${post.id}`}
-                                className="text-blue-500 hover:text-blue-700 text-sm font-medium"
-                              >
-                                View Post
-                              </Link>
-                              <button
-                                onClick={() => handleDeletePost(post.id)}
-                                className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                
+                {/* Posts Card */}
+                <div className="bg-white rounded-xl shadow p-6">
+                  <div className="flex items-center">
+                    <div className="p-3 rounded-full bg-blue-100 mr-4">
+                      <FaFileAlt className="h-6 w-6 text-blue-600" />
                     </div>
-                  ) : (
-                    <p className="text-gray-500 text-center py-6 bg-white rounded-lg shadow">No posts found.</p>
-                  )}
-                </div>
-              )}
-
-              {/* Progress tab */}
-              {activeTab === 'progress' && (
-                <div>
-                  <h2 className="text-2xl font-semibold mb-4">Progress Management</h2>
-                  {progress.length > 0 ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {progress.map((progressItem) => (
-                        <div key={progressItem.id} className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                          <div className="p-4">
-                            <h3 className="font-medium text-lg mb-1 truncate">{progressItem.title}</h3>
-                            <p className="text-sm text-gray-500 mb-2">
-                              By {progressItem.user?.username || 'Unknown'} • {new Date(progressItem.timestamp || progressItem.createdAt || Date.now()).toLocaleDateString()}
-                            </p>
-                            <p className="text-gray-700 mb-4 line-clamp-3">{progressItem.content || progressItem.description}</p>
-                            <div className="flex justify-end">
-                              <button
-                                onClick={() => handleDeleteProgress(progressItem.id)}
-                                className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    <div>
+                      <p className="text-sm text-gray-500">Total Posts</p>
+                      <h3 className="text-2xl font-bold text-gray-800">{stats.totalPosts}</h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {stats.postsThisWeek} this week
+                      </p>
                     </div>
-                  ) : (
-                    <p className="text-gray-500 text-center py-6 bg-white rounded-lg shadow">No progress records found.</p>
-                  )}
+                  </div>
                 </div>
-              )}
-
-              {/* Comments tab */}
-              {activeTab === 'comments' && (
-                <div>
-                  <h2 className="text-2xl font-semibold mb-4">Comments Management</h2>
-                  {comments.length > 0 ? (
-                    <div className="space-y-4">
-                      {comments.map((comment) => (
-                        <div key={comment.id} className="border rounded-lg overflow-hidden bg-white shadow-sm p-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-sm text-gray-500 mb-1">
-                                For post: {comment.postTitle || 'Unknown Post'}
-                              </p>
-                              <p className="mb-2 font-medium">
-                                By {comment.author?.username || comment.user?.username || 'Unknown user'} • {new Date(comment.timestamp || comment.createdAt || Date.now()).toLocaleDateString()}
-                              </p>
-                              <p className="text-gray-700">{comment.content || comment.text}</p>
-                            </div>
-                            <button
-                              onClick={() => handleDeleteComment(comment.id)}
-                              className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                
+                {/* Engagement Card */}
+                <div className="bg-white rounded-xl shadow p-6">
+                  <div className="flex items-center">
+                    <div className="p-3 rounded-full bg-green-100 mr-4">
+                      <FaHeart className="h-6 w-6 text-green-600" />
                     </div>
-                  ) : (
-                    <p className="text-gray-500 text-center py-6 bg-white rounded-lg shadow">No comments found.</p>
-                  )}
+                    <div>
+                      <p className="text-sm text-gray-500">Engagement</p>
+                      <h3 className="text-2xl font-bold text-gray-800">{stats.engagementRate}</h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Interactions per post
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+                
+                {/* Progress Card */}
+                <div className="bg-white rounded-xl shadow p-6">
+                  <div className="flex items-center">
+                    <div className="p-3 rounded-full bg-yellow-100 mr-4">
+                      <FaGraduationCap className="h-6 w-6 text-yellow-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Progress Updates</p>
+                      <h3 className="text-2xl font-bold text-gray-800">{stats.totalProgress}</h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Learning milestones
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Charts Row 1 */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* User Activity Chart */}
+                <div className="bg-white p-6 rounded-xl shadow">
+                  <h2 className="text-lg font-semibold mb-4">User Activity</h2>
+                  <div className="h-80">
+                    <Suspense fallback={<div className="h-full w-full flex items-center justify-center">Loading chart...</div>}>
+                      <ChartComponent 
+                        type="line" 
+                        data={chartData.userActivity}
+                      />
+                    </Suspense>
+                  </div>
+                </div>
+                
+                {/* Content Creation Chart */}
+                <div className="bg-white p-6 rounded-xl shadow">
+                  <h2 className="text-lg font-semibold mb-4">Content Creation</h2>
+                  <div className="h-80">
+                    <Suspense fallback={<div className="h-full w-full flex items-center justify-center">Loading chart...</div>}>
+                      <ChartComponent 
+                        type="line" 
+                        data={chartData.contentCreation}
+                      />
+                    </Suspense>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Charts Row 2 */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Engagement Chart */}
+                <div className="bg-white p-6 rounded-xl shadow">
+                  <h2 className="text-lg font-semibold mb-4">Engagement Metrics</h2>
+                  <div className="h-80">
+                    <Suspense fallback={<div className="h-full w-full flex items-center justify-center">Loading chart...</div>}>
+                      <ChartComponent 
+                        type="bar" 
+                        data={chartData.engagement}
+                      />
+                    </Suspense>
+                  </div>
+                </div>
+                
+                {/* Categories Chart */}
+                <div className="bg-white p-6 rounded-xl shadow">
+                  <h2 className="text-lg font-semibold mb-4">Content Categories</h2>
+                  <div className="h-80 flex justify-center items-center">
+                    <div className="w-4/5 h-full">
+                      <Suspense fallback={<div className="h-full w-full flex items-center justify-center">Loading chart...</div>}>
+                        <ChartComponent 
+                          type="doughnut" 
+                          data={chartData.contentCategories}
+                        />
+                      </Suspense>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Recent Activity Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Top Users */}
+                <div className="bg-white p-6 rounded-xl shadow col-span-1">
+                  <h2 className="text-lg font-semibold mb-4">Top Users</h2>
+                  <div className="space-y-4">
+                    {users.slice(0, 5).map((user, index) => (
+                      <div key={user.id || index} className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3 flex-shrink-0">
+                          <span className="text-indigo-600 font-medium">{user.username?.charAt(0).toUpperCase() || '?'}</span>
+                        </div>
+                        <div className="flex-grow">
+                          <p className="font-medium">{user.username || 'Unknown User'}</p>
+                          <p className="text-xs text-gray-500">{user.email || 'No email available'}</p>
+                        </div>
+                        <div className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-700">
+                          {(user.postCount || 0) + (user.progressCount || 0)} contributions
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Popular Posts */}
+                <div className="bg-white p-6 rounded-xl shadow col-span-1">
+                  <h2 className="text-lg font-semibold mb-4">Popular Posts</h2>
+                  <div className="space-y-4">
+                    {posts.slice(0, 5).map((post, index) => (
+                      <div key={post.id || index} className="border-l-4 border-indigo-500 pl-4 py-1">
+                        <p className="font-medium truncate">{post.title || 'Untitled Post'}</p>
+                        <div className="flex items-center text-xs text-gray-500 mt-1">
+                          <FaHeart className="mr-1 text-red-500" />
+                          <span className="mr-3">{post.likeCount || 0}</span>
+                          <FaCommentAlt className="mr-1 text-blue-500" />
+                          <span>{post.commentCount || 0}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Recent Activity */}
+                <div className="bg-white p-6 rounded-xl shadow col-span-1">
+                  <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
+                  <div className="space-y-4">
+                    <div className="border-l-4 border-blue-500 pl-4 py-1">
+                      <p className="text-sm font-medium">New user registered</p>
+                      <p className="text-xs text-gray-500">2 minutes ago</p>
+                    </div>
+                    <div className="border-l-4 border-green-500 pl-4 py-1">
+                      <p className="text-sm font-medium">New post created</p>
+                      <p className="text-xs text-gray-500">15 minutes ago</p>
+                    </div>
+                    <div className="border-l-4 border-yellow-500 pl-4 py-1">
+                      <p className="text-sm font-medium">Progress update shared</p>
+                      <p className="text-xs text-gray-500">32 minutes ago</p>
+                    </div>
+                    <div className="border-l-4 border-red-500 pl-4 py-1">
+                      <p className="text-sm font-medium">New comment added</p>
+                      <p className="text-xs text-gray-500">1 hour ago</p>
+                    </div>
+                    <div className="border-l-4 border-purple-500 pl-4 py-1">
+                      <p className="text-sm font-medium">User liked a post</p>
+                      <p className="text-xs text-gray-500">2 hours ago</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -520,4 +501,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard; 
+export default AdminDashboard;
