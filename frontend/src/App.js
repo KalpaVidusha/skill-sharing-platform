@@ -68,9 +68,9 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
-      <ToastContainer 
-        position="top-center" 
-        autoClose={3000} 
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
         hideProgressBar={false}
         newestOnTop
         closeOnClick
@@ -84,7 +84,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        
+
         {/* Post Management */}
         <Route path="/posts" element={<Posts />} />
         <Route path="/posts/:id" element={<PostDetail />} />
@@ -103,7 +103,7 @@ function App() {
             <EditPost />
           </ProtectedRoute>
         } />
-        
+
         {/* User Management - Protected */}
         <Route path="/userdashboard" element={
           <ProtectedRoute>
@@ -129,7 +129,7 @@ function App() {
           <ProtectedRoute>
             <UserProfile />
           </ProtectedRoute>} />
-          
+
         <Route path="/user-posts/:userId" element={<Posts />} />
         <Route path="/userdashboard/progress" element={
           <ProtectedRoute>
@@ -155,10 +155,10 @@ function App() {
         } />
         <Route path="/find-users" element={
           <ProtectedRoute>
-            <UserSearch />        <Route path="/findUsers" element={<fUsers />} />
-
+            <UserSearch />
           </ProtectedRoute>
         } />
+
 
         {/* user progress */}
         <Route path="/progress" element={<Progress />} />
@@ -178,15 +178,15 @@ function App() {
         <Route path="/userdashboard/Applications" element={<Applications />} />
         <Route path="/userdashboard/Applications/edit/:id" element={<EditRequest />} />
         <Route path="/AdminDashboard" element={<AdminDashboard2 />} />
-        
 
-        
+
+
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/user-management" element={<UserManagement />} />
         <Route path="/admin/progress-management" element={<ProgressManagement />} />
         <Route path="/admin/AdminMonetize" element={<AdminMonetize />} />
-        
+
         {/* Optional: Category Filter */}
         <Route path="/category/:categoryName" element={<Home />} />
 
