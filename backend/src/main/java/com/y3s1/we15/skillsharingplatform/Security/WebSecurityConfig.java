@@ -92,7 +92,7 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
@@ -118,8 +118,6 @@ public class WebSecurityConfig {
                     .requestMatchers("/api/comments").permitAll()
                     .requestMatchers("/api/comments/post/**").permitAll()  // Allow access to get comments by post
                     .requestMatchers("/api/posts/**").permitAll()
-                    .requestMatchers(HttpMethod.PATCH,"/api/monetization/**").permitAll()
-
                     .requestMatchers(HttpMethod.GET, "/api/progress").permitAll() // Allow public access to GET progress updates
                     .requestMatchers(HttpMethod.GET, "/api/progress/templates").permitAll() // Allow public access to GET progress templates
                     .requestMatchers(HttpMethod.GET, "/api/progress/{progressId}/comments").permitAll() // Allow public access to GET progress comments

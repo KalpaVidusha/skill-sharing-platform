@@ -23,23 +23,14 @@ const Applications = () => {
     setLoading(true);
     setFetchError("");
     setActionError("");
-
     const token = getToken();
-    const userId = localStorage.getItem("userId");
-
     if (!token) {
       setLoading(false);
       return;
     }
 
-    if (!userId) {
-      setFetchError("User ID not found. Please log in again.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const res = await axios.get(`http://localhost:8081/api/monetization/user/${userId}`, {
+      const res = await axios.get("http://localhost:8081/api/monetization", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setRequests(res.data);
@@ -101,24 +92,27 @@ const Applications = () => {
       <Navbar />
       {/* Overlay for readability */}
       <div className="min-h-screen bg-black/10 backdrop-blur-sm">
+        {/* Navbar */}
+        
+        
         <div className="flex min-h-screen pt-20 font-sans">
           {/* Sidebar */}
           <div className="sticky top-20 h-[calc(100vh-5rem)] self-start">
             <Sidebar defaultActiveTab="monetization" />
           </div>
-
+          
           {/* Main Content */}
           <div className="flex-1 p-8 overflow-y-auto">
             <h2 className="mb-8 text-4xl font-bold text-center text-blue-600">
               My Monetization Requests
             </h2>
-
+    
             {loading && (
               <div className="text-lg text-center text-blue-600 animate-pulse">
                 Loading...
               </div>
             )}
-
+    
             {fetchError && (
               <div className="p-4 mb-6 text-center text-red-700 bg-red-100 border border-red-300 rounded-lg">
                 <p className="font-semibold">Error:</p>
@@ -133,13 +127,13 @@ const Applications = () => {
                 )}
               </div>
             )}
-
+    
             {actionError && (
               <div className="p-4 mb-6 text-center text-red-600 border border-red-200 rounded bg-red-50">
                 {actionError}
               </div>
             )}
-
+    
             {!loading && !fetchError && requests.length === 0 && (
               <div className="py-10 text-center text-black">
                 No requests found.{" "}
@@ -151,7 +145,7 @@ const Applications = () => {
                 </a>
               </div>
             )}
-
+    
             {!loading && !fetchError && requests.length > 0 && (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {requests.map((req) => (
@@ -172,12 +166,13 @@ const Applications = () => {
                       <span className="font-medium">Channel Link:</span> {req.platform}
                     </p>
                     <p className="mt-2 text-sm text-black">
-                      <span className="font-medium">Earnings:</span> ${req.expectedEarnings}
+                      <span className="font-medium">Earnings:</span> $
+                      {req.expectedEarnings}
                     </p>
                     <p className="mt-2 text-sm text-black ">
-                      <span className="font-medium">User ID:</span> {req.userId}
+                    <span className="font-medium">User ID:</span> {req.userId}
                     </p>
-                    {/* <div className="flex justify-end gap-2 mt-4">
+                    <div className="flex justify-end gap-2 mt-4">
                       <button
                         onClick={() => handleEdit(req.id)}
                         className="px-3 py-1 text-sm font-medium text-white bg-yellow-500 rounded hover:bg-yellow-600"
@@ -190,10 +185,7 @@ const Applications = () => {
                       >
                         Delete
                       </button>
-                    </div> */}
-                     <p className="mt-2 text-sm text-black">
-                      <span className="font-medium">Status:</span> {req.approved ? <span className="font-semibold text-green-600">Approved</span> : <span className="font-semibold text-orange-600">Pending</span>}
-                    </p>
+                    </div>
                   </div>
                 ))}
               </div>

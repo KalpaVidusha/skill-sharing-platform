@@ -116,9 +116,4 @@ public class MonetizationServiceImpl implements MonetizationService { // Impleme
         }
         return false; // Request not found, deletion failed
     }
-
-    @Override
-    public MonetizationModel saveRequest(MonetizationModel request) {
-        return monetizationRepository.save(request);
-    }
 }

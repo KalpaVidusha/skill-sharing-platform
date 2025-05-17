@@ -50,26 +50,28 @@ public class MonetizationController {
     }
 
     // --- CREATE ---
-@PostMapping
-@PreAuthorize("isAuthenticated()")
-public ResponseEntity<?> createMonetizationRequest(@Valid @RequestBody MonetizationModel requestData) {
-    UserModel currentUser = getCurrentUser();
-    if (currentUser == null) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not authenticated"));
-    }
+    // Allows any logged-in user to create a monetization request for themselves.
+    @PostMapping
+    @PreAuthorize("isAuthenticated()") // Ensures a user is logged in (any role)
+    public ResponseEntity<?> createMonetizationRequest(@Valid @RequestBody MonetizationModel requestData) {
+        UserModel currentUser = getCurrentUser();
+        if (currentUser == null) {
+            // This should ideally not happen if @PreAuthorize works, but good practice to check
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not authenticated"));
+        }
 
-    requestData.setUserId(currentUser.getId());
-    requestData.setApproved(false); // Ensure default value is explicitly set
+        // Automatically set the userId from the currently logged-in user
+        requestData.setUserId(currentUser.getId());
 
-    try {
-        MonetizationModel createdRequest = monetizationService.createRequest(requestData);
-        return new ResponseEntity<>(createdRequest, HttpStatus.CREATED);
-    } catch (Exception e) {
-        Map<String, String> errorResponse = new HashMap<>();
-        errorResponse.put("error", "Failed to create monetization request: " + e.getMessage());
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        try {
+            MonetizationModel createdRequest = monetizationService.createRequest(requestData);
+            return new ResponseEntity<>(createdRequest, HttpStatus.CREATED);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to create monetization request: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
-}
 
     // --- READ ---
 
@@ -219,76 +221,5 @@ public ResponseEntity<?> createMonetizationRequest(@Valid @RequestBody Monetizat
             errorResponse.put("error", "Failed to delete monetization request: " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-
-//     @PatchMapping("/{id}/approve")
-// // @PreAuthorize("hasRole('ADMIN')") // Optional: restrict to admin or reviewers
-// @PreAuthorize("isAuthenticated()") // Ensures a user is logged in (any role)
-// public ResponseEntity<?> updateApprovalStatus(
-//         @PathVariable String id,
-//         @RequestParam boolean isApproved) {
-
-//     Optional<MonetizationModel> optionalRequest = monetizationService.getRequestById(id);
-
-//     if (optionalRequest.isEmpty()) {
-//         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-//                 .body(Map.of("error", "Monetization request not found"));
-//     }
-
-//     MonetizationModel request = optionalRequest.get();
-//     request.setApproved(isApproved);
-
-//     try {
-//         MonetizationModel updatedRequest = monetizationService.saveRequest(request);
-//         return ResponseEntity.ok(updatedRequest);
-//     } catch (Exception e) {
-//         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                 .body(Map.of("error", "Failed to update approval status: " + e.getMessage()));
-//     }
-// }
-
-
-
-@PatchMapping("/{id}/approve")
-@PreAuthorize("isAuthenticated()") // Ensures a user is logged in (any role)
-public ResponseEntity<?> updateApprovalStatus(
-        @PathVariable String id,
-        @RequestParam(required = false) String isApproved) {
-
-    if (isApproved == null) {
-        return ResponseEntity.badRequest().body(Map.of("error", "Missing 'isApproved' parameter"));
-    }
-
-    Boolean approvalStatus;
-    try {
-        approvalStatus = Boolean.parseBoolean(isApproved.toLowerCase());
-    } catch (Exception e) {
-        return ResponseEntity.badRequest().body(Map.of("error", "'isApproved' must be 'true' or 'false'"));
-    }
-
-    Optional<MonetizationModel> optionalRequest = monetizationService.getRequestById(id);
-    if (optionalRequest.isEmpty()) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Request not found"));
-    }
-
-    MonetizationModel request = optionalRequest.get();
-    request.setApproved(approvalStatus);
-
-    MonetizationModel updatedRequest = monetizationService.saveRequest(request);
-    return ResponseEntity.ok(updatedRequest);
-}
-
-
-@GetMapping("/user/{userId}")
-    public ResponseEntity<?> getRequestsByUserId(@PathVariable String userId) {
-        List<MonetizationModel> requests = monetizationService.getRequestsByUserId(userId);
-        
-        if (requests.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(Map.of("error", "No monetization requests found for userId: " + userId));
-        }
-
-        return ResponseEntity.ok(requests);
     }
 }
