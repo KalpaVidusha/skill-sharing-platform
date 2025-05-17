@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaExclamationCircle } from 'react-icons/fa';
 
 // Empty topic now includes a single empty resource string
 const emptyTopic = { 
@@ -38,6 +38,53 @@ const processResources = (resources) => {
   return [''];
 };
 
+// URL validation function
+const isValidUrl = (url) => {
+  try {
+    // Check if it's a valid URL format
+    new URL(url);
+    // Additional check for common protocols
+    return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('ftp://');
+  } catch (e) {
+    return false;
+  }
+};
+
+// Field validation
+const validateTopicName = (name) => {
+  const MAX_LENGTH = 100; // Maximum allowed length for topic name
+  
+  if (!name || !name.trim()) {
+    return { valid: false, message: 'Topic name is required' };
+  }
+  
+  if (name.length > MAX_LENGTH) {
+    return { valid: false, message: `Topic name must be less than ${MAX_LENGTH} characters` };
+  }
+  
+  return { valid: true, message: '' };
+};
+
+const validateResource = (resource) => {
+  if (!resource || !resource.trim()) {
+    return { valid: false, message: 'Resource URL is required' };
+  }
+  
+  if (!isValidUrl(resource)) {
+    return { valid: false, message: 'Please enter a valid URL (e.g., https://example.com)' };
+  }
+  
+  return { valid: true, message: '' };
+};
+
+const validateTimeline = (timeline) => {
+  if (!timeline || !timeline.trim()) {
+    return { valid: false, message: 'Timeline is required' };
+  }
+  
+  return { valid: true, message: '' };
+};
+
 const LearningPlanForm = ({ onSubmit, initialData }) => {
   const [title, setTitle] = useState(initialData?.title || '');
   const [description, setDescription] = useState(initialData?.description || '');
@@ -50,6 +97,16 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
     : [createEmptyTopic()]
   );
   const [submitting, setSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({
+    title: '',
+    description: '',
+    topics: [] // Array of errors for each topic
+  });
+  const [touched, setTouched] = useState({
+    title: false,
+    description: false,
+    topics: [] // Array of touched state for each topic
+  });
 
   useEffect(() => {
     if (initialData) {
@@ -63,24 +120,195 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
           }))
         : [createEmptyTopic()]
       );
+      
+      // Reset validation state
+      setValidationErrors({
+        title: '',
+        description: '',
+        topics: initialData.topics?.length 
+          ? initialData.topics.map(() => ({ name: '', resources: [], timeline: '' }))
+          : [{ name: '', resources: [''], timeline: '' }]
+      });
+      
+      setTouched({
+        title: false,
+        description: false,
+        topics: initialData.topics?.length 
+          ? initialData.topics.map(() => ({ name: false, resources: [false], timeline: false }))
+          : [{ name: false, resources: [false], timeline: false }]
+      });
     }
   }, [initialData]);
+
+  // Validate a single field and update validation state
+  const validateField = (field, value) => {
+    let error = '';
+    
+    if (field === 'title') {
+      if (!value || !value.trim()) {
+        error = 'Title is required';
+      } else if (value.length > 100) {
+        error = 'Title must be less than 100 characters';
+      }
+    }
+    
+    if (field === 'description') {
+      if (!value || !value.trim()) {
+        error = 'Description is required';
+      } else if (value.length > 500) {
+        error = 'Description must be less than 500 characters';
+      }
+    }
+    
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
+    
+    return !error;
+  };
+
+  // Mark a field as touched
+  const handleBlur = (field) => {
+    setTouched(prev => ({
+      ...prev,
+      [field]: true
+    }));
+    validateField(field, field === 'title' ? title : description);
+  };
+
+  // Handle topic field blur
+  const handleTopicBlur = (topicIdx, field, resourceIdx = null) => {
+    setTouched(prev => {
+      const topicsTouched = [...prev.topics];
+      if (!topicsTouched[topicIdx]) {
+        topicsTouched[topicIdx] = { name: false, resources: [], timeline: false };
+      }
+      
+      if (field === 'resources' && resourceIdx !== null) {
+        if (!topicsTouched[topicIdx].resources) {
+          topicsTouched[topicIdx].resources = [];
+        }
+        topicsTouched[topicIdx].resources[resourceIdx] = true;
+      } else {
+        topicsTouched[topicIdx][field] = true;
+      }
+      
+      return {
+        ...prev,
+        topics: topicsTouched
+      };
+    });
+    
+    validateTopicField(topicIdx, field, resourceIdx);
+  };
+
+  // Validate topic field
+  const validateTopicField = (topicIdx, field, resourceIdx = null) => {
+    const topic = topics[topicIdx];
+    let result;
+    
+    setValidationErrors(prev => {
+      const topicsErrors = [...prev.topics];
+      if (!topicsErrors[topicIdx]) {
+        topicsErrors[topicIdx] = { name: '', resources: [], timeline: '' };
+      }
+      
+      if (field === 'name') {
+        result = validateTopicName(topic.name);
+        topicsErrors[topicIdx].name = result.message;
+      } else if (field === 'timeline') {
+        result = validateTimeline(topic.timeline);
+        topicsErrors[topicIdx].timeline = result.message;
+      } else if (field === 'resources' && resourceIdx !== null) {
+        if (!topicsErrors[topicIdx].resources) {
+          topicsErrors[topicIdx].resources = [];
+        }
+        result = validateResource(topic.resources[resourceIdx]);
+        topicsErrors[topicIdx].resources[resourceIdx] = result.message;
+      }
+      
+      return {
+        ...prev,
+        topics: topicsErrors
+      };
+    });
+    
+    return result?.valid ?? false;
+  };
 
   const handleTopicChange = (idx, field, value) => {
     const updated = topics.map((topic, i) =>
       i === idx ? { ...topic, [field]: value } : topic
     );
     setTopics(updated);
+    
+    // If field was already touched, validate on change
+    if (touched.topics[idx] && touched.topics[idx][field]) {
+      validateTopicField(idx, field);
+    }
   };
 
-  const addTopic = () => setTopics([...topics, createEmptyTopic()]);
-  const removeTopic = (idx) => setTopics(topics.filter((_, i) => i !== idx));
+  const addTopic = () => {
+    setTopics([...topics, createEmptyTopic()]);
+    
+    // Add validation state for new topic
+    setValidationErrors(prev => ({
+      ...prev,
+      topics: [...prev.topics, { name: '', resources: [''], timeline: '' }]
+    }));
+    
+    setTouched(prev => ({
+      ...prev,
+      topics: [...prev.topics, { name: false, resources: [false], timeline: false }]
+    }));
+  };
+  
+  const removeTopic = (idx) => {
+    setTopics(topics.filter((_, i) => i !== idx));
+    
+    // Remove validation state for deleted topic
+    setValidationErrors(prev => ({
+      ...prev,
+      topics: prev.topics.filter((_, i) => i !== idx)
+    }));
+    
+    setTouched(prev => ({
+      ...prev,
+      topics: prev.topics.filter((_, i) => i !== idx)
+    }));
+  };
 
   // New function to add a resource to a topic
   const addResource = (topicIdx) => {
     const updated = [...topics];
     updated[topicIdx].resources = [...(updated[topicIdx].resources || []), ''];
     setTopics(updated);
+    
+    // Add validation state for new resource
+    setValidationErrors(prev => {
+      const topicsErrors = [...prev.topics];
+      if (!topicsErrors[topicIdx].resources) {
+        topicsErrors[topicIdx].resources = [];
+      }
+      topicsErrors[topicIdx].resources.push('');
+      return {
+        ...prev,
+        topics: topicsErrors
+      };
+    });
+    
+    setTouched(prev => {
+      const topicsTouched = [...prev.topics];
+      if (!topicsTouched[topicIdx].resources) {
+        topicsTouched[topicIdx].resources = [];
+      }
+      topicsTouched[topicIdx].resources.push(false);
+      return {
+        ...prev,
+        topics: topicsTouched
+      };
+    });
   };
 
   // New function to update a specific resource
@@ -88,6 +316,13 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
     const updated = [...topics];
     updated[topicIdx].resources[resourceIdx] = value;
     setTopics(updated);
+    
+    // If field was already touched, validate on change
+    if (touched.topics[topicIdx] && 
+        touched.topics[topicIdx].resources && 
+        touched.topics[topicIdx].resources[resourceIdx]) {
+      validateTopicField(topicIdx, 'resources', resourceIdx);
+    }
   };
 
   // New function to remove a resource
@@ -99,42 +334,173 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
       updated[topicIdx].resources = [''];
     }
     setTopics(updated);
+    
+    // Remove validation state for deleted resource
+    setValidationErrors(prev => {
+      const topicsErrors = [...prev.topics];
+      topicsErrors[topicIdx].resources = topicsErrors[topicIdx].resources.filter((_, i) => i !== resourceIdx);
+      if (topicsErrors[topicIdx].resources.length === 0) {
+        topicsErrors[topicIdx].resources = [''];
+      }
+      return {
+        ...prev,
+        topics: topicsErrors
+      };
+    });
+    
+    setTouched(prev => {
+      const topicsTouched = [...prev.topics];
+      topicsTouched[topicIdx].resources = topicsTouched[topicIdx].resources.filter((_, i) => i !== resourceIdx);
+      if (topicsTouched[topicIdx].resources.length === 0) {
+        topicsTouched[topicIdx].resources = [false];
+      }
+      return {
+        ...prev,
+        topics: topicsTouched
+      };
+    });
+  };
+
+  const validateForm = () => {
+    // Validate title and description
+    const titleValid = validateField('title', title);
+    const descriptionValid = validateField('description', description);
+    
+    // Validate all topics
+    let allTopicsValid = true;
+    let updatedTopicsErrors = [...validationErrors.topics];
+    let updatedTopicsTouched = [...touched.topics];
+    
+    // Ensure at least one topic exists
+    if (topics.length === 0) {
+      return false;
+    }
+    
+    // Validate each topic
+    for (let i = 0; i < topics.length; i++) {
+      const topic = topics[i];
+      
+      // Initialize errors for this topic if needed
+      if (!updatedTopicsErrors[i]) {
+        updatedTopicsErrors[i] = { name: '', resources: [], timeline: '' };
+      }
+      
+      // Initialize touched for this topic if needed
+      if (!updatedTopicsTouched[i]) {
+        updatedTopicsTouched[i] = { name: true, resources: [], timeline: true };
+      }
+      
+      // Validate topic name
+      const nameResult = validateTopicName(topic.name);
+      updatedTopicsErrors[i].name = nameResult.message;
+      updatedTopicsTouched[i].name = true;
+      if (!nameResult.valid) allTopicsValid = false;
+      
+      // Validate timeline
+      const timelineResult = validateTimeline(topic.timeline);
+      updatedTopicsErrors[i].timeline = timelineResult.message;
+      updatedTopicsTouched[i].timeline = true;
+      if (!timelineResult.valid) allTopicsValid = false;
+      
+      // Validate all resources
+      let hasValidResource = false;
+      for (let j = 0; j < topic.resources.length; j++) {
+        const resource = topic.resources[j];
+        
+        // Initialize errors for this resource if needed
+        if (!updatedTopicsErrors[i].resources) {
+          updatedTopicsErrors[i].resources = [];
+        }
+        
+        // Initialize touched for this resource if needed
+        if (!updatedTopicsTouched[i].resources) {
+          updatedTopicsTouched[i].resources = [];
+        }
+        
+        const resourceResult = validateResource(resource);
+        updatedTopicsErrors[i].resources[j] = resourceResult.message;
+        updatedTopicsTouched[i].resources[j] = true;
+        
+        if (resourceResult.valid) {
+          hasValidResource = true;
+        }
+      }
+      
+      // If no valid resources, mark as invalid
+      if (!hasValidResource) {
+        allTopicsValid = false;
+      }
+    }
+    
+    // Update validation state
+    setValidationErrors(prev => ({
+      ...prev,
+      topics: updatedTopicsErrors
+    }));
+    
+    // Mark all fields as touched
+    setTouched({
+      title: true,
+      description: true,
+      topics: updatedTopicsTouched
+    });
+    
+    return titleValid && descriptionValid && allTopicsValid;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Validate all fields are filled
-    if (!title.trim()) {
-      alert("Please provide a plan title");
+    // Validate all fields
+    const isValid = validateForm();
+    if (!isValid) {
       return;
     }
     
-    if (!description.trim()) {
-      alert("Please provide a plan description");
-      return;
-    }
+    // Additional check for URL validity before submission
+    let hasInvalidUrls = false;
     
-    // Validate all topics have required fields
+    // Double check all resources are valid URLs
     for (let i = 0; i < topics.length; i++) {
       const topic = topics[i];
-      if (!topic.name.trim()) {
-        alert(`Please provide a name for topic #${i+1}`);
-        return;
-      }
-      
-      // Check at least one resource has content
-      const hasResource = topic.resources.some(r => r.trim() !== '');
-      if (!hasResource) {
-        alert(`Please provide at least one resource for topic "${topic.name}"`);
-        return;
-      }
-      
-      if (!topic.timeline.trim()) {
-        alert(`Please provide a timeline for topic "${topic.name}"`);
-        return;
+      for (let j = 0; j < topic.resources.length; j++) {
+        const resource = topic.resources[j];
+        if (resource && resource.trim() && !isValidUrl(resource)) {
+          // Mark the specific field as touched and invalid
+          setTouched(prev => {
+            const newTouched = {...prev};
+            if (!newTouched.topics[i]) {
+              newTouched.topics[i] = { name: true, resources: [], timeline: true };
+            }
+            if (!newTouched.topics[i].resources) {
+              newTouched.topics[i].resources = [];
+            }
+            newTouched.topics[i].resources[j] = true;
+            return newTouched;
+          });
+          
+          setValidationErrors(prev => {
+            const newErrors = {...prev};
+            if (!newErrors.topics[i]) {
+              newErrors.topics[i] = { name: '', resources: [], timeline: '' };
+            }
+            if (!newErrors.topics[i].resources) {
+              newErrors.topics[i].resources = [];
+            }
+            newErrors.topics[i].resources[j] = 'Please enter a valid URL (e.g., https://example.com)';
+            return newErrors;
+          });
+          
+          hasInvalidUrls = true;
+        }
       }
     }
+    
+    if (hasInvalidUrls) {
+      return; // Prevent submission if there are invalid URLs
+    }
+    
+    setSubmitting(true);
     
     // Create a copy of topics to modify for submission
     const formattedTopics = topics.map(topic => {
@@ -158,8 +524,6 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
       return formattedTopic;
     });
     
-    setSubmitting(true);
-    
     // Call onSubmit with the formatted data
     if (onSubmit) {
       try {
@@ -167,6 +531,8 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
       } catch (error) {
         console.error("Error submitting form:", error);
         alert("Failed to save plan. Please try again.");
+        setSubmitting(false);
+        return;
       }
     }
     
@@ -177,6 +543,19 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
         setTitle('');
         setDescription('');
         setTopics([createEmptyTopic()]);
+        
+        // Reset validation state
+        setValidationErrors({
+          title: '',
+          description: '',
+          topics: [{ name: '', resources: [''], timeline: '' }]
+        });
+        
+        setTouched({
+          title: false,
+          description: false,
+          topics: [{ name: false, resources: [false], timeline: false }]
+        });
       }
       setSubmitting(false);
     }, 1000);
@@ -197,35 +576,60 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
   
         {/* Plan Title */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Plan Title</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Plan Title
+          </label>
           <input
             type="text"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            className={`w-full px-4 py-3 border ${validationErrors.title && touched.title ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
             value={title}
-            onChange={e => setTitle(e.target.value)}
+            onChange={e => {
+              setTitle(e.target.value);
+              if (touched.title) validateField('title', e.target.value);
+            }}
+            onBlur={() => handleBlur('title')}
             placeholder="e.g., Full Stack Web Development"
             required
           />
+          {validationErrors.title && touched.title && (
+            <p className="mt-1 text-sm text-red-600 flex items-center">
+              <FaExclamationCircle className="mr-1" size={12} /> {validationErrors.title}
+            </p>
+          )}
         </div>
   
         {/* Description */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Description</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Description
+          </label>
           <textarea
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 min-h-[100px]"
+            className={`w-full px-4 py-3 border ${validationErrors.description && touched.description ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 min-h-[100px]`}
             value={description}
-            onChange={e => setDescription(e.target.value)}
+            onChange={e => {
+              setDescription(e.target.value);
+              if (touched.description) validateField('description', e.target.value);
+            }}
+            onBlur={() => handleBlur('description')}
             placeholder="Briefly describe your learning goals..."
             required
           />
+          {validationErrors.description && touched.description && (
+            <p className="mt-1 text-sm text-red-600 flex items-center">
+              <FaExclamationCircle className="mr-1" size={12} /> {validationErrors.description}
+            </p>
+          )}
         </div>
   
         {/* Topics Section */}
         <div className="space-y-4">
-          <label className="block text-sm font-medium text-gray-700">Topics</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Topics
+            <span className="text-xs text-gray-500 ml-2">At least one topic is required</span>
+          </label>
           
           {topics.map((topic, topicIdx) => (
-            <div key={topicIdx} className="p-5 border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div key={topicIdx} className={`p-5 border ${validationErrors.topics[topicIdx]?.name && touched.topics[topicIdx]?.name ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'} rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200`}>
               {/* Topic Header */}
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-medium text-gray-700">Topic {topicIdx + 1}</h3>
@@ -242,28 +646,39 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
   
               {/* Topic Name */}
               <div className="mb-4">
-                <label className="block text-xs font-medium text-gray-500 mb-2">Topic Name</label>
+                <label className="block text-xs font-medium text-gray-500 mb-2">
+                  Topic Name
+                </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-300 transition-all"
+                  className={`w-full px-3 py-2 border ${validationErrors.topics[topicIdx]?.name && touched.topics[topicIdx]?.name ? 'border-red-500' : 'border-gray-200'} rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-300 transition-all`}
                   value={topic.name}
                   onChange={e => handleTopicChange(topicIdx, 'name', e.target.value)}
+                  onBlur={() => handleTopicBlur(topicIdx, 'name')}
                   placeholder="Enter topic name"
                   required
                 />
+                {validationErrors.topics[topicIdx]?.name && touched.topics[topicIdx]?.name && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <FaExclamationCircle className="mr-1" size={12} /> {validationErrors.topics[topicIdx].name}
+                  </p>
+                )}
               </div>
   
               {/* Resources */}
               <div className="mb-4">
-                <label className="block text-xs font-medium text-gray-500 mb-2">Resources</label>
+                <label className="block text-xs font-medium text-gray-500 mb-2">
+                  Resources
+                </label>
                 <div className="space-y-2">
                   {topic.resources.map((resource, resourceIdx) => (
                     <div key={resourceIdx} className="flex items-center gap-2">
                       <input
                         type="text"
-                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
+                        className={`flex-1 px-3 py-2 border ${validationErrors.topics[topicIdx]?.resources?.[resourceIdx] && touched.topics[topicIdx]?.resources?.[resourceIdx] ? 'border-red-500' : 'border-gray-200'} rounded-lg focus:ring-2 focus:ring-blue-300 transition-all`}
                         value={resource}
                         onChange={e => updateResource(topicIdx, resourceIdx, e.target.value)}
+                        onBlur={() => handleTopicBlur(topicIdx, 'resources', resourceIdx)}
                         placeholder="https://example.com"
                         required
                       />
@@ -280,6 +695,14 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
                     </div>
                   ))}
                 </div>
+                {topic.resources.map((resource, resourceIdx) => (
+                  validationErrors.topics[topicIdx]?.resources?.[resourceIdx] && 
+                  touched.topics[topicIdx]?.resources?.[resourceIdx] && (
+                    <p key={resourceIdx} className="mt-1 text-sm text-red-600 flex items-center">
+                      <FaExclamationCircle className="mr-1" size={12} /> {validationErrors.topics[topicIdx].resources[resourceIdx]}
+                    </p>
+                  )
+                ))}
                 <button
                   type="button"
                   onClick={() => addResource(topicIdx)}
@@ -291,15 +714,23 @@ const LearningPlanForm = ({ onSubmit, initialData }) => {
   
               {/* Timeline */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-2">Completion Timeline</label>
+                <label className="block text-xs font-medium text-gray-500 mb-2">
+                  Completion Timeline
+                </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
+                  className={`w-full px-3 py-2 border ${validationErrors.topics[topicIdx]?.timeline && touched.topics[topicIdx]?.timeline ? 'border-red-500' : 'border-gray-200'} rounded-lg focus:ring-2 focus:ring-blue-300 transition-all`}
                   value={topic.timeline}
                   onChange={e => handleTopicChange(topicIdx, 'timeline', e.target.value)}
+                  onBlur={() => handleTopicBlur(topicIdx, 'timeline')}
                   placeholder="e.g., 2 weeks"
                   required
                 />
+                {validationErrors.topics[topicIdx]?.timeline && touched.topics[topicIdx]?.timeline && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <FaExclamationCircle className="mr-1" size={12} /> {validationErrors.topics[topicIdx].timeline}
+                  </p>
+                )}
               </div>
             </div>
           ))}
