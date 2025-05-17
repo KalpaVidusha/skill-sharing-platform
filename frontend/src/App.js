@@ -28,6 +28,7 @@ import { LearningPlans, LearningPlanDetails } from './pages/LearningPlans';
 import ProgreesOfUserdashboard from './pages/Progress/ProgreesOfUserdashboard';
 import FollowList from './components/FollowList';
 import UserSearch from './components/UserSearch';
+import AdminDashboard2 from './pages/monetizationAndRewardManagement/AdminDashboard';
 
 function App() {
   return (
@@ -82,6 +83,7 @@ function App() {
         <Route path="/userdashboard/monetize" element={<MonetizationForm />} />
         <Route path="/userdashboard/Applications" element={<Applications />} />
         <Route path="/userdashboard/Applications/edit/:id" element={<EditRequest />} />
+        <Route path="/AdminDashboard" element={<AdminDashboard2 />} />
         
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
