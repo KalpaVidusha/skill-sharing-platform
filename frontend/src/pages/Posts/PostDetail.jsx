@@ -21,8 +21,8 @@ const PostDetail = () => {
   const [isDescriptionLong, setIsDescriptionLong] = useState(false);
   const [mediaGalleryOpen, setMediaGalleryOpen] = useState(false);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
-  const [mediaLoading, setMediaLoading] = useState({});
   const [mediaType, setMediaType] = useState('all');
+  const [videoThumbnails, setVideoThumbnails] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,20 +35,6 @@ const PostDetail = () => {
         if (userId && postData.user?.id === userId) setIsPostOwner(true);
         
         setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
-        
-        if (postData.mediaUrls?.length) {
-          const loadingStates = {};
-          postData.mediaUrls.forEach((url, index) => {
-            if (!isVideo(url)) {
-              const img = new Image();
-              img.src = url;
-              img.onload = () => handleMediaLoad(index);
-              img.onerror = () => handleMediaLoad(index);
-            }
-            loadingStates[index] = true;
-          });
-          setMediaLoading(loadingStates);
-        }
       } catch (err) {
         console.error('Error fetching data:', err);
       } finally {
@@ -57,10 +43,6 @@ const PostDetail = () => {
     };
 
     fetchData();
-    
-    return () => {
-      setMediaLoading({});
-    };
   }, [id]);
 
   useEffect(() => {
@@ -69,6 +51,78 @@ const PostDetail = () => {
       setIsDescriptionLong(isLong);
     }
   }, [post]);
+
+  // Function to detect if a URL is a video
+  const isVideo = (url) => {
+    return url && url.match(/\.(mp4|webm|ogg)$/i);
+  };
+
+  // Generate video thumbnail or placeholder
+  const getVideoThumbnail = (url, index) => {
+    // If we already have a thumbnail for this video, return it
+    if (videoThumbnails[index]) {
+      return videoThumbnails[index];
+    }
+    
+    // Otherwise, create a thumbnail using the video element
+    if (window.URL) {
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      
+      // Set up events before setting the src to avoid race conditions
+      video.addEventListener('loadeddata', () => {
+        // Only generate thumbnail once the video can be played
+        if (video.readyState >= 2) {
+          try {
+            // Seek to 1 second or 25% into the video, whichever is less
+            const seekTime = Math.min(1, video.duration * 0.25);
+            video.currentTime = seekTime;
+          } catch (e) {
+            console.error('Error seeking video:', e);
+          }
+        }
+      });
+      
+      // After seeking, capture the frame
+      video.addEventListener('seeked', () => {
+        try {
+          // Create canvas and draw video frame
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          
+          // Convert canvas to data URL
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          
+          // Update state with the new thumbnail
+          setVideoThumbnails(prev => ({
+            ...prev,
+            [index]: dataUrl
+          }));
+          
+          // Clean up
+          URL.revokeObjectURL(video.src);
+        } catch (e) {
+          console.error('Error generating thumbnail:', e);
+        }
+      });
+      
+      // Error handling
+      video.addEventListener('error', () => {
+        console.error('Error loading video for thumbnail generation');
+        URL.revokeObjectURL(video.src);
+      });
+      
+      // Set video source and load it
+      video.src = url;
+      video.load();
+    }
+    
+    // Return a placeholder while we wait for the real thumbnail
+    return null;
+  };
 
   const navigateMedia = (direction) => {
     if (!post?.mediaUrls?.length) return;
@@ -84,23 +138,12 @@ const PostDetail = () => {
     if (!post?.mediaUrls?.length) return [];
     if (mediaType === 'all') return post.mediaUrls;
     if (mediaType === 'images') {
-      return post.mediaUrls.filter(url => !url.match(/\.(mp4|webm|ogg)$/i));
+      return post.mediaUrls.filter(url => !isVideo(url));
     }
     if (mediaType === 'videos') {
-      return post.mediaUrls.filter(url => url.match(/\.(mp4|webm|ogg)$/i));
+      return post.mediaUrls.filter(url => isVideo(url));
     }
     return post.mediaUrls;
-  };
-
-  const isVideo = (url) => {
-    return url && url.match(/\.(mp4|webm|ogg)$/i);
-  };
-
-  const handleMediaLoad = (index) => {
-    setMediaLoading(prev => ({
-      ...prev,
-      [index]: false
-    }));
   };
 
   const openGallery = (index) => {
@@ -113,6 +156,45 @@ const PostDetail = () => {
     setMediaGalleryOpen(false);
     document.body.style.overflow = 'auto';
   };
+
+  // Intersection Observer for lazy loading videos
+  useEffect(() => {
+    if (!post?.mediaUrls) return;
+
+    const options = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1
+    };
+
+    const handleIntersection = (entries, observer) => {
+      entries.forEach(entry => {
+        // When video container enters viewport
+        if (entry.isIntersecting) {
+          const videoIndex = entry.target.dataset.videoIndex;
+          if (videoIndex !== undefined) {
+            // Start generating thumbnail if it's a video
+            const url = post.mediaUrls[parseInt(videoIndex)];
+            if (isVideo(url)) {
+              getVideoThumbnail(url, videoIndex);
+            }
+          }
+          observer.unobserve(entry.target);
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(handleIntersection, options);
+
+    // Observe all media elements
+    document.querySelectorAll('.media-preview-container').forEach(el => {
+      observer.observe(el);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [post?.mediaUrls]);
 
   if (isLoading) {
     return (
@@ -213,32 +295,33 @@ const PostDetail = () => {
 
             {filteredMedia.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                {filteredMedia.map((url) => {
+                {filteredMedia.map((url, index) => {
                   const originalIndex = post.mediaUrls.indexOf(url);
                   const isVideoFile = isVideo(url);
                   return (
                     <div 
                       key={originalIndex}
-                      className="relative rounded-lg overflow-hidden border border-gray-200 shadow-md aspect-w-16 aspect-h-9 group cursor-pointer"
+                      className="media-preview-container relative rounded-lg overflow-hidden border border-gray-200 shadow-md aspect-w-16 aspect-h-9 group cursor-pointer"
                       onClick={() => openGallery(originalIndex)}
+                      data-video-index={originalIndex}
                     >
-                      {mediaLoading[originalIndex] && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                          <div className="w-8 h-8 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                        </div>
-                      )}
-                      
                       {isVideoFile ? (
                         <>
-                          <video 
-                            className="w-full h-full object-cover"
-                            onLoadedData={() => handleMediaLoad(originalIndex)}
-                            onError={() => handleMediaLoad(originalIndex)}
-                            preload="metadata"
-                          >
-                            <source src={url} type={`video/${url.split('.').pop()}`} />
-                          </video>
-                          <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          {videoThumbnails[originalIndex] ? (
+                            <img 
+                              src={videoThumbnails[originalIndex]} 
+                              alt={`video-thumbnail-${originalIndex}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <div className="flex flex-col items-center justify-center">
+                                <FaPlayCircle className="text-gray-400 text-3xl mb-2" />
+                                <span className="text-gray-500 text-sm">Loading preview...</span>
+                              </div>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center transition-opacity">
                             <FaPlayCircle className="text-white text-4xl" />
                           </div>
                         </>
@@ -248,8 +331,6 @@ const PostDetail = () => {
                             src={url} 
                             alt={`media-${originalIndex}`} 
                             className="w-full h-full object-cover"
-                            onLoad={() => handleMediaLoad(originalIndex)}
-                            onError={() => handleMediaLoad(originalIndex)}
                             loading="lazy"
                           />
                           <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -310,7 +391,7 @@ const PostDetail = () => {
                 {isVideo(post.mediaUrls[currentMediaIndex]) ? (
                   <video 
                     controls 
-                    autoPlay 
+                    preload="metadata"
                     className="max-w-full max-h-[80vh] mx-auto"
                   >
                     <source 
@@ -340,14 +421,28 @@ const PostDetail = () => {
                       }`}
                     >
                       {isVideo(url) ? (
-                        <div className="relative w-full h-full bg-gray-800 flex items-center justify-center">
-                          <FaPlayCircle className="text-white" />
-                        </div>
+                        videoThumbnails[index] ? (
+                          <div className="relative w-full h-full">
+                            <img 
+                              src={videoThumbnails[index]} 
+                              alt={`thumbnail-${index}`} 
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                              <FaPlayCircle className="text-white" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="relative w-full h-full bg-gray-800 flex items-center justify-center">
+                            <FaPlayCircle className="text-white" />
+                          </div>
+                        )
                       ) : (
                         <img 
                           src={url} 
                           alt={`thumbnail-${index}`} 
                           className="w-full h-full object-cover"
+                          loading="lazy"
                         />
                       )}
                     </div>
