@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaImage, FaTimesCircle } from 'react-icons/fa';
 import apiService from '../../services/api';
@@ -20,6 +20,7 @@ const EditPost = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const categories = ['Programming', 'Design', 'Business', 'Photography', 'Music', 'Cooking', 'Fitness', 'Language', 'Other'];
 
@@ -112,11 +113,9 @@ const EditPost = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    
+  const processFiles = useCallback((files) => {
     // Validate file types and sizes
-    const validFiles = files.filter(file => {
+    const validFiles = Array.from(files).filter(file => {
       const isValidType = /^(image\/|video\/)/.test(file.type);
       const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
       
@@ -136,12 +135,15 @@ const EditPost = () => {
     if (validFiles.length === 0) return;
     
     // Check total files (existing + new) doesn't exceed 3
-    if (formData.mediaUrls.length + validFiles.length > 3) {
-      setError(`You can have a maximum of 3 media files (${formData.mediaUrls.length} existing + ${validFiles.length} new)`);
+    const totalFilesAfterAdd = formData.mediaUrls.length + uploadedFiles.length + validFiles.length;
+    if (totalFilesAfterAdd > 3) {
+      setError(`You can have a maximum of 3 media files (current total: ${formData.mediaUrls.length + uploadedFiles.length})`);
       return;
     }
     
     setError(null);
+    
+    // Add new files to the uploadedFiles state
     setUploadedFiles(prevFiles => [...prevFiles, ...validFiles]);
     
     // Create preview URLs for newly added files
@@ -151,6 +153,10 @@ const EditPost = () => {
     }));
     
     setPreviewUrls(prevUrls => [...prevUrls, ...newPreviewUrls]);
+  }, [formData.mediaUrls.length, uploadedFiles.length]);
+  
+  const handleFileChange = (e) => {
+    processFiles(e.target.files);
   };
 
   const handleRemoveExistingMedia = (indexToRemove) => {
@@ -161,16 +167,44 @@ const EditPost = () => {
   };
 
   const handleRemoveNewMedia = (indexToRemove) => {
-    // Calculate the actual index in the uploadedFiles array
     setUploadedFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
     
     // Also remove the preview URL
     setPreviewUrls(prevUrls => {
       const newUrls = [...prevUrls];
       // Revoke the object URL to avoid memory leaks
-      URL.revokeObjectURL(newUrls[indexToRemove].url);
+      URL.revokeObjectURL(prevUrls[indexToRemove].url);
       return newUrls.filter((_, index) => index !== indexToRemove);
     });
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    }
   };
 
   // Clean up object URLs when component unmounts
@@ -188,12 +222,6 @@ const EditPost = () => {
         <Navbar />
         <div className="min-h-screen bg-gradient-to-r from-blue-50 to-white flex justify-center items-center">
           <div className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin"></div>
-          <style>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
         </div>
       </div>
     );
@@ -231,6 +259,9 @@ const EditPost = () => {
       </div>
     );
   }
+
+  // Calculate how many more files can be added
+  const remainingFileSlots = 3 - (formData.mediaUrls.length + uploadedFiles.length);
 
   return (
     <div>
@@ -306,7 +337,7 @@ const EditPost = () => {
                   {formData.mediaUrls.map((url, index) => {
                     const isVideo = url.match(/\.(mp4|webm|ogg)(\?.*)?$/i);
                     return (
-                      <div key={index} className="relative rounded-md overflow-hidden border border-gray-300 h-32 w-32 flex items-center justify-center">
+                      <div key={`existing-${index}`} className="relative rounded-md overflow-hidden border border-gray-300 h-32 w-32 flex items-center justify-center">
                         {isVideo ? (
                           <video 
                             src={url} 
@@ -336,11 +367,18 @@ const EditPost = () => {
 
             <div className="flex flex-col">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Add New Media {formData.mediaUrls.length > 0 && `(${3 - formData.mediaUrls.length} remaining)`}
+                Add New Media {(formData.mediaUrls.length > 0 || uploadedFiles.length > 0) && 
+                  `(${remainingFileSlots} remaining)`}
               </label>
               
-              {formData.mediaUrls.length < 3 ? (
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+              {remainingFileSlots > 0 ? (
+                <div 
+                  className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${isDragging ? 'border-indigo-400 bg-indigo-50' : 'border-gray-300'} border-dashed rounded-md relative`}
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
                   <div className="space-y-1 text-center">
                     <FaImage className="mx-auto h-12 w-12 text-gray-400" />
                     <div className="flex justify-center text-sm text-gray-600">
@@ -354,7 +392,7 @@ const EditPost = () => {
                           onChange={handleFileChange}
                           accept="image/*,video/*"
                           multiple
-                          disabled={formData.mediaUrls.length >= 3}
+                          disabled={remainingFileSlots <= 0}
                         />
                       </label>
                       <p className="pl-1">or drag and drop</p>
@@ -385,9 +423,9 @@ const EditPost = () => {
               {previewUrls.length > 0 && (
                 <div className="flex flex-wrap gap-4 mt-4">
                   {previewUrls.map((preview, index) => {
-                    const isVideo = preview.url.match(/\.(mp4|webm|ogg)(\?.*)?$/i);
+                    const isVideo = preview.url.includes('video/') || preview.url.match(/\.(mp4|webm|ogg)(\?.*)?$/i);
                     return (
-                      <div key={index} className="relative rounded-md overflow-hidden border border-gray-300 h-32 w-32 flex items-center justify-center">
+                      <div key={`preview-${index}`} className="relative rounded-md overflow-hidden border border-gray-300 h-32 w-32 flex items-center justify-center">
                         {isVideo ? (
                           <video 
                             src={preview.url} 
