@@ -11,8 +11,10 @@ import {
   FaGraduationCap,
   FaArrowUp,
   FaArrowDown,
-  FaCalendarAlt
+  FaCalendarAlt,
+  FaShieldAlt
 } from 'react-icons/fa';
+import { logSecurityEvent, detectSuspiciousSession } from './AdminSecurity';
 
 // Lazy load chart components to avoid React 19 initialization issues
 const ChartComponent = lazy(() => import('./ChartComponent'));
@@ -36,29 +38,44 @@ const AdminDashboard = () => {
     postsThisWeek: 0,
     engagementRate: 0
   });
+  const [securityAlert, setSecurityAlert] = useState(null);
   
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is admin
-    if (!apiService.isUserAdmin()) {
-      navigate('/');
-      return;
-    }
+    const initializeDashboard = async () => {
+      // Check for suspicious session and set alert if needed
+      const isSuspicious = detectSuspiciousSession();
+      
+      if (isSuspicious) {
+        setSecurityAlert({
+          type: 'warning',
+          message: 'Your session is coming from a new device or location. Enhanced verification may be required.'
+        });
+      }
+      
+      // Log successful access - we don't need to re-verify admin status
+      // because the AdminProtectedRoute already handled that
+      logSecurityEvent({
+        type: 'admin_dashboard_access',
+        details: 'Admin successfully accessed dashboard',
+        severity: 'low'
+      });
 
-    // Fetch all data for the dashboard
-    fetchDashboardData();
+      // Proceed to fetch data
+      fetchDashboardData();
+    };
+
+    initializeDashboard();
   }, [navigate, timeRange]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // Fetch all required data
       const userData = await apiService.admin.getAllUsers();
       const postsData = await apiService.getAllPosts();
       const progressData = await apiService.getAllProgress();
       
-      // Fetch comments from all posts
       const commentsPromises = postsData.map(post => 
         apiService.getCommentsByPost(post.id)
           .catch(() => [])
@@ -66,22 +83,25 @@ const AdminDashboard = () => {
       const allCommentsArrays = await Promise.all(commentsPromises);
       const allComments = allCommentsArrays.flat();
       
-      // Calculate total likes
       const totalLikes = postsData.reduce((total, post) => total + (post.likeCount || 0), 0);
       
-      // Update state with fetched data
       setUsers(userData);
       setPosts(postsData);
       setProgress(progressData);
       setComments(allComments);
       
-      // Calculate dashboard statistics
       calculateStats(userData, postsData, progressData, allComments, totalLikes);
       
       setError(null);
     } catch (err) {
       setError('Failed to fetch dashboard data');
       console.error('Error fetching dashboard data:', err);
+      
+      logSecurityEvent({
+        type: 'admin_data_fetch_error',
+        error: err.message || 'Unknown error',
+        severity: 'medium'
+      });
     } finally {
       setLoading(false);
     }
@@ -93,19 +113,16 @@ const AdminDashboard = () => {
     const oneWeekAgo = new Date(now);
     oneWeekAgo.setDate(now.getDate() - 7);
     
-    // Calculate new users today
     const newUsersToday = users.filter(user => {
       const createdAt = new Date(user.createdAt || user.registeredAt);
       return createdAt >= today;
     }).length;
     
-    // Calculate posts this week
     const postsThisWeek = posts.filter(post => {
       const createdAt = new Date(post.createdAt || post.timestamp);
       return createdAt >= oneWeekAgo;
     }).length;
     
-    // Calculate engagement rate
     const engagementRate = posts.length > 0 ? 
       ((comments.length + likes) / posts.length).toFixed(1) : 0;
     
@@ -121,7 +138,6 @@ const AdminDashboard = () => {
     });
   };
 
-  // Generate date labels for charts
   const getLabels = () => {
     const labels = [];
     const now = new Date();
@@ -160,15 +176,12 @@ const AdminDashboard = () => {
     return labels;
   };
 
-  // Generate sample data for charts
-  // In a real app, this would come from your analytics API
   const generateSampleData = (min, max, count) => {
     return Array.from({ length: count }, () => 
       Math.floor(Math.random() * (max - min + 1)) + min
     );
   };
 
-  // Chart data preparation
   const chartData = {
     userActivity: {
       labels: getLabels(),
@@ -248,14 +261,22 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Admin Sidebar - Fixed position */}
       <div className="fixed left-0 top-0 h-screen bg-white z-10 shadow-md">
         <AdminSidebar activeTab={activeTab} />
       </div>
       
-      {/* Main Content - Add left margin to make space for fixed sidebar */}
       <div className="flex-1 overflow-auto ml-72">
         <div className="p-6">
+          {securityAlert && (
+            <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg flex items-start">
+              <FaShieldAlt className="text-yellow-500 mr-3 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-yellow-800">Security Alert</h3>
+                <p className="text-yellow-700 text-sm">{securityAlert.message}</p>
+              </div>
+            </div>
+          )}
+          
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Analytics Dashboard</h1>
@@ -285,7 +306,6 @@ const AdminDashboard = () => {
             </div>
           </div>
           
-          {/* Error message */}
           {error && (
             <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
               <p>{error}</p>
@@ -298,9 +318,7 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <>
-              {/* Stats Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {/* Users Card */}
                 <div className="bg-white rounded-xl shadow p-6">
                   <div className="flex items-center">
                     <div className="p-3 rounded-full bg-indigo-100 mr-4">
@@ -316,7 +334,6 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 
-                {/* Posts Card */}
                 <div className="bg-white rounded-xl shadow p-6">
                   <div className="flex items-center">
                     <div className="p-3 rounded-full bg-blue-100 mr-4">
@@ -332,7 +349,6 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 
-                {/* Engagement Card */}
                 <div className="bg-white rounded-xl shadow p-6">
                   <div className="flex items-center">
                     <div className="p-3 rounded-full bg-green-100 mr-4">
@@ -348,7 +364,6 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 
-                {/* Progress Card */}
                 <div className="bg-white rounded-xl shadow p-6">
                   <div className="flex items-center">
                     <div className="p-3 rounded-full bg-yellow-100 mr-4">
@@ -365,9 +380,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
               
-              {/* Charts Row 1 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* User Activity Chart */}
                 <div className="bg-white p-6 rounded-xl shadow">
                   <h2 className="text-lg font-semibold mb-4">User Activity</h2>
                   <div className="h-80">
@@ -380,7 +393,6 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 
-                {/* Content Creation Chart */}
                 <div className="bg-white p-6 rounded-xl shadow">
                   <h2 className="text-lg font-semibold mb-4">Content Creation</h2>
                   <div className="h-80">
@@ -394,9 +406,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
               
-              {/* Charts Row 2 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* Engagement Chart */}
                 <div className="bg-white p-6 rounded-xl shadow">
                   <h2 className="text-lg font-semibold mb-4">Engagement Metrics</h2>
                   <div className="h-80">
@@ -409,7 +419,6 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 
-                {/* Categories Chart */}
                 <div className="bg-white p-6 rounded-xl shadow">
                   <h2 className="text-lg font-semibold mb-4">Content Categories</h2>
                   <div className="h-80 flex justify-center items-center">
@@ -425,9 +434,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
               
-              {/* Recent Activity Section */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Top Users */}
                 <div className="bg-white p-6 rounded-xl shadow col-span-1">
                   <h2 className="text-lg font-semibold mb-4">Top Users</h2>
                   <div className="space-y-4">
@@ -448,7 +455,6 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 
-                {/* Popular Posts */}
                 <div className="bg-white p-6 rounded-xl shadow col-span-1">
                   <h2 className="text-lg font-semibold mb-4">Popular Posts</h2>
                   <div className="space-y-4">
@@ -466,7 +472,6 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 
-                {/* Recent Activity */}
                 <div className="bg-white p-6 rounded-xl shadow col-span-1">
                   <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
                   <div className="space-y-4">

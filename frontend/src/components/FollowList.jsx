@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import apiService from '../services/api';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
-import { FaUserPlus, FaUserMinus } from 'react-icons/fa';
+import { FaUserPlus, FaUserMinus, FaUsers, FaLongArrowAltLeft } from 'react-icons/fa';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 
@@ -17,6 +17,7 @@ const FollowList = ({ type, userId: propUserId }) => {
   const [currentUserId, setCurrentUserId] = useState('');
   const [followingIds, setFollowingIds] = useState([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [followLoading, setFollowLoading] = useState({});
   
   // Get userId from props, location state, or localStorage
   const getUserId = () => {
@@ -85,6 +86,9 @@ const FollowList = ({ type, userId: propUserId }) => {
   };
 
   const handleFollow = async (userToFollowId, userName) => {
+    // Set loading state for this specific user
+    setFollowLoading(prev => ({ ...prev, [userToFollowId]: true }));
+    
     try {
       await apiService.followUser(userToFollowId);
       setFollowingIds([...followingIds, userToFollowId]);
@@ -92,11 +96,18 @@ const FollowList = ({ type, userId: propUserId }) => {
       
       // Dispatch a custom event to notify other components
       window.dispatchEvent(new CustomEvent('followStatusChanged', {
-        detail: { action: 'follow', targetUserId: userToFollowId }
+        detail: { 
+          action: 'follow', 
+          targetUserId: userToFollowId,
+          currentUserId: currentUserId 
+        }
       }));
     } catch (err) {
       console.error('Error following user:', err);
       toast.error('Failed to follow user');
+    } finally {
+      // Clear loading state for this user
+      setFollowLoading(prev => ({ ...prev, [userToFollowId]: false }));
     }
   };
 
@@ -112,6 +123,9 @@ const FollowList = ({ type, userId: propUserId }) => {
       cancelButtonText: 'Cancel'
     }).then(async (result) => {
       if (result.isConfirmed) {
+        // Set loading state for this specific user
+        setFollowLoading(prev => ({ ...prev, [userToUnfollowId]: true }));
+        
         try {
           await apiService.unfollowUser(userToUnfollowId);
           setFollowingIds(followingIds.filter(id => id !== userToUnfollowId));
@@ -124,11 +138,18 @@ const FollowList = ({ type, userId: propUserId }) => {
           
           // Dispatch a custom event to notify other components
           window.dispatchEvent(new CustomEvent('followStatusChanged', {
-            detail: { action: 'unfollow', targetUserId: userToUnfollowId }
+            detail: { 
+              action: 'unfollow', 
+              targetUserId: userToUnfollowId,
+              currentUserId: currentUserId 
+            }
           }));
         } catch (error) {
           console.error('Error unfollowing user:', error);
           toast.error('Failed to unfollow user');
+        } finally {
+          // Clear loading state for this user
+          setFollowLoading(prev => ({ ...prev, [userToUnfollowId]: false }));
         }
       }
     });
@@ -154,6 +175,31 @@ const FollowList = ({ type, userId: propUserId }) => {
     setShowLoginModal(false);
     navigate('/login');
   };
+  
+  // Function to generate initials and background color based on name
+  const generateInitials = (firstName, lastName) => {
+    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
+    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
+    return firstInitial + lastInitial;
+  };
+  
+  // Generate a consistent color based on user ID
+  const generateColor = (userId) => {
+    // List of professional, visually pleasing colors
+    const colors = [
+      'bg-blue-600', 'bg-indigo-600', 'bg-purple-600', 'bg-pink-600', 
+      'bg-red-600', 'bg-orange-600', 'bg-amber-600', 'bg-yellow-600', 
+      'bg-lime-600', 'bg-green-600', 'bg-emerald-600', 'bg-teal-600', 
+      'bg-cyan-600', 'bg-sky-600', 'bg-violet-600', 'bg-fuchsia-600'
+    ];
+    
+    // Use the last characters of the userId to determine color
+    const hash = userId.split('').reduce((acc, char) => {
+      return acc + char.charCodeAt(0);
+    }, 0);
+    
+    return colors[hash % colors.length];
+  };
 
   if (loading) {
     return (
@@ -165,7 +211,7 @@ const FollowList = ({ type, userId: propUserId }) => {
           </div>
           <main className="flex-1 p-8 overflow-y-auto">
             <div className="flex items-center justify-center h-64">
-              <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-200 border-t-indigo-600"></div>
             </div>
           </main>
         </div>
@@ -182,7 +228,15 @@ const FollowList = ({ type, userId: propUserId }) => {
             <Sidebar defaultActiveTab={type === "followers" ? "followers" : "following"} userId={userId} />
           </div>
           <main className="flex-1 p-8 overflow-y-auto">
-            <div className="p-4 bg-red-100 text-red-800 rounded text-center mb-4">{error}</div>
+            <div className="p-5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-center mb-4">
+              <p className="font-medium">{error}</p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="mt-2 px-3 py-1 text-sm bg-red-100 hover:bg-red-200 text-red-800 rounded"
+              >
+                Try Again
+              </button>
+            </div>
           </main>
         </div>
       </div>
@@ -197,7 +251,7 @@ const FollowList = ({ type, userId: propUserId }) => {
           <Sidebar defaultActiveTab={type === "followers" ? "followers" : "following"} userId={userId} />
         </div>
         <main className="flex-1 p-8 overflow-y-auto">
-          <div className="p-4 bg-white rounded-lg shadow">
+          <div className="max-w-4xl mx-auto">
             {/* Authentication Modal */}
             {showLoginModal && (
               <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -244,84 +298,138 @@ const FollowList = ({ type, userId: propUserId }) => {
                 </div>
               </div>
             )}
-          
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              {type === 'followers' ? 'Followers' : 'Following'} 
-              <span className="ml-2 text-base text-gray-600">({count})</span>
-            </h2>
             
-            {users.length === 0 ? (
-              <div className="p-4 text-center text-gray-600 bg-gray-100 rounded">
-                {type === 'followers' 
-                  ? 'No followers yet.' 
-                  : 'Not following anyone yet.'}
+            {/* Header Section */}
+            <div className="bg-white rounded-xl shadow-md mb-6 p-6">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                    {type === 'followers' ? 'People Following You' : 'People You Follow'} 
+                    <span className="ml-2 inline-block px-3 py-1 text-sm font-medium rounded-full bg-indigo-100 text-indigo-800">
+                      {count}
+                    </span>
+                  </h2>
+                  <p className="text-gray-500 mt-1">
+                    {type === 'followers' 
+                      ? 'Users who are interested in your content' 
+                      : 'Users whose content you are following'}
+                  </p>
+                </div>
+                
+                <button 
+                  onClick={() => navigate(-1)} 
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <FaLongArrowAltLeft className="mr-2" /> Go Back
+                </button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {users.map(user => (
-                  <div 
-                    key={user.id} 
-                    className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200"
-                  >
-                    {/* User Info with clickable area */}
-                    <div 
-                      onClick={() => handleProfileClick(user.id)}
-                      className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer group"
-                    >
-                      <div className="relative">
-                        <img 
-                          src={user.profilePicture || 'https://via.placeholder.com/150?text='+user.firstName[0]+user.lastName[0]} 
-                          alt={`${user.firstName} ${user.lastName}`} 
-                          className="w-12 h-12 rounded-full object-cover border-2 border-blue-100 group-hover:border-blue-200 transition-colors"
-                        />
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
-                      </div>
-                      
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors truncate">
-                          {user.firstName} {user.lastName}
-                        </h3>
-                        <p className="text-sm text-gray-500 truncate">@{user.username}</p>
-                        {user.bio && (
-                          <p className="text-xs text-gray-400 mt-1 truncate">{user.bio}</p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Follow/Unfollow Button */}
-                    {currentUserId !== user.id && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          followingIds.includes(user.id) 
-                            ? handleUnfollow(user.id, `${user.firstName} ${user.lastName}`) 
-                            : handleFollow(user.id, `${user.firstName} ${user.lastName}`);
-                        }}
-                        className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1.5
-                          ${
-                            followingIds.includes(user.id)
-                              ? 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-                              : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                          }
-                        `}
-                      >
-                        {followingIds.includes(user.id) ? (
-                          <>
-                            <FaUserMinus className="text-xs" />
-                            Unfollow
-                          </>
-                        ) : (
-                          <>
-                            <FaUserPlus className="text-xs" />
-                            Follow
-                          </>
-                        )}
-                      </button>
-                    )}
+            </div>
+          
+            {/* User List */}
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              {users.length === 0 ? (
+                <div className="p-8 text-center">
+                  <div className="mx-auto h-16 w-16 text-gray-400 mb-4 flex items-center justify-center rounded-full bg-gray-100">
+                    <FaUsers className="h-8 w-8" />
                   </div>
-                ))}
-              </div>
-            )}
+                  <h3 className="text-lg font-medium text-gray-900 mb-1">
+                    {type === 'followers' 
+                      ? 'No followers yet' 
+                      : 'Not following anyone yet'}
+                  </h3>
+                  <p className="text-gray-500 max-w-md mx-auto">
+                    {type === 'followers'
+                      ? 'When people follow you, they will appear here.'
+                      : 'When you follow people, they will appear here.'}
+                  </p>
+                  {type === 'following' && (
+                    <button
+                      onClick={() => navigate('/find-users')}
+                      className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                    >
+                      Find People to Follow
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {users.map(user => (
+                    <li key={user.id}>
+                      <div className="flex items-center justify-between p-5 hover:bg-gray-50 transition-all duration-150">
+                        {/* User Info with clickable area */}
+                        <div 
+                          onClick={() => handleProfileClick(user.id)}
+                          className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer group"
+                        >
+                          {/* User Initials Avatar */}
+                          <div className="flex-shrink-0">
+                            <div className={`relative w-12 h-12 rounded-full flex items-center justify-center text-white font-medium text-lg shadow-sm border-2 border-white ${generateColor(user.id)}`}>
+                              {generateInitials(user.firstName, user.lastName)}
+                              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
+                            </div>
+                          </div>
+                          
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                              {user.firstName} {user.lastName}
+                            </h3>
+                            <div className="flex items-center">
+                              <p className="text-sm text-gray-500 truncate">@{user.username}</p>
+                              {currentUserId === user.id && (
+                                <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-100 text-gray-800 rounded">You</span>
+                              )}
+                            </div>
+                            {user.bio && (
+                              <p className="text-sm text-gray-500 mt-1 line-clamp-1">{user.bio}</p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Follow/Unfollow Button - Styled like UserProfile.jsx */}
+                        {currentUserId !== user.id && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              followingIds.includes(user.id) 
+                                ? handleUnfollow(user.id, `${user.firstName} ${user.lastName}`) 
+                                : handleFollow(user.id, `${user.firstName} ${user.lastName}`);
+                            }}
+                            disabled={followLoading[user.id]}
+                            className={`py-2 px-5 rounded-full flex items-center gap-2 text-sm font-medium transition-all shadow-sm
+                              ${
+                                followingIds.includes(user.id)
+                                  ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
+                          >
+                            {followLoading[user.id] ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-b-transparent border-white"></div>
+                                <span>{followingIds.includes(user.id) ? 'Unfollowing...' : 'Following...'}</span>
+                              </>
+                            ) : (
+                              <>
+                                {followingIds.includes(user.id) ? (
+                                  <>
+                                    <FaUserMinus className="text-xs" />
+                                    <span>Unfollow</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <FaUserPlus className="text-xs" />
+                                    <span>Follow</span>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </main>
       </div>

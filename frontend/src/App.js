@@ -24,6 +24,7 @@ import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetiz
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import EditRequest from "./pages/monetizationAndRewardManagement/EditMonetization"; // This will be the edit page
 import Applications from "./pages/monetizationAndRewardManagement/Applications";
+import AdminMonetize from "./pages/Admin/AdminMonetize";
 
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
@@ -41,9 +42,15 @@ import NotificationsPage from './pages/Notification/NotificationsPage';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import UserManagement from './pages/Admin/UserManagement';
 import ProgressManagement from './pages/Admin/ProgressManagement';
+import PostManagement from './pages/Admin/PostManagement';
+import CommentManagement from './pages/Admin/CommentManagement';
+import AdminProtectedRoute from './pages/Admin/AdminProtectedRoute';
 
 //Learning Plans
 import { LearningPlans, LearningPlanDetails } from './pages/LearningPlans';
+
+//Auth Protection
+import ProtectedRoute from './components/ProtectedRoute';
 
 //Toast
 import { ToastContainer } from 'react-toastify';
@@ -52,6 +59,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 //ScrollToTop
 import ScrollToTop from './components/ScrollToTop';
+import AdminDashboard2 from './pages/monetizationAndRewardManagement/AdminDashboard';
 
 function App() {
   return (
@@ -77,49 +85,158 @@ function App() {
         {/* Post Management */}
         <Route path="/posts" element={<Posts />} />
         <Route path="/posts/:id" element={<PostDetail />} />
-        <Route path="/add-post" element={<CreatePost />} />
-        <Route path="/my-posts" element={<MyPosts />} />
-        <Route path="/edit-post/:id" element={<EditPost />} />
+        <Route path="/add-post" element={
+          <ProtectedRoute>
+            <CreatePost />
+          </ProtectedRoute>
+        } />
+        <Route path="/my-posts" element={
+          <ProtectedRoute>
+            <MyPosts />
+          </ProtectedRoute>
+        } />
+        <Route path="/edit-post/:id" element={
+          <ProtectedRoute>
+            <EditPost />
+          </ProtectedRoute>
+        } />
         
-        {/* User Management */}
-        <Route path="/userdashboard" element={<UserDashboard />} />
-        <Route path="/userdashboard/followers" element={<UserDashboard />} />
-        <Route path="/userdashboard/following" element={<UserDashboard />} />
-        <Route path="/userdashboard/find-users" element={<UserDashboard />} />
-        <Route path="/profile/:userId" element={<UserProfile />} />
+        {/* User Management - Protected */}
+        <Route path="/userdashboard" element={
+          <ProtectedRoute>
+            <UserDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/userdashboard/followers" element={
+          <ProtectedRoute>
+            <UserDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/userdashboard/following" element={
+          <ProtectedRoute>
+            <UserDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/userdashboard/find-users" element={
+          <ProtectedRoute>
+            <UserDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/profile/:userId" element={
+          <ProtectedRoute>
+            <UserProfile />
+          </ProtectedRoute>} />
+          
         <Route path="/user-posts/:userId" element={<Posts />} />
-        <Route path="/userdashboard/progress" element={<ProgreesOfUserdashboard />} />
-        <Route path="/userdashboard/settings" element={<Settings />} />
+        <Route path="/userdashboard/progress" element={
+          <ProtectedRoute>
+            <ProgreesOfUserdashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/userdashboard/settings" element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        } />
 
-        {/* Direct Routes for Followers, Following, and User Search */}
-        <Route path="/followers" element={<FollowList type="followers" />} />
-        <Route path="/following" element={<FollowList type="following" />} />
-        <Route path="/find-users" element={<UserSearch />} />
+        {/* Direct Routes for Followers, Following, and User Search - Protected */}
+        <Route path="/followers" element={
+          <ProtectedRoute>
+            <FollowList type="followers" />
+          </ProtectedRoute>
+        } />
+        <Route path="/following" element={
+          <ProtectedRoute>
+            <FollowList type="following" />
+          </ProtectedRoute>
+        } />
+        <Route path="/find-users" element={
+          <ProtectedRoute>
+            <UserSearch />
+          </ProtectedRoute>
+        } />
 
-        {/* New Routes */}
-        <Route path="/feed" element={<Feed />} />
-        <Route path="/courses" element={<Courses />} />
+        {/* user progress */}
         <Route path="/progress" element={<Progress />} />
-        <Route path="/oauth-success" element={<OAuthSuccess />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
 
-        {/*Monetization and reward management */}
-        <Route path="/monetization/form" element={<MonetizationRequest />} />
-        <Route path="/userdashboard/monetize" element={<MonetizationForm />} />
-        <Route path="/userdashboard/Applications" element={<Applications />} />
-        <Route path="/userdashboard/Applications/edit/:id" element={<EditRequest />} />
+        <Route path="/oauth-success" element={<OAuthSuccess />} />
+
+        <Route path="/notifications" element={
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        } />
+
+
+        {/*Monetization and reward management - Protected */}
+        <Route path="/monetization/form" element={
+          <ProtectedRoute>
+            <MonetizationRequest />
+          </ProtectedRoute>
+        } />
+        <Route path="/userdashboard/monetize" element={
+          <ProtectedRoute>
+            <MonetizationForm />
+          </ProtectedRoute>
+        } />
+        <Route path="/userdashboard/Applications" element={
+          <ProtectedRoute>
+            <Applications />
+          </ProtectedRoute>
+        } />
+        <Route path="/userdashboard/Applications/edit/:id" element={
+          <ProtectedRoute>
+            <EditRequest />
+          </ProtectedRoute>
+        } />
+
         
-        {/* Admin Routes */}
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/user-management" element={<UserManagement />} />
-        <Route path="/admin/progress-management" element={<ProgressManagement />} />
+        {/* Admin Routes - Protected with AdminProtectedRoute for enhanced security */}
+        <Route path="/admin" element={
+          <AdminProtectedRoute>
+            <AdminDashboard />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/user-management" element={
+          <AdminProtectedRoute>
+            <UserManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/progress-management" element={
+          <AdminProtectedRoute>
+            <ProgressManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/post-management" element={
+          <AdminProtectedRoute>
+            <PostManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/comment-management" element={
+          <AdminProtectedRoute>
+            <CommentManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/AdminMonetize" element={
+          <AdminProtectedRoute>
+            <AdminMonetize />
+          </AdminProtectedRoute>
+        } />
         
         {/* Optional: Category Filter */}
         <Route path="/category/:categoryName" element={<Home />} />
 
-        {/* Learning Plans */}
-        <Route path="/userdashboard/learning-plans" element={<LearningPlans />} />
-        <Route path="/userdashboard/learning-plans/:id" element={<LearningPlanDetails />} />
+        {/* Learning Plans - Protected */}
+        <Route path="/userdashboard/learning-plans" element={
+          <ProtectedRoute>
+            <LearningPlans />
+          </ProtectedRoute>
+        } />
+        <Route path="/userdashboard/learning-plans/:id" element={
+          <ProtectedRoute>
+            <LearningPlanDetails />
+          </ProtectedRoute>
+        } />
       </Routes>
     </Router>
   );

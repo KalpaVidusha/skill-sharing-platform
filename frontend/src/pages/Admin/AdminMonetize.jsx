@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../../components/Navbar";
-import Sidebar from "../../components/Sidebar";
+//import Sidebar from "../../components/Sidebar";
+import AdminSidebar from "./AdminSidebar";
 
 const Applications = () => {
   const [requests, setRequests] = useState([]);
@@ -89,22 +89,18 @@ const Applications = () => {
           "url('https://images.pexels.com/photos/7688336/pexels-photo-7688336.jpeg?auto=compress&cs=tinysrgb&w=1600')",
       }}
     >
-      <Navbar />
       {/* Overlay for readability */}
-      <div className="min-h-screen bg-black/10 backdrop-blur-sm">
-        {/* Navbar */}
-        
-        
-        <div className="flex min-h-screen pt-20 font-sans">
+      <div className="min-h-screen bg-white/70 backdrop-blur-sm">
+        <div className="flex min-h-screen">
           {/* Sidebar */}
-          <div className="sticky top-20 h-[calc(100vh-5rem)] self-start">
-            <Sidebar defaultActiveTab="monetization" />
+          <div className="h-screen sticky top-0 self-start">
+            <AdminSidebar activeTab="monetization" />
           </div>
           
           {/* Main Content */}
           <div className="flex-1 p-8 overflow-y-auto">
-            <h2 className="mb-8 text-4xl font-bold text-center text-blue-600">
-              My Monetization Requests
+            <h2 className="mb-8 text-4xl font-bold text-center text-black">
+              Monetization Requests
             </h2>
     
             {loading && (

@@ -71,11 +71,10 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100">
       <Navbar />
-      
-      <div className="flex flex-1 items-center justify-center p-4 pt-24 bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className={`w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-700 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <div className="flex flex-1 items-center justify-center p-4 pt-24 pb-4 md:py-24 mt-5">
+        <div className={`w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-700 transform ${loaded ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-10 scale-95'}`}>
           <div className="p-8">
           <div className="text-center mb-8">
             {/* Replace the icon with your logo */}
@@ -175,7 +174,7 @@ const Login = () => {
               <div>
                 <button
                   type="submit"
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
                   tabIndex="3"
                 >
                   Sign in
@@ -201,7 +200,7 @@ const Login = () => {
                   onClick={handleGoogleLogin}
                   onMouseEnter={() => setGoogleHover(true)}
                   onMouseLeave={() => setGoogleHover(false)}
-                  className={`w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all ${googleHover ? 'transform -translate-y-0.5 shadow-md' : ''}`}
+                  className={`w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ${googleHover ? 'transform -translate-y-0.5 shadow-md' : ''}`}
                 >
                   <div className="flex items-center space-x-3">
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -231,158 +230,6 @@ const Login = () => {
       <Footer />
     </div>
   );
-};
-
-// Styles
-const containerStyle = {
-  height: "100vh",
-  width: "100vw",
-  backgroundImage: `url("https://images.unsplash.com/photo-1508780709619-79562169bc64?auto=format&fit=crop&w=1500&q=80")`,
-  backgroundSize: "cover",
-  backgroundPosition: "center",
-  backgroundRepeat: "no-repeat",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  fontFamily: "'Poppins', sans-serif",
-  paddingTop: "20px",
-};
-
-const cardStyle = {
-  background: "rgba(255, 255, 255, 0.92)",
-  borderRadius: "16px",
-  padding: "40px",
-  width: "90%",
-  maxWidth: "420px",
-  color: "#0d47a1",
-  boxShadow: "0 20px 50px rgba(33, 150, 243, 0.25)",
-  textAlign: "center",
-  backdropFilter: "blur(10px)",
-  transition: "opacity 0.8s ease, transform 0.8s ease",
-};
-
-const hiddenStyle = {
-  opacity: 0,
-  transform: "translateY(40px)",
-};
-
-const fadeIn = {
-  opacity: 1,
-  transform: "translateY(0)",
-};
-
-const titleStyle = {
-  fontSize: "30px",
-  fontWeight: "700",
-  marginBottom: "10px",
-  color: "#1565c0"
-};
-
-const subtitleStyle = {
-  color: "#607d8b",
-  marginBottom: "25px",
-  fontSize: "14px"
-};
-
-const formStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "16px",
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "14px 18px",
-  borderRadius: "10px",
-  border: "1px solid #bbdefb",
-  backgroundColor: "#e3f2fd",
-  color: "#0d47a1",
-  fontSize: "15px",
-  outline: "none",
-  transition: "border 0.3s ease",
-};
-
-const passwordContainer = {
-  position: "relative",
-  display: "flex",
-  alignItems: "center",
-};
-
-const eyeIcon = {
-  position: "absolute",
-  right: "12px",
-  top: "50%",
-  transform: "translateY(-50%)",
-  fontSize: "18px",
-  color: "#1976d2",
-  cursor: "pointer",
-};
-
-const loginBtn = {
-  padding: "14px",
-  borderRadius: "10px",
-  border: "none",
-  backgroundColor: "#2196f3",
-  color: "#ffffff",
-  fontSize: "16px",
-  fontWeight: "600",
-  cursor: "pointer",
-  transition: "background-color 0.3s ease",
-};
-
-const dividerStyle = {
-  display: "flex",
-  alignItems: "center",
-  margin: "10px 0",
-};
-
-const dividerLineStyle = {
-  flex: 1,
-  height: "1px",
-  backgroundColor: "#bbdefb",
-};
-
-const dividerTextStyle = {
-  margin: "0 10px",
-  color: "#607d8b",
-  fontSize: "14px",
-};
-
-const googleBtn = {
-  display: 'flex',
-  alignItems: 'center',
-  width: '100%',
-  height: '50px',
-  backgroundColor: '#4285F4',
-  border: 'none',
-  borderRadius: '10px',
-  cursor: 'pointer',
-  transition: 'all 0.3s ease',
-  padding: 0,
-  overflow: 'hidden'
-};
-
-const googleIconWrapper = {
-  width: '48px',
-  height: '48px',
-  backgroundColor: 'white',
-  borderRadius: '10px 0 0 10px',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center'
-};
-
-const googleIcon = {
-  width: '24px',
-  height: '24px'
-};
-
-const googleText = {
-  flex: 1,
-  color: 'white',
-  fontSize: '16px',
-  fontWeight: '500',
-  textAlign: 'center'
 };
 
 export default Login;
