@@ -86,7 +86,7 @@ const LearningPlans = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50/50 to-indigo-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50/80 to-indigo-50/80">
       <Navbar />
       <div className="flex min-h-screen pt-20 font-sans">
         {/* Sidebar */}

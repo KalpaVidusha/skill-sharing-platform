@@ -59,6 +59,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
   const [editFormData, setEditFormData] = useState({});
   const currentUserId = localStorage.getItem('userId');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -229,11 +230,11 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
     if (!progress.mediaUrl) return null;
     
     return (
-      <div className="mt-3">
+      <div className="mt-3 overflow-hidden rounded-lg group">
         <img 
           src={progress.mediaUrl.startsWith('http') ? progress.mediaUrl : `${process.env.PUBLIC_URL}${progress.mediaUrl}`} 
           alt="Progress media" 
-          className="rounded-lg max-h-80 max-w-full mx-auto object-contain" 
+          className="rounded-lg max-h-80 max-w-full mx-auto object-contain transition-transform duration-300 ease-in-out transform group-hover:scale-105 hover:scale-110" 
         />
       </div>
     );
@@ -277,6 +278,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
 
   const handleDelete = async () => {
     try {
+      setIsDeleting(true); // Start loading state
       await apiService.deleteProgress(deleteId);
       setProgressUpdates(progressUpdates.filter(p => p.id !== deleteId));
       setShowConfirm(false);
@@ -287,6 +289,9 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
       setError('Could not delete progress update');
       console.error(error);
       toast.error('Failed to delete progress');
+    } finally {
+      setIsDeleting(false); // End loading state
+      setDeleteId(null);
     }
   };
 
@@ -309,6 +314,15 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
         skillName: progress.content.skillName || ''
       });
     } else if (progress.templateType === 'learning_goal') {
+      // If there's a target date, parse it and update selectedDate state
+      if (progress.content.targetDate) {
+        const targetDate = new Date(progress.content.targetDate);
+        if (!isNaN(targetDate.getTime())) {
+          setSelectedDate(targetDate);
+          setCurrentMonth(targetDate); // Also update current month to show relevant month in calendar
+        }
+      }
+      
       setEditFormData({
         goalName: progress.content.goalName || '',
         targetDate: progress.content.targetDate || ''
@@ -372,6 +386,29 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
     try {
       if (!editingProgress) return;
       
+      // Add validation for target date in learning_goal template
+      if (editingProgress.templateType === 'learning_goal') {
+        if (!editFormData.targetDate) {
+          toast.error('Please select a target date for your goal');
+          return;
+        }
+        
+        // Ensure date is in the future
+        const targetDate = new Date(editFormData.targetDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
+        
+        if (isNaN(targetDate.getTime())) {
+          toast.error('Invalid date format');
+          return;
+        }
+        
+        if (targetDate < today) {
+          toast.error('Target date must be in the future');
+          return;
+        }
+      }
+      
       setIsSubmitting(true); // Start loading state
       
       let mediaUrl = editingProgress.mediaUrl; // Keep existing media URL by default
@@ -424,6 +461,15 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
 
   // Handle date selection
   const handleDateChange = (day) => {
+    // Check if the selected date is in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
+    
+    if (day < today) {
+      toast.error("Please select a future date for your goal");
+      return;
+    }
+    
     setSelectedDate(day);
     const formattedDate = format(day, 'yyyy-MM-dd');
     setEditFormData(prev => ({
@@ -1121,7 +1167,7 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
         <div className="fixed inset-0 z-10 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             {/* Background overlay with improved transition */}
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity animate-fadeIn" onClick={cancelDelete}></div>
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity animate-fadeIn" onClick={!isDeleting ? cancelDelete : undefined}></div>
 
             {/* This element is to trick the browser into centering the modal contents */}
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
@@ -1148,15 +1194,27 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button 
                   type="button" 
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200 sm:ml-3 sm:w-auto sm:text-sm"
+                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200 sm:ml-3 sm:w-auto sm:text-sm ${isDeleting ? 'opacity-70 cursor-not-allowed' : ''}`}
                   onClick={handleDelete}
+                  disabled={isDeleting}
                 >
-                  Delete
+                  {isDeleting ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Deleting...
+                    </span>
+                  ) : (
+                    'Delete'
+                  )}
                 </button>
                 <button 
                   type="button" 
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  className={`mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm ${isDeleting ? 'opacity-70 cursor-not-allowed' : ''}`}
                   onClick={cancelDelete}
+                  disabled={isDeleting}
                 >
                   Cancel
                 </button>

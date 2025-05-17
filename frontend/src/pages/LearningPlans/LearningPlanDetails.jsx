@@ -264,7 +264,7 @@ const LearningPlanDetails = () => {
   return (
     <div>
       <Navbar />
-      <div className="flex min-h-screen pt-20 font-sans bg-gradient-to-br from-blue-50/50 to-indigo-50/50">
+      <div className="flex min-h-screen pt-20 font-sans bg-gradient-to-br from-blue-50/80 to-indigo-50/80">
         {/* Sidebar */}
         <div className="sticky top-20 h-[calc(100vh-5rem)] self-start">
           <Sidebar defaultActiveTab="learning_plans" userId={userId} />
@@ -509,7 +509,30 @@ const LearningPlanDetails = () => {
                     initialData={{
                       title: plan.title,
                       description: plan.description,
-                      topics: plan.topics
+                      topics: plan.topics.map(topic => {
+                        // Properly format resources to ensure validation works
+                        let resources = [];
+                        if (typeof topic.resources === 'string') {
+                          if (topic.resources.includes('\n')) {
+                            resources = topic.resources.split('\n').filter(r => r.trim() !== '');
+                          } else if (topic.resources.trim()) {
+                            resources = [topic.resources];
+                          } else {
+                            resources = [''];
+                          }
+                        } else if (Array.isArray(topic.resources)) {
+                          resources = topic.resources.length > 0 ? 
+                            topic.resources.filter(r => r !== null && r !== undefined) : 
+                            [''];
+                        } else {
+                          resources = [''];
+                        }
+
+                        return {
+                          ...topic,
+                          resources
+                        };
+                      })
                     }}
                   />
                 </div>

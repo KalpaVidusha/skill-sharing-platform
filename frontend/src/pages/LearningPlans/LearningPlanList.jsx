@@ -18,7 +18,7 @@ const LearningPlanList = ({ plans, onSelect }) => {
   }
   
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 overflow-visible">
       {plans.map((plan, idx) => {
         const totalTopics = plan.topics?.length || 0;
         const completedTopics = plan.topics?.filter(t => t.completed)?.length || 0;
@@ -27,7 +27,7 @@ const LearningPlanList = ({ plans, onSelect }) => {
         return (
           <div
             key={plan.id || idx}
-            className="p-5 bg-white rounded-xl shadow-xs border border-gray-100 hover:shadow-sm hover:border-blue-100/50 transition-all duration-300 group"
+            className="p-5 bg-white rounded-xl shadow-xs border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300 group transform hover:scale-105 hover:z-10 hover:-translate-y-1 cursor-pointer relative"
           >
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               <div 
