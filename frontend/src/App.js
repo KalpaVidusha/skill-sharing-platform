@@ -24,6 +24,7 @@ import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetiz
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import EditRequest from "./pages/monetizationAndRewardManagement/EditMonetization"; // This will be the edit page
 import Applications from "./pages/monetizationAndRewardManagement/Applications";
+import AdminMonetize from "./pages/Admin/AdminMonetize";
 
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
@@ -58,6 +59,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 //ScrollToTop
 import ScrollToTop from './components/ScrollToTop';
+import AdminDashboard2 from './pages/monetizationAndRewardManagement/AdminDashboard';
 
 function App() {
   return (
@@ -154,17 +156,17 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* New Routes */}
-        <Route path="/feed" element={<Feed />} />
-        <Route path="/courses" element={<Courses />} />
+        {/* user progress */}
         <Route path="/progress" element={<Progress />} />
 
         <Route path="/oauth-success" element={<OAuthSuccess />} />
+
         <Route path="/notifications" element={
           <ProtectedRoute>
             <NotificationsPage />
           </ProtectedRoute>
         } />
+
 
         {/*Monetization and reward management - Protected */}
         <Route path="/monetization/form" element={
@@ -187,6 +189,7 @@ function App() {
             <EditRequest />
           </ProtectedRoute>
         } />
+
         
         {/* Admin Routes - Protected with AdminProtectedRoute for enhanced security */}
         <Route path="/admin" element={
@@ -212,6 +215,11 @@ function App() {
         <Route path="/admin/comment-management" element={
           <AdminProtectedRoute>
             <CommentManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/AdminMonetize" element={
+          <AdminProtectedRoute>
+            <AdminMonetize />
           </AdminProtectedRoute>
         } />
         

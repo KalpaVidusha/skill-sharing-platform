@@ -81,7 +81,7 @@ const MonetizationForm = () => {
         </div>
         
         <div 
-          className="flex-1 p-8 flex items-center justify-center"
+          className="flex items-center justify-center flex-1 p-8"
           style={{
             backgroundImage: "url('https://images.pexels.com/photos/7688336/pexels-photo-7688336.jpeg?auto=compress&cs=tinysrgb&w=1600')",
             backgroundSize: "cover",
@@ -133,19 +133,19 @@ const MonetizationForm = () => {
                 />
               </div>
 
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-500 pointer-events-none">
-                  <LinkIcon size={18} />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Channel Link"
-                  value={platform}
-                  onChange={(e) => setPlatform(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 pl-10 transition-all duration-300 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-500 pointer-events-none">
+                <LinkIcon size={18} />
               </div>
+              <input
+                type="text"
+                placeholder="Channel Link"
+                value={platform}
+                onChange={(e) => setPlatform(e.target.value)}
+                required
+                className="w-full px-4 py-3 pl-10 transition-all duration-300 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              />
+            </div>
 
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-500 pointer-events-none">
