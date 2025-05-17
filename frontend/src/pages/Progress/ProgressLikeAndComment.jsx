@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { FaThumbsUp, FaRegThumbsUp, FaComment, FaRegComment } from 'react-icons/fa';
+import { FaThumbsUp, FaRegThumbsUp, FaComment, FaRegComment, FaLock, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../../services/api';
 import { toast } from "react-toastify";
@@ -67,6 +67,11 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isSubmittingReply, setIsSubmittingReply] = useState({});
   const [isUpdatingComment, setIsUpdatingComment] = useState(false);
+
+  // Authentication modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authAction, setAuthAction] = useState('');
+  const [returnFunction, setReturnFunction] = useState(null);
 
   // Toggle comments visibility for a progress update
   const toggleComments = async () => {
@@ -183,11 +188,11 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
   };
 
   // Helper function to check if user is authenticated
-  const checkAuthenticated = () => {
+  const checkAuthenticated = (action, callback) => {
     if (!currentUserId) {
-      toast.info('Please sign in to perform this action');
-      // Redirect to sign in page
-      window.location.href = '/signin';
+      setAuthAction(action);
+      setReturnFunction(() => callback);
+      setShowAuthModal(true);
       return false;
     }
     return true;
@@ -195,11 +200,8 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
 
   // Handle adding a new comment
   const handleAddComment = async () => {
-    // Check if user is logged in
-    if (!currentUserId) {
-      toast.info('Please sign in to comment on progress updates');
-      // Redirect to sign in page
-      window.location.href = '/signin';
+    // Check if user is logged in with improved authentication flow
+    if (!checkAuthenticated('comment', handleAddComment)) {
       return;
     }
     
@@ -239,23 +241,18 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
       
       // Check if error is unauthorized
       if (error.status === 401) {
-        toast.error('Please sign in to comment on progress updates');
-        // Redirect to sign in page after a short delay
-        setTimeout(() => {
-          window.location.href = '/signin';
-        }, 1500);
+        checkAuthenticated('comment', handleAddComment);
       } else {
         toast.error('Failed to add comment');
       }
     } finally {
-      // Reset loading state
       setIsSubmittingComment(false);
     }
   };
 
   // Start editing a comment
   const startEditComment = (comment) => {
-    if (!checkAuthenticated()) return;
+    if (!checkAuthenticated('edit', startEditComment)) return;
     
     // Check if the current user is the comment owner
     if (comment.userId !== currentUserId) {
@@ -275,7 +272,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
 
   // Handle updating a comment
   const handleUpdateComment = async (commentId) => {
-    if (!checkAuthenticated()) return;
+    if (!checkAuthenticated('update', handleUpdateComment)) return;
     if (!editCommentText.trim()) return;
     
     // Set loading state
@@ -328,7 +325,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
       console.error('Error updating comment:', error);
       
       if (error.status === 401) {
-        toast.error('Please sign in to update comments');
+        checkAuthenticated('update', handleUpdateComment);
       } else if (error.status === 403) {
         toast.error('You can only edit your own comments');
       } else {
@@ -342,7 +339,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
 
   // Start delete comment process
   const handleDeleteComment = async (commentId) => {
-    if (!checkAuthenticated()) return;
+    if (!checkAuthenticated('delete', handleDeleteComment)) return;
     
     // Find the comment to be deleted
     let commentObj = null;
@@ -435,7 +432,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
       console.error('Error deleting comment:', error);
       
       if (error.status === 401) {
-        toast.error('Please sign in to delete comments');
+        checkAuthenticated('delete', handleDeleteComment);
       } else if (error.status === 403) {
         toast.error('You can only delete your own comments');
       } else {
@@ -456,7 +453,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
 
   // Start replying to a comment
   const startReply = (commentId) => {
-    if (!checkAuthenticated()) return;
+    if (!checkAuthenticated('reply', startReply)) return;
     setReplyingTo(commentId);
   };
   
@@ -468,16 +465,14 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
   
   // Handle adding a reply to a comment
   const handleAddReply = async (commentId) => {
-    // Check if user is logged in
-    if (!currentUserId) {
-      toast.info('Please sign in to reply to comments');
-      window.location.href = '/signin';
+    // Check if user is logged in with improved authentication flow
+    if (!checkAuthenticated('reply', () => handleAddReply(commentId))) {
       return;
     }
     
     if (!replyText[commentId]?.trim()) return;
     
-    // Set loading state for this specific reply
+    // Set loading state
     setIsSubmittingReply(prev => ({
       ...prev,
       [commentId]: true
@@ -485,18 +480,11 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
     
     try {
       const newReply = {
-        content: replyText[commentId]
+        content: replyText[commentId],
+        parentCommentId: commentId
       };
       
       const createdReply = await apiService.addCommentReply(commentId, newReply);
-      
-      // If replies for this comment haven't been loaded yet, initialize the array
-      if (!commentReplies[commentId]) {
-        setCommentReplies(prev => ({
-          ...prev,
-          [commentId]: []
-        }));
-      }
       
       // Update replies state with the new reply
       setCommentReplies(prev => ({
@@ -531,10 +519,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
       
       // Check if error is unauthorized
       if (error.status === 401) {
-        toast.error('Please sign in to reply to comments');
-        setTimeout(() => {
-          window.location.href = '/signin';
-        }, 1500);
+        checkAuthenticated('reply', () => handleAddReply(commentId));
       } else {
         toast.error('Failed to add reply');
       }
@@ -549,11 +534,8 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
   
   // Toggle like on a progress update
   const toggleLike = async () => {
-    // Check if user is logged in
-    if (!currentUserId) {
-      toast.info('Please sign in to like progress updates');
-      // Redirect to sign in page
-      window.location.href = '/signin';
+    // Check if user is logged in with improved authentication flow
+    if (!checkAuthenticated('like', toggleLike)) {
       return;
     }
     
@@ -584,11 +566,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
       
       // Check if error is unauthorized
       if (error.status === 401) {
-        toast.error('Please sign in to like progress updates');
-        // Redirect to sign in page after a short delay
-        setTimeout(() => {
-          window.location.href = '/signin';
-        }, 1500);
+        checkAuthenticated('like', toggleLike);
       } else {
         toast.error('Failed to update like');
       }
@@ -598,15 +576,30 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
   // Handle clicking on a user's profile
   const handleProfileClick = (profileUserId) => {
     // Check if user is logged in before allowing profile navigation
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn) {
-      toast.info('Please sign in to view user profiles');
-      window.location.href = '/signin';
+    if (!checkAuthenticated('view profile', () => navigate(`/profile/${profileUserId}`))) {
       return;
     }
     
     // Navigate to the user's profile page
     navigate(`/profile/${profileUserId}`);
+  };
+
+  // Handle login from auth modal
+  const handleLogin = () => {
+    setShowAuthModal(false);
+    navigate('/login');
+  };
+
+  // Handle signup from auth modal
+  const handleSignup = () => {
+    setShowAuthModal(false);
+    navigate('/register');
+  };
+
+  // Handle close auth modal
+  const handleCloseAuthModal = () => {
+    setShowAuthModal(false);
+    setReturnFunction(null);
   };
 
   // Spinner component for loading states
@@ -905,7 +898,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
             </div>
           )}
           
-          {/* Add Comment Form - only for logged-in users */}
+          {/* Add Comment Form - improved UX for non-logged users */}
           {currentUserId ? (
             <div className="flex space-x-2 mt-3">
               <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium">
@@ -938,15 +931,88 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
               </div>
             </div>
           ) : (
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => window.location.href = '/signin'}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-              >
-                Sign in to comment
-              </button>
+            <div className="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <FaLock className="text-blue-500 mr-2" />
+                <span className="text-blue-700 font-medium">Join the conversation</span>
+              </div>
+              <p className="text-sm text-blue-600 mb-3">Sign in to like, comment, and interact with other learners</p>
+              <div className="flex justify-center space-x-3">
+                <button
+                  onClick={() => checkAuthenticated('comment', handleAddComment)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 shadow-sm transition-colors"
+                >
+                  Sign in
+                </button>
+                <button
+                  onClick={() => navigate('/register')}
+                  className="px-4 py-2 bg-white border border-blue-300 text-blue-600 rounded-md text-sm hover:bg-blue-50 transition-colors"
+                >
+                  Create account
+                </button>
+              </div>
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Authentication Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
+            {/* Background overlay */}
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleCloseAuthModal}></div>
+
+            <div className="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-md w-full mx-4">
+              <div className="absolute top-0 right-0 pt-3 pr-3">
+                <button 
+                  onClick={handleCloseAuthModal}
+                  className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <FaLock className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Authentication Required</h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        You need to be signed in to {authAction} on this platform. Join our community to engage with content and track your progress.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                    onClick={handleLogin}
+                  >
+                    Sign in
+                  </button>
+                  <button
+                    type="button"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+                    onClick={handleSignup}
+                  >
+                    Create Account
+                  </button>
+                </div>
+                
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 text-center">
+                    By signing in, you'll be able to interact with progress updates, like posts, comment, and share your own learning journey.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
       

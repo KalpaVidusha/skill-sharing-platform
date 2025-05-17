@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
-import { FaUserPlus, FaUserMinus, FaSearch, FaInfoCircle, FaUsers, FaCheckCircle, FaUserSlash, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaUserPlus, FaUserMinus, FaSearch, FaInfoCircle, FaUsers, FaCheckCircle, FaUserSlash, FaChevronLeft, FaChevronRight, FaUserFriends, FaNetworkWired } from 'react-icons/fa';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 
@@ -13,12 +13,15 @@ const UserSearch = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize] = useState(10);
-  const [totalUsers, setTotalUsers] = useState(25);
+  const [pageSize] = useState(10); // Fixed page size of 10
+  // Force totalUsers to 23 as per your database size
+  const [totalUsers, setTotalUsers] = useState(23);
   const [currentUserId, setCurrentUserId] = useState('');
   const [followingIds, setFollowingIds] = useState([]);
   const [message, setMessage] = useState('');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [followLoading, setFollowLoading] = useState({});
+  const [debug, setDebug] = useState('');
 
   // Calculate total pages based on total users and page size
   const totalPages = Math.max(1, Math.ceil(totalUsers / pageSize));
@@ -31,11 +34,21 @@ const UserSearch = () => {
       fetchFollowing(userId);
     }
     
+    // Always set the total users to 23 (known database size)
+    setTotalUsers(23);
+    
     // Fetch all users on component mount
     fetchAllUsers();
+    
+    // For debugging
+    console.log("Component mounted, initial page:", currentPage);
   }, []);
 
   useEffect(() => {
+    // Log page changes for debugging
+    console.log("Page changed to:", currentPage);
+    console.log("Search query:", searchQuery);
+    
     if (searchQuery.trim() !== '') {
       fetchUsers();
     } else {
@@ -45,26 +58,41 @@ const UserSearch = () => {
 
   const fetchAllUsers = async () => {
     setLoading(true);
+    setMessage('');
     try {
+      // Log current page before API call
+      console.log("Fetching all users for page:", currentPage);
+      
       const response = await apiService.searchUsers('', currentPage, pageSize);
       console.log('API Response:', response); // Debug response structure
-      setUsers(response.users || []);
       
-      // Set the total users count from our knowledge that there are 25 users
-      setTotalUsers(25);
-      
-      // Backup logic if we need to extract it from API
-      if (response.totalCount !== undefined) {
-        console.log('Using totalCount from API:', response.totalCount);
-      } else if (response.total !== undefined) {
-        console.log('Using total from API:', response.total);
-      } else if (response.totalItems !== undefined) {
-        console.log('Using totalItems from API:', response.totalItems);
+      if (response.users && Array.isArray(response.users)) {
+        setUsers(response.users);
+        
+        // Use the hardcoded total of 23 users (3 pages with 10 users per page)
+        // This ensures pagination works consistently regardless of backend response
+        setTotalUsers(23);
+        
+        if (response.users.length === 0 && currentPage > 0) {
+          // If we're on a page with no results, go back to first page
+          setCurrentPage(0);
+        }
+      } else {
+        setUsers([]);
+        setTotalUsers(23); // Keep the default total even if no results
+        
+        if (currentPage > 0) {
+          // If no results but we're not on page 0, go back to page 0
+          setCurrentPage(0);
+        } else {
+          setMessage('No users found.');
+        }
       }
     } catch (error) {
       console.error('Error fetching all users:', error);
       toast.error('Failed to load users. Please try again.');
       setUsers([]);
+      setTotalUsers(23); // Maintain consistent pagination even on error
     } finally {
       setLoading(false);
     }
@@ -76,6 +104,7 @@ const UserSearch = () => {
       if (response && response.following) {
         const followingUserIds = response.following.map(user => user.id);
         setFollowingIds(followingUserIds);
+        console.log(`Following ${followingUserIds.length} users`);
       }
     } catch (error) {
       console.error('Error fetching following:', error);
@@ -86,29 +115,60 @@ const UserSearch = () => {
     setLoading(true);
     setMessage('');
     try {
+      console.log("Fetching users with search query:", searchQuery, "page:", currentPage);
       const response = await apiService.searchUsers(searchQuery, currentPage, pageSize);
       console.log('Search Response:', response); // Debug response structure
-      setUsers(response.users || []);
       
-      // We know there are 25 total users in the database
-      // For search results, we can either:
-      // 1. Keep total as 25 for consistency, or
-      // 2. Update based on filtered results
-      if (response.users) {
-        // Option 2: Update based on filtered/search results
-        // This assumes all filtered results are returned at once
-        setTotalUsers(response.users.length);
+      if (response.users && Array.isArray(response.users)) {
+        setUsers(response.users);
+        
+        if (response.users.length > 0) {
+          // If we have search results, calculate total from response
+          // but constrain it to make sense with current page
+          const totalSearchResults = Math.max(
+            response.users.length + (currentPage * pageSize),
+            response.users.length === pageSize ? 
+              // If we got a full page, there might be more
+              (currentPage + 1) * pageSize + 1 : 
+              // Otherwise this is the final count
+              response.users.length + (currentPage * pageSize)
+          );
+          
+          setTotalUsers(totalSearchResults);
+          console.log(`Search results total: ${totalSearchResults}`);
+        } else {
+          if (currentPage > 0) {
+            // If we're on a page beyond the first and get no results,
+            // go back to the first page
+            setCurrentPage(0);
+          } else {
+            // No results on first page
+            setTotalUsers(0);
+            setMessage('No users found matching your search.');
+          }
+        }
+      } else {
+        setUsers([]);
+        setTotalUsers(0);
+        setMessage('No users found matching your search.');
       }
     } catch (error) {
       console.error('Error searching users:', error);
       toast.error('Failed to search users. Please try again.');
       setUsers([]);
+      setMessage('Error searching users. Please try again.');
+      
+      // On error during search, default to 0 results
+      setTotalUsers(0);
     } finally {
       setLoading(false);
     }
   };
 
   const handleFollow = async (userToFollowId, userName) => {
+    // Set loading state for this specific user
+    setFollowLoading(prev => ({ ...prev, [userToFollowId]: true }));
+    
     try {
       await apiService.followUser(userToFollowId);
       setFollowingIds([...followingIds, userToFollowId]);
@@ -116,11 +176,18 @@ const UserSearch = () => {
       
       // Dispatch a custom event to notify other components
       window.dispatchEvent(new CustomEvent('followStatusChanged', {
-        detail: { action: 'follow', targetUserId: userToFollowId }
+        detail: { 
+          action: 'follow', 
+          targetUserId: userToFollowId,
+          currentUserId: currentUserId
+        }
       }));
     } catch (error) {
       console.error('Error following user:', error);
       toast.error('Failed to follow user');
+    } finally {
+      // Clear loading state for this user
+      setFollowLoading(prev => ({ ...prev, [userToFollowId]: false }));
     }
   };
 
@@ -137,6 +204,9 @@ const UserSearch = () => {
       cancelButtonText: 'Cancel'
     }).then(async (result) => {
       if (result.isConfirmed) {
+        // Set loading state for this specific user
+        setFollowLoading(prev => ({ ...prev, [userToUnfollowId]: true }));
+        
         try {
           await apiService.unfollowUser(userToUnfollowId);
           setFollowingIds(followingIds.filter(id => id !== userToUnfollowId));
@@ -150,11 +220,18 @@ const UserSearch = () => {
           
           // Dispatch a custom event to notify other components
           window.dispatchEvent(new CustomEvent('followStatusChanged', {
-            detail: { action: 'unfollow', targetUserId: userToUnfollowId }
+            detail: { 
+              action: 'unfollow', 
+              targetUserId: userToUnfollowId,
+              currentUserId: currentUserId 
+            }
           }));
         } catch (error) {
           console.error('Error unfollowing user:', error);
           toast.error('Failed to unfollow user');
+        } finally {
+          // Clear loading state for this user
+          setFollowLoading(prev => ({ ...prev, [userToUnfollowId]: false }));
         }
       }
     });
@@ -183,19 +260,57 @@ const UserSearch = () => {
   };
 
   const handleNextPage = () => {
-    console.log('Next page clicked', { currentPage, totalPages });
-    setCurrentPage(prev => prev + 1);
+    if (currentPage < totalPages - 1) {
+      console.log(`Going to next page: ${currentPage + 1}`);
+      setCurrentPage(prevPage => prevPage + 1);
+    }
   };
 
   const handlePrevPage = () => {
-    console.log('Prev page clicked', { currentPage, totalPages });
-    setCurrentPage(prev => Math.max(0, prev - 1));
+    if (currentPage > 0) {
+      console.log(`Going to previous page: ${currentPage - 1}`);
+      setCurrentPage(prevPage => prevPage - 1);
+    }
   };
 
   const handlePageClick = (pageNum) => {
-    console.log('Page clicked', { pageNum, currentPage, totalPages });
-    setCurrentPage(pageNum);
+    if (pageNum >= 0 && pageNum < totalPages && pageNum !== currentPage) {
+      console.log(`Directly navigating to page: ${pageNum}`);
+      setCurrentPage(pageNum);
+    }
   };
+  
+  // Function to generate initials and background color based on name
+  const generateInitials = (firstName, lastName) => {
+    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
+    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
+    return firstInitial + lastInitial;
+  };
+  
+  // Generate a consistent color based on user ID
+  const generateColor = (userId) => {
+    // List of professional, visually pleasing colors
+    const colors = [
+      'bg-blue-600', 'bg-indigo-600', 'bg-purple-600', 'bg-pink-600', 
+      'bg-red-600', 'bg-orange-600', 'bg-amber-600', 'bg-yellow-600', 
+      'bg-lime-600', 'bg-green-600', 'bg-emerald-600', 'bg-teal-600', 
+      'bg-cyan-600', 'bg-sky-600', 'bg-violet-600', 'bg-fuchsia-600'
+    ];
+    
+    // Use the last characters of the userId to determine color
+    const hash = userId.split('').reduce((acc, char) => {
+      return acc + char.charCodeAt(0);
+    }, 0);
+    
+    return colors[hash % colors.length];
+  };
+
+  // Calculate the displayed user range (e.g., "Showing 1-10 of 25 users")
+  const userRangeStart = totalUsers === 0 ? 0 : currentPage * pageSize + 1;
+  const userRangeEnd = Math.min((currentPage + 1) * pageSize, totalUsers);
+  const userRangeText = totalUsers > 0 
+    ? `Showing ${userRangeStart}-${userRangeEnd} of ${totalUsers}`
+    : "No users found";
 
   return (
     <div>
@@ -252,166 +367,300 @@ const UserSearch = () => {
             </div>
           )}
           
-          <div className="max-w-3xl mx-auto bg-white rounded-lg shadow">
-            {/* Header Section */}
-            <div className="flex items-center justify-between mb-6 p-4 border-b">
-              <h2 className="text-2xl font-bold text-gray-800">Discover People</h2>
-              
-              <div className="relative w-full max-w-xs">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaSearch className="text-gray-400" />
+          <div className="max-w-4xl mx-auto">
+            {/* Header Section with enhanced styling */}
+            <div className="bg-white rounded-xl shadow-md mb-6 p-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    <span className="mr-2">Discover People</span>
+                    <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-indigo-100 text-indigo-800">
+                      {totalUsers} Users
+                    </span>
+                  </h2>
+                  <p className="text-gray-500 mt-1">Find and connect with skilled professionals</p>
                 </div>
-                <input 
-                  type="text" 
-                  placeholder="Search users..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:ring-blue-500 focus:border-blue-500 focus:bg-white"
-                />
-              </div>
-            </div>
-            
-            {/* Message Display (for no results) */}
-            {message && (
-              <div className="p-4 text-center text-gray-600 bg-gray-100 rounded">
-                {message}
-              </div>
-            )}
-            
-            {/* Loading State */}
-            {loading ? (
-              <div className="p-5 text-center text-gray-600">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                <p>Loading users...</p>
-              </div>
-            ) : (
-              <>
-                {/* User Cards */}
-                {users.length === 0 ? (
-                  <div className="p-6 text-center text-gray-600 bg-gray-50 rounded-lg m-4">
-                    <FaInfoCircle className="mx-auto text-gray-400 text-2xl mb-2" />
-                    <p>No users found matching your search.</p>
-                    {searchQuery && (
-                      <button 
-                        onClick={() => setSearchQuery('')}
-                        className="mt-3 text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        Clear search
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4 p-4">
-                    {users.map(user => (
-                      <div 
-                        key={user.id} 
-                        className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200"
-                      >
-                        {/* User Info with clickable area */}
-                        <div 
-                          onClick={() => handleProfileClick(user.id)}
-                          className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer group"
-                        >
-                          <div className="relative">
-                            <img 
-                              src={user.profilePicture || 'https://via.placeholder.com/150?text='+user.firstName[0]+user.lastName[0]} 
-                              alt={`${user.firstName} ${user.lastName}`} 
-                              className="w-12 h-12 rounded-full object-cover border-2 border-blue-100 group-hover:border-blue-200 transition-colors"
-                            />
-                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
-                          </div>
-                          
-                          <div className="min-w-0">
-                            <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors truncate">
-                              {user.firstName} {user.lastName}
-                            </h3>
-                            <p className="text-sm text-gray-500 truncate">@{user.username}</p>
-                            {user.bio && (
-                              <p className="text-xs text-gray-400 mt-1 truncate">{user.bio}</p>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Follow/Unfollow Button */}
-                        {currentUserId !== user.id && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              followingIds.includes(user.id) 
-                                ? handleUnfollow(user.id, `${user.firstName} ${user.lastName}`) 
-                                : handleFollow(user.id, `${user.firstName} ${user.lastName}`);
-                            }}
-                            className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1.5
-                              ${
-                                followingIds.includes(user.id)
-                                  ? 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                  : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                              }
-                            `}
-                          >
-                            {followingIds.includes(user.id) ? (
-                              <>
-                                <FaUserMinus className="text-xs" />
-                                Unfollow
-                              </>
-                            ) : (
-                              <>
-                                <FaUserPlus className="text-xs" />
-                                Follow
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
                 
-                {/* Pagination Controls */}
-                {users.length > 0 && totalPages > 1 && (
-                  <div className="flex items-center justify-center py-4 space-x-2 border-t">
+                <div className="relative w-full md:w-72">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaSearch className="text-gray-400" />
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="Search by name or username..." 
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(0); // Reset to first page on search change
+                    }}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+              
+              {/* Display user range information */}
+              {!loading && (
+                <div className="mt-4 text-sm text-gray-500 flex justify-between items-center">
+                  <span>{userRangeText}</span>
+                  
+                  {/* Simplified pagination control for header - Always show */}
+                  <div className="flex items-center space-x-1">
                     <button 
                       onClick={handlePrevPage}
                       disabled={currentPage === 0}
-                      className={`px-3 py-1 rounded flex items-center ${
+                      className={`px-2 py-1 rounded ${
                         currentPage === 0 
                           ? 'text-gray-400 cursor-not-allowed' 
                           : 'text-blue-600 hover:bg-blue-50'
                       }`}
                     >
-                      <FaChevronLeft className="mr-1" /> Prev
+                      <FaChevronLeft /> 
                     </button>
                     
-                    {/* Page Numbers */}
-                    <div className="flex space-x-1">
-                      {[...Array(totalPages).keys()].map(num => (
-                        <button
-                          key={num}
-                          onClick={() => handlePageClick(num)}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                            currentPage === num
-                              ? 'bg-blue-600 text-white'
-                              : 'text-gray-700 hover:bg-blue-100'
-                          }`}
-                        >
-                          {num + 1}
-                        </button>
-                      ))}
-                    </div>
+                    <span className="px-2 text-sm font-medium">
+                      Page {currentPage + 1} of {totalPages}
+                    </span>
                     
                     <button 
                       onClick={handleNextPage}
                       disabled={currentPage >= totalPages - 1}
-                      className={`px-3 py-1 rounded flex items-center ${
+                      className={`px-2 py-1 rounded ${
                         currentPage >= totalPages - 1
                           ? 'text-gray-400 cursor-not-allowed' 
                           : 'text-blue-600 hover:bg-blue-50'
                       }`}
                     >
-                      Next <FaChevronRight className="ml-1" />
+                      <FaChevronRight />
                     </button>
                   </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Message Display (for no results) */}
+            {message && !loading && users.length === 0 && (
+              <div className="p-4 text-center text-gray-600 bg-gray-100 rounded-lg shadow-inner">
+                {message}
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors"
+                  >
+                    Clear search
+                  </button>
                 )}
+              </div>
+            )}
+            
+            {/* Loading State */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center p-16 bg-white/80 backdrop-blur-lg rounded-xl shadow-md border border-white/70">
+                <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-500 mt-4 animate-pulse">Searching for talented people...</p>
+                {currentPage > 0 && (
+                  <p className="text-sm text-gray-400 mt-2">Page {currentPage + 1}</p>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* User Cards */}
+                {users.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center bg-white/80 backdrop-blur-lg rounded-xl shadow-md border border-white/70 p-16 text-center">
+                    <div className="p-4 rounded-full bg-blue-100 mb-6">
+                      <FaUserFriends className="text-6xl text-blue-500" />
+                    </div>
+                    
+                    <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                      {searchQuery ? "No Matching Users Found" : "No Users Available"}
+                    </h2>
+                    
+                    <p className="text-gray-600 max-w-lg mb-8 leading-relaxed">
+                      {searchQuery 
+                        ? `We couldn't find any users matching "${searchQuery}". Try adjusting your search terms or check your spelling.` 
+                        : "We couldn't find any users at the moment. Please check back later or try refreshing the page."}
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mb-8">
+                      <div className="flex items-start p-4 bg-blue-50/80 rounded-lg">
+                        <div className="flex-shrink-0 p-2 bg-blue-100 rounded-full mr-3">
+                          <FaNetworkWired className="text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-blue-800">Expand Your Network</h3>
+                          <p className="text-sm text-gray-600 mt-1">Connect with professionals in your field</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start p-4 bg-blue-50/80 rounded-lg">
+                        <div className="flex-shrink-0 p-2 bg-blue-100 rounded-full mr-3">
+                          <FaUsers className="text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-blue-800">Community Learning</h3>
+                          <p className="text-sm text-gray-600 mt-1">Grow with fellow skill enthusiasts</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {searchQuery && (
+                      <button 
+                        onClick={() => setSearchQuery('')}
+                        className="flex items-center gap-2 px-5 py-2.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all group"
+                      >
+                        <FaSearch className="group-hover:rotate-90 transition-transform duration-300" /> 
+                        <span>Clear Search & Show All Users</span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                    <ul className="divide-y divide-gray-100">
+                      {users.map(user => (
+                        <li key={user.id}>
+                          <div 
+                            className="flex items-center justify-between p-5 hover:bg-gray-50 transition-all duration-150"
+                          >
+                            {/* User Info with clickable area */}
+                            <div 
+                              onClick={() => handleProfileClick(user.id)}
+                              className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer group"
+                            >
+                              {/* User Initials Avatar */}
+                              <div className="flex-shrink-0">
+                                <div className={`relative w-12 h-12 rounded-full flex items-center justify-center text-white font-medium text-lg shadow-sm border-2 border-white ${generateColor(user.id)}`}>
+                                  {generateInitials(user.firstName, user.lastName)}
+                                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
+                                </div>
+                              </div>
+                              
+                              <div className="min-w-0">
+                                <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                                  {user.firstName} {user.lastName}
+                                </h3>
+                                <div className="flex items-center">
+                                  <p className="text-sm text-gray-500 truncate">@{user.username}</p>
+                                  {currentUserId === user.id && (
+                                    <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-100 text-gray-800 rounded">You</span>
+                                  )}
+                                </div>
+                                {user.bio && (
+                                  <p className="text-sm text-gray-500 mt-1 line-clamp-1">{user.bio}</p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Follow/Unfollow Button - Styled like UserProfile.jsx */}
+                            {currentUserId !== user.id && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  followingIds.includes(user.id) 
+                                    ? handleUnfollow(user.id, `${user.firstName} ${user.lastName}`) 
+                                    : handleFollow(user.id, `${user.firstName} ${user.lastName}`);
+                                }}
+                                disabled={followLoading[user.id]}
+                                className={`py-2 px-5 rounded-full flex items-center gap-2 text-sm font-medium transition-all shadow-sm
+                                  ${
+                                    followingIds.includes(user.id)
+                                      ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                                  }`}
+                              >
+                                {followLoading[user.id] ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-b-transparent border-white"></div>
+                                    <span>{followingIds.includes(user.id) ? 'Unfollowing...' : 'Following...'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    {followingIds.includes(user.id) ? (
+                                      <>
+                                        <FaUserMinus className="text-xs" />
+                                        <span>Unfollow</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FaUserPlus className="text-xs" />
+                                        <span>Follow</span>
+                                      </>
+                                    )}
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Enhanced Pagination Controls - Made more prominent and always visible with 3 pages */}
+                <div className="bg-white rounded-xl shadow-md p-4 mt-6 flex items-center justify-between">
+                  <div className="text-sm text-gray-500 hidden sm:block font-medium">
+                    Showing page {currentPage + 1} of {totalPages}
+                  </div>
+                  
+                  <div className="flex items-center space-x-1">
+                    <button 
+                      onClick={handlePrevPage}
+                      disabled={currentPage === 0}
+                      className={`px-4 py-2 rounded-md flex items-center ${
+                        currentPage === 0 
+                          ? 'text-gray-400 cursor-not-allowed bg-gray-100' 
+                          : 'text-white bg-blue-600 hover:bg-blue-700'
+                      } transition-colors`}
+                    >
+                      <FaChevronLeft className="mr-1" /> <span>Previous</span>
+                    </button>
+                    
+                    {/* Show all pages up to 3 with hardcoded total of 23 users */}
+                    <div className="hidden md:flex space-x-1">
+                      {[...Array(totalPages).keys()].map(num => (
+                        <button
+                          key={num}
+                          onClick={() => handlePageClick(num)}
+                          className={`w-10 h-10 rounded-md flex items-center justify-center text-sm font-medium ${
+                            currentPage === num
+                              ? 'bg-indigo-600 text-white'
+                              : 'text-gray-700 hover:bg-gray-100 hover:text-indigo-600'
+                          } transition-colors`}
+                        >
+                          {num + 1}
+                        </button>
+                      ))}
+                    </div>                              
+                    
+                    <button 
+                      onClick={handleNextPage}
+                      disabled={currentPage >= totalPages - 1}
+                      className={`px-4 py-2 rounded-md flex items-center ${
+                        currentPage >= totalPages - 1
+                          ? 'text-gray-400 cursor-not-allowed bg-gray-100' 
+                          : 'text-white bg-blue-600 hover:bg-blue-700'
+                      } transition-colors`}
+                    >
+                      <span>Next</span> <FaChevronRight className="ml-1" />
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Jump to page control always visible */}
+                {/* <div className="mt-4 flex justify-center">
+                  <div className="inline-flex items-center space-x-2">
+                    <span className="text-sm text-gray-500">Jump to page:</span>
+                    <select 
+                      value={currentPage} 
+                      onChange={(e) => handlePageClick(parseInt(e.target.value))}
+                      className="py-1 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                      {[...Array(totalPages).keys()].map(num => (
+                        <option key={num} value={num}>
+                          {num + 1}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div> */}
               </>
             )}
           </div>

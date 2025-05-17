@@ -72,9 +72,9 @@ const ProgressAll = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-blue-100 to-white">
+    <div className="flex flex-col min-h-screen bg-gradient-to-r from-blue-100 to-white">
       <Navbar />
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-24">
+      <div className="flex-grow w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 pt-24">
         <div className="bg-white shadow-lg rounded-lg p-6 mb-8">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">
@@ -164,7 +164,9 @@ const ProgressAll = () => {
                     </button>
                   </div>
                 </div>
-                <ProgressFeed key={`global-${refreshFeed}-${globalSortOrder}`} sortOrder={globalSortOrder} hideFilters={true} />
+                <div className="min-h-[400px]">
+                  <ProgressFeed key={`global-${refreshFeed}-${globalSortOrder}`} sortOrder={globalSortOrder} hideFilters={true} />
+                </div>
               </div>
             </div>
           )}
@@ -196,7 +198,9 @@ const ProgressAll = () => {
                     </button>
                   </div>
                 </div>
-                <ProgressFeed key={`personal-${refreshFeed}-${personalSortOrder}`} userId={currentUserId} sortOrder={personalSortOrder} hideFilters={true} />
+                <div className="min-h-[400px]">
+                  <ProgressFeed key={`personal-${refreshFeed}-${personalSortOrder}`} userId={currentUserId} sortOrder={personalSortOrder} hideFilters={true} />
+                </div>
               </div>
             </div>
           )}

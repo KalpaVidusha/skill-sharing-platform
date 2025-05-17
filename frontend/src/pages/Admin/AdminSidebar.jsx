@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { 
   FaUsers, 
@@ -19,6 +19,11 @@ import apiService from "../../services/api";
 const AdminSidebar = ({ activeTab = "dashboard" }) => {
   const [currentTab, setCurrentTab] = useState(activeTab);
   const navigate = useNavigate();
+  
+  // Update currentTab when activeTab prop changes
+  useEffect(() => {
+    setCurrentTab(activeTab);
+  }, [activeTab]);
   
   // Update activeTab when navigating to a page
   const navigateWithTabUpdate = (path, tabId) => {
@@ -65,17 +70,17 @@ const AdminSidebar = ({ activeTab = "dashboard" }) => {
   };
 
   return (
-    <aside className="flex flex-col h-screen shadow-xl w-72 bg-gradient-to-b from-gray-800 to-gray-900">
+    <aside className="flex flex-col w-72 h-screen bg-gradient-to-b from-gray-800 to-gray-900 shadow-xl">
       {/* Logo/Branding */}
       <div className="flex items-center gap-3 p-6 pl-8">
-        <div className="p-2 rounded-lg bg-white/10">
+        <div className="p-2 bg-white/10 rounded-lg">
           <FaUserShield className="text-2xl text-red-400" />
         </div>
-        <h2 className="text-2xl font-bold tracking-tight text-white">Admin Panel</h2>
+        <h2 className="text-2xl font-bold text-white tracking-tight">Admin Panel</h2>
       </div>
       
       {/* Navigation Items - Fixed height with no overflow */}
-      <nav className="flex flex-col flex-1 gap-1 px-4">
+      <nav className="flex flex-col gap-1 px-4 flex-1">
         {[
           { 
             id: "dashboard", 
@@ -93,13 +98,13 @@ const AdminSidebar = ({ activeTab = "dashboard" }) => {
             id: "posts", 
             icon: <FaFileAlt className="text-lg" />, 
             label: "Posts Management", 
-            action: () => navigateWithTabUpdate("/admin/dashboard", "posts") 
+            action: () => navigateWithTabUpdate("/admin/post-management", "posts") 
           },
           { 
             id: "comments", 
             icon: <FaComments className="text-lg" />, 
             label: "Comments Management", 
-            action: () => navigateWithTabUpdate("/admin/dashboard", "comments") 
+            action: () => navigateWithTabUpdate("/admin/comment-management", "comments") 
           },
           { 
             id: "progress", 
@@ -111,19 +116,19 @@ const AdminSidebar = ({ activeTab = "dashboard" }) => {
             id: "monetization", 
             icon: <FaCoins className="text-lg" />, 
             label: "Monetization List", 
-            action: () => navigateWithTabUpdate("AdminMonetize", "monetization") 
+            action: () => navigateWithTabUpdate("/admin/AdminMonetize", "monetization") 
           },
           { 
             id: "settings", 
             icon: <FaCog className="text-lg" />, 
             label: "Site Settings", 
-            action: () => navigateWithTabUpdate("/admin/settings", "settings") 
+            action: () => navigateWithTabUpdate("#") 
           },
           { 
             id: "database", 
             icon: <FaDatabase className="text-lg" />, 
             label: "Database Management", 
-            action: () => navigateWithTabUpdate("/admin/database", "database") 
+            action: () => navigateWithTabUpdate("#") 
           },
         ].map((item) => (
           <button 
@@ -141,20 +146,20 @@ const AdminSidebar = ({ activeTab = "dashboard" }) => {
             </span>
             <span className="font-medium">{item.label}</span>
             {currentTab === item.id && (
-              <span className="w-2 h-2 ml-auto bg-red-500 rounded-full animate-pulse"></span>
+              <span className="ml-auto w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
             )}
           </button>
         ))}
       </nav>
       
       {/* User & Logout - Fixed at bottom */}
-      <div className="p-4 border-t border-gray-700">
-        <div className="flex items-center gap-3 px-4 py-3 text-gray-200 transition rounded-lg hover:bg-white/10">
+      <div className="border-t border-gray-700 p-4">
+        <div className="flex items-center gap-3 px-4 py-3 text-gray-200 rounded-lg hover:bg-white/10 transition">
           <div className="relative">
-            <div className="flex items-center justify-center text-white bg-red-500 rounded-full w-9 h-9">
+            <div className="w-9 h-9 rounded-full bg-red-500 flex items-center justify-center text-white">
               <FaUserShield />
             </div>
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-gray-800 rounded-full"></span>
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-800"></span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-medium truncate">Administrator</p>
@@ -175,7 +180,7 @@ const AdminSidebar = ({ activeTab = "dashboard" }) => {
             onClick={showLogoutConfirmation}
             className="flex-1 flex items-center justify-center py-2.5 px-4 text-gray-300 hover:text-white rounded-lg hover:bg-red-500/90 transition-all group bg-gray-700"
           >
-            <FaSignOutAlt className="mr-2 text-red-400 transition group-hover:text-white" />
+            <FaSignOutAlt className="text-red-400 group-hover:text-white transition mr-2" />
             <span>Logout</span>
           </button>
         </div>

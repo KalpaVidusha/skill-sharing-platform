@@ -379,14 +379,14 @@ const UserProfile = () => {
       
       // Refresh follower count regardless of follow/unfollow
       try {
-        const followersResponse = await apiService.getFollowers(userId);
-        
+      const followersResponse = await apiService.getFollowers(userId);
+      
         if (followersResponse && followersResponse.count !== undefined) {
-          setUserData(prev => ({
-            ...prev,
-            followers: followersResponse.count
-          }));
-        }
+        setUserData(prev => ({
+          ...prev,
+          followers: followersResponse.count
+        }));
+      }
       } catch (refreshError) {
         console.error("Error refreshing follower count:", refreshError);
       }
@@ -514,7 +514,7 @@ const UserProfile = () => {
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-blue-50">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
               <div className="h-28 w-28 md:h-32 md:w-32 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 flex items-center justify-center text-4xl font-bold text-white border-4 border-white shadow-md">
-                {userData.name.charAt(0).toUpperCase()}
+                    {userData.name.charAt(0).toUpperCase()}
               </div>
               
               <div className="flex flex-col md:flex-row justify-between items-center md:items-start flex-grow gap-4">
@@ -537,17 +537,17 @@ const UserProfile = () => {
                 
                 {currentUserId && currentUserId !== userId && (
                   <div className="flex flex-col items-center md:items-end gap-2">
-                    <button
-                      onClick={handleFollow}
-                      disabled={followLoading}
+                  <button
+                    onClick={handleFollow}
+                    disabled={followLoading}
                       className={`py-2.5 px-6 rounded-full flex items-center gap-2 text-sm font-semibold transition-all shadow-sm
                         ${isFollowing 
                           ? 'bg-red-100 text-red-600 hover:bg-red-200'
                           : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
-                    >
-                      {followLoading ? (
-                        <>
+                  >
+                    {followLoading ? (
+                      <>
                           <div className="animate-spin rounded-full h-4 w-4 border-2 border-b-transparent border-white"></div>
                           <span>{isFollowing ? 'Unfollowing...' : 'Following...'}</span>
                         </>
@@ -557,16 +557,16 @@ const UserProfile = () => {
                             <>
                               <FaUserMinus className="text-xs" />
                               <span>Unfollow</span>
-                            </>
-                          ) : (
+                      </>
+                    ) : (
                             <>
                               <FaUserPlus className="text-xs" />
                               <span>Follow</span>
                             </>
                           )}
                         </>
-                      )}
-                    </button>
+                    )}
+                  </button>
                     
                     {/* <Link to={`/chat/${userId}`} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
                       Send Message
@@ -581,10 +581,10 @@ const UserProfile = () => {
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 text-center shadow-sm">
                 <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600/10 mb-2">
                   <FaFileAlt className="text-blue-600" />
-                </div>
+                  </div>
                 <div className="text-2xl font-bold text-gray-900">{userData.posts}</div>
-                <div className="text-sm text-gray-600">Posts</div>
-              </div>
+                    <div className="text-sm text-gray-600">Posts</div>
+                  </div>
               
               <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 text-center shadow-sm">
                 <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-600/10 mb-2">
@@ -597,59 +597,59 @@ const UserProfile = () => {
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 text-center shadow-sm">
                 <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-purple-600/10 mb-2">
                   <FaThumbsUp className="text-purple-600" />
-                </div>
+                    </div>
                 <div className="text-2xl font-bold text-gray-900">{userData.likesReceived}</div>
                 <div className="text-sm text-gray-600">Likes</div>
-              </div>
+                    </div>
               
               <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-4 text-center shadow-sm">
                 <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-amber-600/10 mb-2">
                   <FaComment className="text-amber-600" />
-                </div>
+                  </div>
                 <div className="text-2xl font-bold text-gray-900">{userData.comments}</div>
-                <div className="text-sm text-gray-600">Comments</div>
+                      <div className="text-sm text-gray-600">Comments</div>
+                </div>
               </div>
             </div>
-          </div>
-          
-          {/* Tabs Navigation */}
+            
+              {/* Tabs Navigation */}
           <div className="bg-white rounded-xl shadow-md mb-8">
             <div className="flex overflow-x-auto scrollbar-hide">
-              <button 
-                onClick={() => handleTabChange('overview')}
+                <button 
+                  onClick={() => handleTabChange('overview')}
                 className={`px-6 py-4 font-medium text-sm whitespace-nowrap ${
-                  activeTab === 'overview' 
-                    ? 'text-blue-600 border-b-2 border-blue-600' 
+                    activeTab === 'overview' 
+                      ? 'text-blue-600 border-b-2 border-blue-600' 
                     : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
                 } transition-colors`}
-              >
-                Overview
-              </button>
-              <button 
-                onClick={() => handleTabChange('posts')}
+                >
+                  Overview
+                </button>
+                <button 
+                  onClick={() => handleTabChange('posts')}
                 className={`px-6 py-4 font-medium text-sm whitespace-nowrap ${
-                  activeTab === 'posts' 
-                    ? 'text-blue-600 border-b-2 border-blue-600' 
+                    activeTab === 'posts' 
+                      ? 'text-blue-600 border-b-2 border-blue-600' 
                     : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
                 } transition-colors`}
-              >
-                Posts
-              </button>
-              <button 
-                onClick={() => handleTabChange('progress')}
+                >
+                  Posts
+                </button>
+                <button 
+                  onClick={() => handleTabChange('progress')}
                 className={`px-6 py-4 font-medium text-sm whitespace-nowrap ${
-                  activeTab === 'progress' 
-                    ? 'text-blue-600 border-b-2 border-blue-600' 
+                    activeTab === 'progress' 
+                      ? 'text-blue-600 border-b-2 border-blue-600' 
                     : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
                 } transition-colors`}
-              >
-                Progress Updates
-              </button>
+                >
+                  Progress Updates
+                </button>
             </div>
-          </div>
-          
+              </div>
+              
           {/* Main Content */}
-          {activeTab === 'overview' && (
+              {activeTab === 'overview' && (
             <div>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Recent Posts Section */}
@@ -659,18 +659,18 @@ const UserProfile = () => {
                       <FaFileAlt className="mr-2 text-blue-500" />
                       Recent Posts
                     </h2>
-                    
-                    {userData.recentPosts.length === 0 ? (
+                  
+                  {userData.recentPosts.length === 0 ? (
                       <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 mb-3">
                           <FaEye className="text-gray-400 text-lg" />
                         </div>
                         <p className="text-lg font-medium mb-1">No posts yet</p>
                         <p className="text-sm">This user hasn't created any posts</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {userData.recentPosts.map(post => (
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {userData.recentPosts.map(post => (
                           <Link 
                             key={post.id} 
                             to={`/posts/${post.id}`}
@@ -685,18 +685,18 @@ const UserProfile = () => {
                               {(post.summary?.length > 120 || post.content?.length > 120) && "..."}
                             </p>
                           </Link>
-                        ))}
-                        
+                      ))}
+                      
                         <div className="text-center mt-6">
-                          <Link
-                            to={`/user-posts/${userId}`}
+                        <Link
+                          to={`/user-posts/${userId}`}
                             className="inline-block px-5 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 shadow-sm transition-all text-sm font-medium"
-                          >
-                            View All Posts
-                          </Link>
-                        </div>
+                        >
+                          View All Posts
+                        </Link>
                       </div>
-                    )}
+                    </div>
+                  )}
                   </div>
                   
                   {/* Recent Progress */}
@@ -781,44 +781,44 @@ const UserProfile = () => {
                 </div>
               </div>
             </div>
-          )}
-          
-          {activeTab === 'posts' && (
+              )}
+              
+              {activeTab === 'posts' && (
             <div className="bg-white rounded-xl shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
                 <FaFileAlt className="mr-2 text-blue-500" /> 
                 All Posts
               </h2>
               
-              {userData.recentPosts.length === 0 ? (
+                  {userData.recentPosts.length === 0 ? (
                 <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 mb-3">
                     <FaEye className="text-gray-400 text-lg" />
                   </div>
                   <p className="text-lg font-medium mb-1">No posts yet</p>
                   <p className="text-sm">This user hasn't created any posts</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <Link 
-                    to={`/user-posts/${userId}`}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <Link 
+                        to={`/user-posts/${userId}`}
                     className="inline-block px-5 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 shadow-sm transition-all text-sm font-medium"
-                  >
-                    View All Posts
-                  </Link>
-                </div>
-              )}
+                      >
+                        View All Posts
+                      </Link>
+                    </div>
+                  )}
             </div>
-          )}
-          
-          {activeTab === 'progress' && (
+              )}
+              
+              {activeTab === 'progress' && (
             <div className="bg-white rounded-xl shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
                 <FaChartLine className="mr-2 text-green-500" />
                 Progress Updates
               </h2>
               
-              <ProgressFeed userId={userId} hideFilters={false} />
+                  <ProgressFeed userId={userId} hideFilters={false} />
             </div>
           )}
         </div>

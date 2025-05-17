@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import apiService from '../../services/api';
 import { formatDistanceToNow, format, parse, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
-import { FaEdit, FaTrash, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSyncAlt, FaSort, FaImage } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSyncAlt, FaSort, FaImage, FaEllipsisV } from 'react-icons/fa';
 import { toast } from "react-toastify";
 import ProgressLikeAndComment from './ProgressLikeAndComment';
 
@@ -41,6 +41,13 @@ const getUserInitials = (user) => {
   }
 };
 
+// Loading component
+const LoadingIndicator = () => (
+  <div className="flex justify-center items-center py-10 min-h-[300px]">
+    <div className="animate-spin rounded-full h-14 w-14 border-4 border-indigo-200 border-b-indigo-600 border-t-indigo-600 shadow-md"></div>
+  </div>
+);
+
 const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters }) => {
   const navigate = useNavigate();
   const [progressUpdates, setProgressUpdates] = useState([]);
@@ -69,6 +76,8 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
   const [uploadedFile, setUploadedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   // Update internal sort order when external changes
   useEffect(() => {
@@ -819,26 +828,51 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
     navigate('/login');
   };
 
+  // Toggle dropdown menu for a specific progress
+  const toggleMenu = (progressId, e) => {
+    e.stopPropagation(); // Prevent event from bubbling up
+    setOpenMenuId(openMenuId === progressId ? null : progressId);
+  };
+  
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenMenuId(null);
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
   if (loading) {
-    return (
-      <div className="flex justify-center items-center py-10">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
-      </div>
-    );
+    return <LoadingIndicator />;
   }
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 text-red-700 rounded-md">
-        {error}
+      <div className="p-6 bg-red-50 text-red-700 rounded-md border border-red-200 min-h-[300px] flex items-center justify-center">
+        <div className="text-center">
+          <svg className="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <p className="font-medium">{error}</p>
+        </div>
       </div>
     );
   }
 
   if (progressUpdates.length === 0) {
     return (
-      <div className="border border-gray-200 rounded-lg p-4 text-center text-gray-500">
-        No progress updates yet.
+      <div className="border border-gray-200 rounded-lg p-8 text-center text-gray-500 min-h-[300px] flex items-center justify-center bg-gray-50">
+        <div>
+          <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <p className="text-lg font-medium">No progress updates yet.</p>
+          <p className="text-sm text-gray-400 mt-2">Be the first to share your learning journey!</p>
+        </div>
       </div>
     );
   }
@@ -971,21 +1005,43 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                 </div>
               </div>
               
-              {/* Show edit/delete buttons only for current user's posts */}
+              {/* Improved edit/delete buttons with dropdown menu */}
               {currentUserId === progress.user?.id && (
-                <div className="flex items-center space-x-2">
+                <div className="relative">
                   <button
-                    onClick={() => startEdit(progress)}
-                    className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50"
+                    onClick={(e) => toggleMenu(progress.id, e)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-all duration-150 focus:outline-none"
+                    aria-label="Post options"
+                    title="Post options"
                   >
-                    <FaEdit className="h-5 w-5" />
+                    <FaEllipsisV className="h-4 w-4" />
                   </button>
-                  <button
-                    onClick={() => confirmDelete(progress.id)}
-                    className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50"
-                  >
-                    <FaTrash className="h-5 w-5" />
-                  </button>
+                  
+                  {/* Dropdown menu */}
+                  {openMenuId === progress.id && (
+                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200 py-1 animate-fadeIn">
+                      <button
+                        onClick={() => {
+                          startEdit(progress);
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center transition-colors duration-150"
+                      >
+                        <FaEdit className="mr-2 h-4 w-4 text-blue-600" />
+                        Edit this post
+                      </button>
+                      <button
+                        onClick={() => {
+                          confirmDelete(progress.id);
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 flex items-center transition-colors duration-150"
+                      >
+                        <FaTrash className="mr-2 h-4 w-4 text-red-600" />
+                        Delete this post
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1060,18 +1116,18 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
         </div>
       )}
       
-      {/* Delete confirmation dialog */}
+      {/* Delete confirmation dialog - improve styling */}
       {showConfirm && (
         <div className="fixed inset-0 z-10 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            {/* Background overlay */}
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={cancelDelete}></div>
+            {/* Background overlay with improved transition */}
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity animate-fadeIn" onClick={cancelDelete}></div>
 
             {/* This element is to trick the browser into centering the modal contents */}
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            {/* Modal content */}
-            <div className="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full">
+            {/* Modal content with improved animation */}
+            <div className="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full animate-scaleIn">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
                   <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
@@ -1092,14 +1148,14 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button 
                   type="button" 
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={handleDelete}
                 >
                   Delete
                 </button>
                 <button 
                   type="button" 
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={cancelDelete}
                 >
                   Cancel
