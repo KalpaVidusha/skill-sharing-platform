@@ -5,7 +5,7 @@ import LearningPlanForm from './LearningPlanForm';
 import Navbar from '../../components/Navbar';
 import Sidebar from '../../components/Sidebar';
 import Footer from '../../components/Footer';
-import { FaLink } from 'react-icons/fa';
+import { FaLink, FaLock, FaShieldAlt, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
 const ProgressBar = ({ percent }) => (
   <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
     <div
@@ -26,17 +26,42 @@ const LearningPlanDetails = () => {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const userId = localStorage.getItem('userId');
+  const [hasPermission, setHasPermission] = useState(true);
+  const [showAccessDeniedModal, setShowAccessDeniedModal] = useState(false);
 
   useEffect(() => {
+    if (!userId) {
+      setShowAccessDeniedModal(true);
+      setHasPermission(false);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     apiService.getLearningPlanById(id)
-      .then(res => setPlan(res.data || res))
-      .catch(() => setError('Failed to load plan'))
+      .then(res => {
+        const planData = res.data || res;
+        setPlan(planData);
+        
+        // Check if the current user is the creator of the plan
+        if (planData.user && planData.user.id !== userId) {
+          setShowAccessDeniedModal(true);
+          setHasPermission(false);
+        }
+      })
+      .catch((err) => {
+        if (err.response && err.response.status === 403) {
+          setShowAccessDeniedModal(true);
+          setHasPermission(false);
+        } else {
+          setError('Failed to load plan');
+        }
+      })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, userId]);
 
   const handleToggleTask = (idx) => {
-    if (!plan) return;
+    if (!plan || !hasPermission) return;
     setUpdating(true);
     const updatedTopics = plan.topics.map((topic, i) =>
       i === idx ? { ...topic, completed: !topic.completed } : topic
@@ -48,6 +73,8 @@ const LearningPlanDetails = () => {
         // Handle permission error
         if (err.response && err.response.status === 403) {
           setError("You don't have permission to update this learning plan");
+          setShowAccessDeniedModal(true);
+          setHasPermission(false);
         } else {
           setError('Failed to update task');
         }
@@ -56,6 +83,7 @@ const LearningPlanDetails = () => {
   };
 
   const handleDelete = async () => {
+    if (!hasPermission) return;
     setDeleting(true);
     try {
       await apiService.deleteLearningPlan(plan.id);
@@ -64,6 +92,8 @@ const LearningPlanDetails = () => {
       // Handle permission error
       if (err.response && err.response.status === 403) {
         setError("You don't have permission to delete this learning plan");
+        setShowAccessDeniedModal(true);
+        setHasPermission(false);
       } else {
         setError('Failed to delete plan');
       }
@@ -74,6 +104,7 @@ const LearningPlanDetails = () => {
   };
 
   const handleEdit = async (updated) => {
+    if (!hasPermission) return;
     setUpdating(true);
     try {
       const response = await apiService.updateLearningPlan(plan.id, { ...plan, ...updated });
@@ -84,6 +115,8 @@ const LearningPlanDetails = () => {
       // Handle permission error
       if (err.response && err.response.status === 403) {
         setError("You don't have permission to edit this learning plan");
+        setShowAccessDeniedModal(true);
+        setHasPermission(false);
       } else {
         setError('Failed to update plan');
       }
@@ -92,6 +125,15 @@ const LearningPlanDetails = () => {
     } finally {
       setUpdating(false);
     }
+  };
+
+  const handleCloseAccessDeniedModal = () => {
+    setShowAccessDeniedModal(false);
+    navigate('/userdashboard/learning-plans');
+  };
+
+  const handleLogin = () => {
+    navigate('/login');
   };
 
   if (loading) return (
@@ -110,7 +152,7 @@ const LearningPlanDetails = () => {
     </div>
   );
   
-  if (error) return (
+  if (error && !showAccessDeniedModal) return (
     <div>
       <Navbar />
       <div className="flex min-h-screen pt-20 font-sans bg-gradient-to-r from-blue-50 to-white">
@@ -124,7 +166,7 @@ const LearningPlanDetails = () => {
     </div>
   );
   
-  if (!plan) return (
+  if (!plan && !showAccessDeniedModal) return (
     <div>
       <Navbar />
       <div className="flex min-h-screen pt-20 font-sans bg-gradient-to-r from-blue-50 to-white">
@@ -137,6 +179,83 @@ const LearningPlanDetails = () => {
       </div>
     </div>
   );
+
+  if (showAccessDeniedModal) {
+    return (
+      <div>
+        <Navbar />
+        <div className="flex min-h-screen pt-20 font-sans bg-gradient-to-r from-blue-50 to-white">
+          <div className="sticky top-20 h-[calc(100vh-5rem)] self-start">
+            <Sidebar defaultActiveTab="learning_plans" userId={userId} />
+          </div>
+          <main className="flex-1 p-8 overflow-y-auto">
+            {/* Access Denied Modal */}
+            <div className="fixed inset-0 z-50 overflow-y-auto">
+              <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center">
+                {/* Overlay with increased blur */}
+                <div className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-80 backdrop-blur-md"></div>
+                
+                {/* Modal Content */}
+                <div className="relative inline-block overflow-hidden text-left align-middle transition-all transform bg-white rounded-xl shadow-2xl sm:max-w-md w-full">
+                  {/* Center the shield icon in the modal */}
+                  <div className="flex flex-col items-center px-8 pt-8 pb-6">
+                    <div className="flex items-center justify-center w-24 h-24 bg-red-100 rounded-full shadow-lg mb-6">
+                      <FaShieldAlt className="w-12 h-12 text-red-600" />
+                    </div>
+                    
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h3>
+                    <div className="flex justify-center items-center mt-2 mb-4">
+                      <FaExclamationTriangle className="text-amber-500 mr-2" />
+                      <span className="text-amber-700 font-medium">Unauthorized Access Attempt</span>
+                    </div>
+                    <div className="mt-4 text-gray-600">
+                      <p className="mb-4 text-center">
+                        You don't have permission to view this learning plan. Plans are private and can only be accessed by their creators.
+                      </p>
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 text-left mb-6">
+                        <p className="text-sm text-blue-700 flex items-start">
+                          <FaLock className="text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                          <span>Learning plans contain personal learning goals and progress information that are only accessible to their owners.</span>
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-center gap-4 mt-6 w-full">
+                      <button
+                        onClick={handleCloseAccessDeniedModal}
+                        className="px-5 py-3 text-sm font-medium text-gray-700 bg-gray-100 border border-transparent rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 flex items-center"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Back to My Plans
+                      </button>
+                      
+                      {!userId && (
+                        <button
+                          onClick={handleLogin}
+                          className="px-5 py-3 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center"
+                        >
+                          <FaLock className="mr-2" />
+                          Sign In
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="mt-6 pt-4 border-t border-gray-200 w-full">
+                      <p className="text-xs text-gray-500 text-center">
+                        If you believe this is an error, please contact support for assistance.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   const completed = plan.topics.filter(t => t.completed).length;
   const total = plan.topics.length;

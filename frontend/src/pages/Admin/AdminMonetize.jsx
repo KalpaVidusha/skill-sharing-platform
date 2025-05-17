@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../../components/Navbar";
 //import Sidebar from "../../components/Sidebar";
 import AdminSidebar from "./AdminSidebar";
 
@@ -90,20 +89,12 @@ const Applications = () => {
           "url('https://images.pexels.com/photos/7688336/pexels-photo-7688336.jpeg?auto=compress&cs=tinysrgb&w=1600')",
       }}
     >
-      <Navbar />
       {/* Overlay for readability */}
-      <div className="min-h-screen bg-white/70 backdrop-blur-sm ">
-        
-        {/* Navbar */}
-        
-          
-        
-        
-        
-        <div className="flex min-h-screen pt-20 font-sans">
+      <div className="min-h-screen bg-white/70 backdrop-blur-sm">
+        <div className="flex min-h-screen">
           {/* Sidebar */}
-          <div className="sticky top-20 h-[calc(100vh-5rem)] self-start">
-            <AdminSidebar activeTab="progress" />
+          <div className="h-screen sticky top-0 self-start">
+            <AdminSidebar activeTab="monetization" />
           </div>
           
           {/* Main Content */}
