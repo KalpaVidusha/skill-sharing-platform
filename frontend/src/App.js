@@ -28,9 +28,6 @@ import AdminFind from "./pages/monetizationAndRewardManagement/UserDashboard";
 import fUsers from "./pages/monetizationAndRewardManagement/UserSearch";
 
 
-import Feed from "./pages/Feed";
-import Courses from "./pages/Courses";
-
 //progress
 import Progress from "./pages/Progress/ProgressAll";
 
@@ -62,7 +59,6 @@ import 'react-toastify/dist/ReactToastify.css';
 
 //ScrollToTop
 import ScrollToTop from './components/ScrollToTop';
-import AdminDashboard2 from './pages/monetizationAndRewardManagement/AdminDashboard';
 
 function App() {
   return (

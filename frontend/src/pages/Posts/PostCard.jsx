@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaComment, FaHeart, FaRegHeart } from 'react-icons/fa';
 import apiService from '../../services/api';
@@ -8,13 +8,17 @@ const PostCard = ({ post }) => {
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const [likedByCurrentUser, setLikedByCurrentUser] = useState(false);
   const [mediaLoaded, setMediaLoaded] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef(null);
+  const cardRef = useRef(null);
 
-  const hasImage = post.mediaUrls && post.mediaUrls.length > 0;
+  const hasMedia = post.mediaUrls && post.mediaUrls.length > 0;
   const defaultImageUrl = 'https://via.placeholder.com/400x200?text=No+Image';
   const instructor = post.user ? `${post.user.firstName} ${post.user.lastName}` : 'Unknown';
   
   const isVideoUrl = (url) => {
-    return url && (url.includes('/video/') || url.endsWith('.mp4') || url.endsWith('.mov'));
+    return url && (url.includes('/video/') || url.endsWith('.mp4') || url.endsWith('.mov') || 
+           url.endsWith('.webm') || url.endsWith('.ogg'));
   };
 
   const getOptimizedImageUrl = (url, width = 400) => {
@@ -26,22 +30,58 @@ const PostCard = ({ post }) => {
     return `${parts[0]}/upload/c_scale,w_${width},q_auto,f_auto/${parts[1]}`;
   };
 
-  const getMediaUrl = () => {
-    if (!hasImage) return defaultImageUrl;
+  // Function to find the first non-video media
+  const findFirstImageUrl = () => {
+    if (!hasMedia) return null;
     
-    const firstMedia = post.mediaUrls[0];
-    if (isVideoUrl(firstMedia)) {
-      if (firstMedia.includes('cloudinary.com')) {
-        const parts = firstMedia.split('/video/');
-        if (parts.length === 2) {
-          return `${parts[0]}/video/upload/c_scale,w_400,q_auto,f_auto/e_preview:duration_2/${parts[1].split('/').pop()}`;
-        }
+    const imageUrl = post.mediaUrls.find(url => !isVideoUrl(url));
+    return imageUrl ? getOptimizedImageUrl(imageUrl) : null;
+  };
+
+  // Function to find the first video media
+  const findFirstVideoUrl = () => {
+    if (!hasMedia) return null;
+    
+    return post.mediaUrls.find(url => isVideoUrl(url)) || null;
+  };
+
+  // Function to get a quick video thumbnail from Cloudinary (if possible)
+  const getVideoThumbnail = () => {
+    const firstVideoUrl = findFirstVideoUrl();
+    
+    if (firstVideoUrl && firstVideoUrl.includes('cloudinary.com')) {
+      // For Cloudinary videos, use their built-in thumbnail generation
+      const parts = firstVideoUrl.split('/video/');
+      if (parts.length === 2) {
+        return `${parts[0]}/video/upload/c_scale,w_400,q_auto,f_auto/e_preview:duration_2/${parts[1].split('/').pop()}`;
       }
-      return defaultImageUrl;
     }
     
-    return getOptimizedImageUrl(firstMedia);
+    // For non-Cloudinary videos, return a generic video thumbnail
+    return 'https://via.placeholder.com/400x200?text=Video+Content';
   };
+
+  // Get the most appropriate media for display with immediate loading
+  const getMediaUrl = () => {
+    if (!hasMedia) return defaultImageUrl;
+    
+    // First priority: Use an image if available
+    const firstImageUrl = findFirstImageUrl();
+    if (firstImageUrl) return firstImageUrl;
+    
+    // Second priority: Use quick video thumbnail
+    return getVideoThumbnail();
+  };
+
+  useEffect(() => {
+    // Mark media as loaded after a short delay
+    // This ensures we show something quickly instead of waiting for processing
+    const timer = setTimeout(() => {
+      setMediaLoaded(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const fetchCommentCount = async () => {
@@ -73,6 +113,49 @@ const PostCard = ({ post }) => {
     }
   }, [post]);
 
+  useEffect(() => {
+    // Set up intersection observer for video autoplay
+    if (!videoRef.current || !hasOnlyVideos()) {
+      return; // Early return if we don't have a video element
+    }
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          // Only proceed if the video reference is still valid
+          if (!videoRef.current) return;
+          
+          if (entry.isIntersecting) {
+            // Video is visible in viewport, autoplay it
+            videoRef.current.play()
+              .then(() => {
+                setIsPlaying(true);
+              })
+              .catch(error => {
+                console.error("Error autoplaying video:", error);
+                setIsPlaying(false);
+              });
+          } else {
+            // Video is not visible, pause it
+            videoRef.current.pause();
+            setIsPlaying(false);
+          }
+        });
+      },
+      { threshold: 0.5 } // 50% of the video visible in viewport to trigger
+    );
+
+    observer.observe(videoRef.current);
+    
+    // Clean up function
+    return () => {
+      // Make sure we check if the observer and element still exist
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+  }, [mediaLoaded]);
+
   const toggleLike = async () => {
     try {
       const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -92,21 +175,52 @@ const PostCard = ({ post }) => {
     }
   };
 
+  // Check if the post contains only video(s)
+  const hasOnlyVideos = () => {
+    if (!hasMedia) return false;
+    return post.mediaUrls.every(url => isVideoUrl(url));
+  };
+
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-blue-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 h-full flex flex-col">
+    <div 
+      ref={cardRef}
+      className="bg-white rounded-2xl shadow-lg overflow-hidden border border-blue-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 h-full flex flex-col"
+    >
       <div className="relative h-48 bg-blue-50 overflow-hidden flex-shrink-0">
         {!mediaLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-blue-50">
             <div className="text-indigo-600">Loading...</div>
           </div>
         )}
-        <img
-          src={getMediaUrl()}
-          alt={post.title}
-          className={`w-full h-full object-cover transition-transform duration-300 hover:scale-105 ${mediaLoaded ? 'opacity-100' : 'opacity-0'}`}
-          loading="lazy"
-          onLoad={() => setMediaLoaded(true)}
-        />
+        
+        {/* Show video if the post has videos */}
+        {hasOnlyVideos() ? (
+          <div className="w-full h-full relative">
+            <video 
+              ref={videoRef}
+              src={findFirstVideoUrl()}
+              className="w-full h-full object-cover"
+              poster={getVideoThumbnail()}
+              preload="metadata"
+              muted
+              playsInline
+              loop
+              onLoadedMetadata={() => setMediaLoaded(true)}
+              onError={() => setMediaLoaded(true)}
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        ) : (
+          <img
+            src={getMediaUrl()}
+            alt={post.title}
+            className={`w-full h-full object-cover transition-transform duration-300 hover:scale-105 ${mediaLoaded ? 'opacity-100' : 'opacity-0'}`}
+            loading="lazy"
+            onLoad={() => setMediaLoaded(true)}
+            onError={() => setMediaLoaded(true)}
+          />
+        )}
       </div>
 
       <div className="p-5 flex flex-col flex-grow">

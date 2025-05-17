@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import apiService from '../../services/api';
 import { formatDistanceToNow, format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parse } from 'date-fns';
 import { FaCalendarAlt, FaChevronLeft, FaChevronRight, FaImage, FaTimesCircle } from 'react-icons/fa';
@@ -19,6 +20,7 @@ const ProgressForm = ({ onSubmitSuccess }) => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const calendarRef = useRef(null);
+  const [calendarPosition, setCalendarPosition] = useState({ left: 0, top: 0 });
 
   useEffect(() => {
     // Close calendar when clicking outside
@@ -114,6 +116,20 @@ const ProgressForm = ({ onSubmitSuccess }) => {
     handleInputChange('targetDate', formattedDate);
     setShowCalendar(false);
   };
+
+  // Track the calendar position
+  useEffect(() => {
+    if (showCalendar) {
+      const targetDateElement = document.getElementById('date-input');
+      if (targetDateElement) {
+        const rect = targetDateElement.getBoundingClientRect();
+        setCalendarPosition({
+          left: rect.left,
+          top: rect.bottom + 5
+        });
+      }
+    }
+  }, [showCalendar]);
 
   // Handle month navigation
   const prevMonth = () => {
@@ -274,6 +290,60 @@ const ProgressForm = ({ onSubmitSuccess }) => {
     setError(null);
     setSuccess(false);
     
+    // Validate fields based on template type
+    if (selectedTemplate === 'completed_tutorial') {
+      if (!fieldValues.tutorialName || !fieldValues.tutorialName.trim()) {
+        setError('Please enter the tutorial name');
+        setLoading(false);
+        return;
+      }
+    }
+    
+    if (selectedTemplate === 'new_skill') {
+      if (!fieldValues.skillName || !fieldValues.skillName.trim()) {
+        setError('Please enter the skill name');
+        setLoading(false);
+        return;
+      }
+    }
+    
+    if (selectedTemplate === 'learning_goal') {
+      if (!fieldValues.goalName || !fieldValues.goalName.trim()) {
+        setError('Please enter the goal name');
+        setLoading(false);
+        return;
+      }
+      
+      if (!fieldValues.targetDate || !fieldValues.targetDate.trim()) {
+        setError('Please select a target date');
+        setLoading(false);
+        return;
+      }
+      
+      // Validate date format and ensure it's in the future
+      try {
+        const targetDate = new Date(fieldValues.targetDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
+        
+        if (isNaN(targetDate.getTime())) {
+          setError('Invalid date format');
+          setLoading(false);
+          return;
+        }
+        
+        if (targetDate < today) {
+          setError('Target date must be in the future');
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        setError('Invalid date format');
+        setLoading(false);
+        return;
+      }
+    }
+    
     try {
       let mediaUrl = '';
       
@@ -329,6 +399,58 @@ const ProgressForm = ({ onSubmitSuccess }) => {
 
   // Render custom input field based on field type
   const renderField = (field) => {
+    // Field validation state
+    let hasError = false;
+    let errorMessage = '';
+    
+    // Field-specific validation - only apply if field has been modified
+    if (fieldValues[field] !== undefined && fieldValues[field] !== '') {
+      if (field === 'tutorialName' && selectedTemplate === 'completed_tutorial') {
+        if (!fieldValues[field] || !fieldValues[field].trim()) {
+          hasError = true;
+          errorMessage = 'Tutorial name is required';
+        }
+      }
+      
+      if (field === 'skillName' && selectedTemplate === 'new_skill') {
+        if (!fieldValues[field] || !fieldValues[field].trim()) {
+          hasError = true;
+          errorMessage = 'Skill name is required';
+        }
+      }
+      
+      if (field === 'goalName' && selectedTemplate === 'learning_goal') {
+        if (!fieldValues[field] || !fieldValues[field].trim()) {
+          hasError = true;
+          errorMessage = 'Goal name is required';
+        }
+      }
+      
+      if (field === 'targetDate' && selectedTemplate === 'learning_goal') {
+        if (!fieldValues[field] || !fieldValues[field].trim()) {
+          hasError = true;
+          errorMessage = 'Target date is required';
+        } else {
+          try {
+            const targetDate = new Date(fieldValues[field]);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (isNaN(targetDate.getTime())) {
+              hasError = true;
+              errorMessage = 'Invalid date format';
+            } else if (targetDate < today) {
+              hasError = true;
+              errorMessage = 'Date must be in the future';
+            }
+          } catch (e) {
+            hasError = true;
+            errorMessage = 'Invalid date format';
+          }
+        }
+      }
+    }
+    
     // Check if this is a targetDate field in a learning_goal template
     if (field === 'targetDate' && selectedTemplate === 'learning_goal') {
       return (
@@ -339,23 +461,28 @@ const ProgressForm = ({ onSubmitSuccess }) => {
           <div className="relative">
             <input 
               type="text"
-              id={field}
+              id="date-input"
               value={fieldValues[field] || ''}
               onChange={(e) => handleInputChange(field, e.target.value)}
               onClick={() => setShowCalendar(true)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer"
+              className={`block w-full px-3 py-2 border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer`}
               placeholder="Select a date"
               readOnly
               required
             />
             <div className="absolute right-0 top-0 bottom-0 flex items-center px-3 pointer-events-none">
-              <FaCalendarAlt className="text-gray-400" />
+              <FaCalendarAlt className={`${hasError ? 'text-red-400' : 'text-gray-400'}`} />
             </div>
             
-            {showCalendar && (
+            {/* Render the calendar using a portal */}
+            {showCalendar && createPortal(
               <div 
                 ref={calendarRef}
-                className="absolute z-10 mt-1 bg-white rounded-md shadow-lg p-2 border border-gray-200 w-64"
+                className="fixed z-50 bg-white rounded-md shadow-lg p-2 border border-gray-200 w-64"
+                style={{ 
+                  left: `${calendarPosition.left}px`,
+                  top: `${calendarPosition.top}px`
+                }}
               >
                 <div className="flex justify-between items-center mb-2">
                   <button 
@@ -377,9 +504,13 @@ const ProgressForm = ({ onSubmitSuccess }) => {
                   </button>
                 </div>
                 {renderCalendarDays()}
-              </div>
+              </div>,
+              document.body
             )}
           </div>
+          {hasError && (
+            <p className="mt-1 text-sm text-red-600">{errorMessage}</p>
+          )}
         </div>
       );
     }
@@ -395,9 +526,12 @@ const ProgressForm = ({ onSubmitSuccess }) => {
           id={field}
           value={fieldValues[field] || ''}
           onChange={(e) => handleInputChange(field, e.target.value)}
-          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          className={`block w-full px-3 py-2 border ${hasError ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`}
           required
         />
+        {hasError && (
+          <p className="mt-1 text-sm text-red-600">{errorMessage}</p>
+        )}
       </div>
     );
   };
