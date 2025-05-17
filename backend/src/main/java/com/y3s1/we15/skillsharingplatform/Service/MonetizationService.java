@@ -58,6 +58,8 @@ public interface MonetizationService {
     List<MonetizationModel> getAllRequests();
     MonetizationModel updateRequest(MonetizationModel request); // Takes the full updated model
     boolean deleteRequest(String id);
+   
+MonetizationModel saveRequest(MonetizationModel request);
 }
 
 
