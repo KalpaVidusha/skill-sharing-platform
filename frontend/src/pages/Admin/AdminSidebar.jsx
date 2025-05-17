@@ -11,7 +11,8 @@ import {
   FaTachometerAlt,
   FaCog,
   FaDatabase,
-  FaCoins
+  FaCoins,
+  FaSearch
 } from "react-icons/fa";
 import Swal from 'sweetalert2';
 import apiService from "../../services/api";
@@ -107,11 +108,17 @@ const AdminSidebar = ({ activeTab = "dashboard" }) => {
             label: "Progress Management", 
             action: () => navigateWithTabUpdate("/admin/progress-management", "progress") 
           },
+          {
+            id: "monetization",
+            icon: <FaCoins className="text=lg" />,
+            label: "Monetization List",
+            action: () => navigateWithTabUpdate("Monetize", "monetization")
+          },
           { 
-            id: "monetization", 
-            icon: <FaCoins className="text-lg" />, 
-            label: "Monetization List", 
-            action: () => navigateWithTabUpdate("AdminMonetize", "monetization") 
+            id: "findUsers", 
+            icon: <FaSearch className="text-lg" />, 
+            label: "Find Users", 
+            action: () => navigateWithTabUpdate("/find-users") 
           },
           { 
             id: "settings", 

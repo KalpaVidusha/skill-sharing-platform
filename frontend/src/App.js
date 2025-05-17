@@ -24,7 +24,9 @@ import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetiz
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import EditRequest from "./pages/monetizationAndRewardManagement/EditMonetization"; // This will be the edit page
 import Applications from "./pages/monetizationAndRewardManagement/Applications";
-import AdminMonetize from "./pages/Admin/AdminMonetize";
+import AdminFind from "./pages/monetizationAndRewardManagement/UserDashboard";
+import fUsers from "./pages/monetizationAndRewardManagement/UserSearch";
+
 
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
@@ -42,6 +44,7 @@ import NotificationsPage from './pages/Notification/NotificationsPage';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import UserManagement from './pages/Admin/UserManagement';
 import ProgressManagement from './pages/Admin/ProgressManagement';
+import AdminMonetize from './pages/Admin/AdminMonetize';
 
 //Learning Plans
 import { LearningPlans, LearningPlanDetails } from './pages/LearningPlans';
@@ -97,6 +100,7 @@ function App() {
         <Route path="/followers" element={<FollowList type="followers" />} />
         <Route path="/following" element={<FollowList type="following" />} />
         <Route path="/find-users" element={<UserSearch />} />
+        <Route path="/findUsers" element={<fUsers />} />
 
         {/* New Routes */}
         <Route path="/feed" element={<Feed />} />
@@ -111,6 +115,8 @@ function App() {
         <Route path="/userdashboard/Applications" element={<Applications />} />
         <Route path="/userdashboard/Applications/edit/:id" element={<EditRequest />} />
         <Route path="/AdminDashboard" element={<AdminDashboard2 />} />
+        <Route path="/admin/findUser" element={<AdminFind />} />
+
         
 
         
@@ -118,7 +124,7 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/user-management" element={<UserManagement />} />
         <Route path="/admin/progress-management" element={<ProgressManagement />} />
-        <Route path="/admin/AdminMonetize" element={<AdminMonetize />} />
+        <Route path="admin/Monetize" element={<AdminMonetize />} />
         
         {/* Optional: Category Filter */}
         <Route path="/category/:categoryName" element={<Home />} />
