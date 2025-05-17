@@ -24,6 +24,7 @@ import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetiz
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import EditRequest from "./pages/monetizationAndRewardManagement/EditMonetization"; // This will be the edit page
 import Applications from "./pages/monetizationAndRewardManagement/Applications";
+import AdminMonetize from "./pages/Admin/AdminMonetize";
 
 import Feed from "./pages/Feed";
 import Courses from "./pages/Courses";
@@ -111,10 +112,13 @@ function App() {
         <Route path="/userdashboard/Applications/edit/:id" element={<EditRequest />} />
         <Route path="/AdminDashboard" element={<AdminDashboard2 />} />
         
+
+        
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/user-management" element={<UserManagement />} />
         <Route path="/admin/progress-management" element={<ProgressManagement />} />
+        <Route path="/admin/AdminMonetize" element={<AdminMonetize />} />
         
         {/* Optional: Category Filter */}
         <Route path="/category/:categoryName" element={<Home />} />
