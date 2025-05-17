@@ -267,6 +267,23 @@ const UserDashboard = () => {
         return progress.content.customContent;
       }
       
+      // Format based on template type, similar to ProgressFeed.jsx
+      if (progress.templateType && typeof progress.content === 'object') {
+        switch (progress.templateType) {
+          case 'completed_tutorial':
+            return `✅ I completed ${progress.content.tutorialName || 'a tutorial'} today!`;
+          case 'new_skill':
+            return `🎯 Today I learned about ${progress.content.skillName || 'a new skill'}`;
+          case 'learning_goal':
+            return `📅 I aim to finish ${progress.content.goalName || 'my goal'} by ${progress.content.targetDate || 'the deadline'}`;
+          default:
+            // If none of the specific templates, fallback to generic formatting
+            return Object.entries(progress.content)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(', ');
+        }
+      }
+      
       // If content is an object with field values
       if (typeof progress.content === 'object') {
         // Fallback - create a basic formatted string
@@ -355,24 +372,24 @@ const UserDashboard = () => {
   }, [navigate, location.pathname, initialLoad]);
 
   // Helper function to get an icon based on post category
-  const getPostIcon = (category) => {
-    if (!category) return '📝';
+  // const getPostIcon = (category) => {
+  //   if (!category) return '📝';
     
-    const categoryLowerCase = category.toLowerCase().trim();
-    console.log("Category:", categoryLowerCase);
+  //   const categoryLowerCase = category.toLowerCase().trim();
+  //   console.log("Category:", categoryLowerCase);
     
-    switch(categoryLowerCase) {
-      case 'photography': return '📷';
-      case 'programming': return '💻';
-      case 'design': return '🎨';
-      case 'cooking': return '🍳';
-      case 'music': return '🎵';
-      case 'writing': return '📚';
-      default: 
-        console.log("Using default icon for category:", category);
-        return '📝';
-    }
-  };
+  //   switch(categoryLowerCase) {
+  //     case 'photography': return '📷';
+  //     case 'programming': return '💻';
+  //     case 'design': return '🎨';
+  //     case 'cooking': return '🍳';
+  //     case 'music': return '🎵';
+  //     case 'writing': return '📚';
+  //     default: 
+  //       console.log("Using default icon for category:", category);
+  //       return '📝';
+  //   }
+  // };
 
   const handleAddPost = () => navigate("/add-post");
 

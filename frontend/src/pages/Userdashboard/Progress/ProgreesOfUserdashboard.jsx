@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaEdit, FaTrashAlt, FaSyncAlt, FaChevronLeft, FaChevronRight, FaCalendarAlt } from "react-icons/fa";
+import { FaEdit, FaTrashAlt, FaSyncAlt, FaChevronLeft, FaChevronRight, FaCalendarAlt, FaRegLightbulb, FaUsers, FaPlus } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from 'date-fns';
 import ProgressForm from "../../Progress/ProgressForm";
@@ -875,9 +875,51 @@ const ProgreesOfUserdashboard = (props) => {
               </div>
             </div>
             
-            {userProgress.length === 0 ? (
-              <div className="p-5 text-center text-gray-500 rounded-lg bg-gray-50">
-                You haven't shared any progress updates yet. Use the form above to share your learning journey!
+            {/* Loading State */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center p-16 bg-white/80 backdrop-blur-lg rounded-xl shadow-md border border-white/70">
+                <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-500 mt-4 animate-pulse">Loading your progress updates...</p>
+              </div>
+            ) : userProgress.length === 0 ? (
+              <div className="flex flex-col items-center justify-center bg-white/80 backdrop-blur-lg rounded-xl shadow-md border border-white/70 p-16 text-center">
+                <div className="p-4 rounded-full bg-blue-100 mb-6">
+                  <FaRegLightbulb className="text-6xl text-blue-500" />
+                </div>
+                
+                <h2 className="text-2xl font-bold text-gray-800 mb-3">Start Tracking Your Progress</h2>
+                
+                <p className="text-gray-600 max-w-lg mb-8 leading-relaxed">
+                  Share your learning achievements, milestones, and skills with the community. Regular updates help you track your growth and inspire others.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mb-8">
+                  <div className="flex items-start p-4 bg-blue-50/80 rounded-lg">
+                    <div className="flex-shrink-0 p-2 bg-blue-100 rounded-full mr-3">
+                      <FaRegLightbulb className="text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-blue-800">Celebrate Achievements</h3>
+                      <p className="text-sm text-gray-600 mt-1">Share your victories, no matter how small</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start p-4 bg-blue-50/80 rounded-lg">
+                    <div className="flex-shrink-0 p-2 bg-blue-100 rounded-full mr-3">
+                      <FaUsers className="text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-blue-800">Connect With Others</h3>
+                      <p className="text-sm text-gray-600 mt-1">Build your network and learn together</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => document.querySelector('.progress-form-container')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="flex items-center gap-2 px-6 py-3 text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all"
+                >
+                  <FaPlus /> Share Your First Progress Update
+                </button>
               </div>
             ) : (
               <div>
