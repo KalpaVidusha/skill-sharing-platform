@@ -1,3 +1,11 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import {
+  FaPencilAlt, FaTrash, FaHeart, FaRegHeart,
+  FaComment, FaUser
+} from 'react-icons/fa';
+import apiService from '../../services/api';
+
 // import React, { useState, useEffect } from 'react';
 // import { useNavigate } from 'react-router-dom';
 // import {
@@ -310,6 +318,10 @@ const PostLikeComment = ({
       try {
         const commentsData = await apiService.getCommentsByPost(postId);
         setComments(commentsData);
+        
+        // Fetch user details for each comment
+        const uniqueUserIds = [...new Set(commentsData.map(comment => comment.userId))];
+        const newUserCache = { ...userCache };
 
         const uniqueUserIds = [
           ...new Set(commentsData.map((comment) => comment.userId)),
@@ -321,12 +333,17 @@ const PostLikeComment = ({
             try {
               const userData = await apiService.getUserById(userId);
               newUserCache[userId] = userData;
+            } catch (userErr) {
+              console.error(`Error fetching user ${userId}:`, userErr);
+              newUserCache[userId] = { username: 'Unknown User' };
+            }
+          }
+        }      
             } catch {
               newUserCache[userId] = { username: "Unknown User" };
             }
           }
         }
-
         setUserCache(newUserCache);
       } catch (err) {
         console.error("Error fetching comments:", err);
@@ -352,9 +369,15 @@ const PostLikeComment = ({
       const data = await apiService.getCommentsByPost(postId);
       setComments(data);
 
+      // Update user cache for new comments
+      const newUserIds = data
+        .filter(comment => !userCache[comment.userId])
+        .map(comment => comment.userId);
+
       const newUserIds = data
         .filter((comment) => !userCache[comment.userId])
         .map((comment) => comment.userId);
+
 
       if (newUserIds.length > 0) {
         const newUserCache = { ...userCache };
@@ -362,6 +385,9 @@ const PostLikeComment = ({
           try {
             const userData = await apiService.getUserById(userId);
             newUserCache[userId] = userData;
+          } catch (userErr) {
+            console.error(`Error fetching user ${userId}:`, userErr);
+            newUserCache[userId] = { username: 'Unknown User' };
           } catch {
             newUserCache[userId] = { username: "Unknown User" };
           }
@@ -428,6 +454,20 @@ const PostLikeComment = ({
     return isLoggedIn && (comment.userId === userId || isPostOwner);
   };
 
+  // Helper function to get the username for a comment
+  const getCommentAuthor = (comment) => {
+    if (!comment || !comment.userId) return 'Unknown User';
+    const user = userCache[comment.userId];
+    
+    if (!user) return 'Unknown User';
+    
+    // Return full name if both firstName and lastName are available
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    
+    // Fallback options in order of preference
+    return user.fullName || user.name || user.username || 'Unknown User';
   const getCommentAuthor = (comment) => {
     const user = userCache[comment.userId];
     if (!user) return "Unknown User";
@@ -498,6 +538,76 @@ const PostLikeComment = ({
           </div>
         ) : (
           <div className="mt-6 space-y-4">
+            {comments.map((c) => (
+              <div 
+                key={c.id} 
+                className="bg-white p-5 rounded-lg border-l-4 border-indigo-500 shadow-sm"
+              >
+                {editingComment === c.id ? (
+                  <>
+                    <textarea
+                      value={c.content}
+                      onChange={(e) => {
+                        const updated = comments.map(comment =>
+                          comment.id === c.id ? { ...comment, content: e.target.value } : comment
+                        );
+                        setComments(updated);
+                      }}
+                      className="w-full p-4 border border-gray-300 rounded-lg mb-4 min-h-32 resize-y"
+                    />
+                    <div className="flex space-x-3">
+                      <button 
+                        onClick={() => handleUpdateComment(c.id, c.content)}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center"
+                      >
+                        <FaPencilAlt className="mr-2" /> Save
+                      </button>
+                      <button 
+                        onClick={() => setEditingComment(null)}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center mb-3">
+                      <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 mr-2">
+                        <FaUser />
+                      </div>
+                      <Link 
+                        to={`/profile/${c.userId}`} 
+                        className="font-medium text-indigo-700 hover:text-indigo-900 hover:underline"
+                      >
+                        {getCommentAuthor(c)}
+                      </Link>
+                    </div>
+                    <p className="text-gray-700 mb-3">{c.content}</p>
+                    <div className="flex justify-between items-center mt-4">
+                      <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                        Posted on {new Date(c.createdAt).toLocaleString()}
+                      </span>
+                      
+                      {(canEditComment(c) || canDeleteComment(c)) && (
+                        <div className="flex space-x-2">
+                          {canEditComment(c) && (
+                            <button 
+                              onClick={() => setEditingComment(c.id)}
+                              className="text-xs flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200"
+                            >
+                              <FaPencilAlt className="mr-1" /> Edit
+                            </button>
+                          )}
+                          {canDeleteComment(c) && (
+                            <button 
+                              onClick={() => confirmDeleteComment(c.id)}
+                              className="text-xs flex items-center px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200"
+                            >
+                              <FaTrash className="mr-1" /> Delete
+                            </button>
+                          )}
+
             {comments.map((c) => {
               const parsedDate = parseCreatedAt(c.createdAt);
               return (

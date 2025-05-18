@@ -120,12 +120,16 @@ const AdminSidebar = ({ activeTab = "dashboard" }) => {
             action: () => navigateWithTabUpdate("AdminMonetize", "monetization") 
           },
           { 
+            id: "usersearch", 
+            icon: <FaDatabase className="text-lg" />, 
+            label: "usersearch", 
+            action: () => navigateWithTabUpdate("/find-users", "usersearch") 
+          },
             id: "findUsers", 
             icon: <FaUsers className="text-lg" />, 
             label: "Find Users", 
             action: () => navigateWithTabUpdate("/find-users", "findusers") 
           },
-          
           { 
             id: "settings", 
             icon: <FaCog className="text-lg" />, 

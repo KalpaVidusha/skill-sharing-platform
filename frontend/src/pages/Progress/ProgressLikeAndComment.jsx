@@ -677,6 +677,10 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                               {currentUserId === comment.userId && (
                                 <span className="ml-1 text-xs font-normal text-indigo-600">(You)</span>
                               )}
+                              <span className="text-xs text-gray-500 ml-2">
+                                {comment.createdAt && !isNaN(new Date(comment.createdAt).getTime())
+                                  ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })
+                                  : 'Unknown time'}
                               <span className="ml-2 text-xs text-gray-500">
                                 {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                               </span>
@@ -824,6 +828,10 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                                         {currentUserId === reply.userId && (
                                           <span className="ml-1 text-xs font-normal text-indigo-600">(You)</span>
                                         )}
+                                        <span className="text-xs text-gray-500 ml-2">
+                                          {reply.createdAt && !isNaN(new Date(reply.createdAt).getTime())
+                                            ? formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true })
+                                            : 'Unknown time'}
                                         <span className="ml-2 text-xs text-gray-500">
                                           {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true })}
                                         </span>

@@ -43,7 +43,7 @@ const NotificationItem = ({ notification, onMarkAsRead }) => {
         // For progress notifications, we need to navigate to the user dashboard
         // If the notification's content contains "progress", it's likely about a progress update
         if (notification.content.toLowerCase().includes('progress')) {
-          navigate(`/user-dashboard`);
+          navigate(`/progress`);
           // After navigation, we want to switch to the progress tab
           setTimeout(() => {
             const progressTabElement = document.querySelector('[data-tab="progress"]');
@@ -75,6 +75,9 @@ const NotificationItem = ({ notification, onMarkAsRead }) => {
             {notification.content}
           </p>
           <p className="text-xs text-gray-500 mt-1">
+            {notification.createdAt && !isNaN(new Date(notification.createdAt).getTime())
+              ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })
+              : 'Unknown time'}
             {isValidDate(notification.createdAt)
               ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })
               : "Invalid date"}
