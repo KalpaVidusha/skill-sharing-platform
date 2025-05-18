@@ -217,7 +217,7 @@ const Applications = () => {
                       {req.description}
                     </p>
                     <p className="mt-2 text-sm text-black">
-                      <span className="font-medium">Channel Link:</span>{" "}
+                      <span className="font-medium">User name:</span>{" "}
                       {req.platform}
                     </p>
                     <p className="mt-2 text-sm text-black">

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { DollarSign, FileText, Video, Link as LinkIcon } from 'lucide-react';
 import Navbar from "../../components/Navbar";
 import Sidebar from "../../components/Sidebar";
+import { FaUser } from "react-icons/fa";
 
 const MonetizationForm = () => {
   const [contentType, setContentType] = useState("");
@@ -135,11 +136,11 @@ const MonetizationForm = () => {
 
             <div className="relative">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-500 pointer-events-none">
-                <LinkIcon size={18} />
+                <FaUser size={18} />
               </div>
               <input
                 type="text"
-                placeholder="Channel Link"
+                placeholder="User name"
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
                 required

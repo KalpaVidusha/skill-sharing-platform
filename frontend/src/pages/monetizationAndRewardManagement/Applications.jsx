@@ -169,7 +169,7 @@ const Applications = () => {
                       <span className="font-medium">Description:</span> {req.description}
                     </p>
                     <p className="mt-2 text-sm text-black">
-                      <span className="font-medium">Channel Link:</span> {req.platform}
+                      <span className="font-medium">User name:</span> {req.platform}
                     </p>
                     <p className="mt-2 text-sm text-black">
                       <span className="font-medium">Earnings:</span> ${req.expectedEarnings}
