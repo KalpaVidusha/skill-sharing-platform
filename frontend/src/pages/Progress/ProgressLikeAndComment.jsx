@@ -5,6 +5,36 @@ import { useNavigate } from 'react-router-dom';
 import apiService from '../../services/api';
 import { toast } from "react-toastify";
 
+// Helper function to parse dates correctly regardless of format
+const parseDate = (dateValue) => {
+  if (!dateValue) return null;
+  
+  // Handle string date
+  if (typeof dateValue === 'string') {
+    return new Date(dateValue);
+  }
+  
+  // Handle array format [year, month, day, hour, minute, second]
+  if (Array.isArray(dateValue) && dateValue.length >= 3) {
+    // Month in JS Date is 0-indexed, but likely 1-indexed in the array
+    return new Date(
+      dateValue[0], 
+      dateValue[1] - 1, 
+      dateValue[2], 
+      dateValue[3] || 0, 
+      dateValue[4] || 0, 
+      dateValue[5] || 0
+    );
+  }
+  
+  // If it's already a Date object
+  if (dateValue instanceof Date) {
+    return dateValue;
+  }
+  
+  return null;
+};
+
 // Helper function to get the display name for a user
 const getDisplayName = (user) => {
   if (!user) return "Unknown User";
@@ -678,9 +708,12 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                                 <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
                               )}
                               <span className="text-xs text-gray-500 ml-2">
-                                {comment.createdAt && !isNaN(new Date(comment.createdAt).getTime())
-                                  ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })
-                                  : 'Unknown time'}
+                                {comment.createdAt && (() => {
+                                  const parsedDate = parseDate(comment.createdAt);
+                                  return parsedDate && !isNaN(parsedDate.getTime())
+                                    ? formatDistanceToNow(parsedDate, { addSuffix: true })
+                                    : 'Unknown time';
+                                })()}
                               </span>
                             </div>
                             <div className="flex space-x-2">
@@ -827,9 +860,12 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                                           <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
                                         )}
                                         <span className="text-xs text-gray-500 ml-2">
-                                          {reply.createdAt && !isNaN(new Date(reply.createdAt).getTime())
-                                            ? formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true })
-                                            : 'Unknown time'}
+                                          {reply.createdAt && (() => {
+                                            const parsedDate = parseDate(reply.createdAt);
+                                            return parsedDate && !isNaN(parsedDate.getTime())
+                                              ? formatDistanceToNow(parsedDate, { addSuffix: true })
+                                              : 'Unknown time';
+                                          })()}
                                         </span>
                                       </div>
                                       {currentUserId === reply.userId && (

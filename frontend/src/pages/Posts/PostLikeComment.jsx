@@ -5,6 +5,37 @@ import {
   FaComment, FaUser
 } from 'react-icons/fa';
 import apiService from '../../services/api';
+import { format } from 'date-fns';
+
+// Helper function to parse dates correctly regardless of format
+const parseDate = (dateValue) => {
+  if (!dateValue) return null;
+  
+  // Handle string date
+  if (typeof dateValue === 'string') {
+    return new Date(dateValue);
+  }
+  
+  // Handle array format [year, month, day, hour, minute, second]
+  if (Array.isArray(dateValue) && dateValue.length >= 3) {
+    // Month in JS Date is 0-indexed, but likely 1-indexed in the array
+    return new Date(
+      dateValue[0], 
+      dateValue[1] - 1, 
+      dateValue[2], 
+      dateValue[3] || 0, 
+      dateValue[4] || 0, 
+      dateValue[5] || 0
+    );
+  }
+  
+  // If it's already a Date object
+  if (dateValue instanceof Date) {
+    return dateValue;
+  }
+  
+  return null;
+};
 
 const PostLikeComment = ({ postId, isLoggedIn, isPostOwner, initialLikeCount = 0, initialLiked = false }) => {
   const navigate = useNavigate();
@@ -268,7 +299,12 @@ const PostLikeComment = ({ postId, isLoggedIn, isPostOwner, initialLikeCount = 0
                     <p className="text-gray-700 mb-3">{c.content}</p>
                     <div className="flex justify-between items-center mt-4">
                       <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                        Posted on {new Date(c.createdAt).toLocaleString()}
+                        {c.createdAt && (() => {
+                          const parsedDate = parseDate(c.createdAt);
+                          return parsedDate && !isNaN(parsedDate.getTime())
+                            ? `Posted on ${format(parsedDate, 'MMM dd, yyyy h:mm a')}`
+                            : 'Recently posted';
+                        })()}
                       </span>
                       
                       {(canEditComment(c) || canDeleteComment(c)) && (

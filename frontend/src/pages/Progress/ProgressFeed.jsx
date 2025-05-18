@@ -2,10 +2,40 @@ import React, { useState, useEffect, useRef, useCallback, createRef } from 'reac
 import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import apiService from '../../services/api';
-import { formatDistanceToNow, format, parse, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
+import { formatDistanceToNow, format, parse, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO } from 'date-fns';
 import { FaEdit, FaTrash, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaSyncAlt, FaSort, FaImage, FaEllipsisV } from 'react-icons/fa';
 import { toast } from "react-toastify";
 import ProgressLikeAndComment from './ProgressLikeAndComment';
+
+// Helper function to parse dates correctly regardless of format
+const parseDate = (dateValue) => {
+  if (!dateValue) return null;
+  
+  // Handle string date
+  if (typeof dateValue === 'string') {
+    return new Date(dateValue);
+  }
+  
+  // Handle array format [year, month, day, hour, minute, second]
+  if (Array.isArray(dateValue) && dateValue.length >= 3) {
+    // Month in JS Date is 0-indexed, but likely 1-indexed in the array
+    return new Date(
+      dateValue[0], 
+      dateValue[1] - 1, 
+      dateValue[2], 
+      dateValue[3] || 0, 
+      dateValue[4] || 0, 
+      dateValue[5] || 0
+    );
+  }
+  
+  // If it's already a Date object
+  if (dateValue instanceof Date) {
+    return dateValue;
+  }
+  
+  return null;
+};
 
 // Helper function to get the display name for a user
 const getDisplayName = (user) => {
@@ -170,8 +200,8 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
   // Helper function to sort progress by date
   const sortProgressByDate = (progress, order) => {
     return [...progress].sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
+      const dateA = parseDate(a.createdAt)?.getTime() || 0;
+      const dateB = parseDate(b.createdAt)?.getTime() || 0;
       return order === 'newest' ? dateB - dateA : dateA - dateB;
     });
   };
@@ -1046,9 +1076,19 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                     {getDisplayName(progress.user)}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {progress.createdAt && !isNaN(new Date(progress.createdAt).getTime())
-                      ? formatDistanceToNow(new Date(progress.createdAt), { addSuffix: true })
-                      : 'Unknown time'}
+                    {progress.createdAt && (() => {
+                      const parsedDate = parseDate(progress.createdAt);
+                      if (parsedDate && !isNaN(parsedDate.getTime())) {
+                        return (
+                          <div className="flex flex-col">
+                            <span>{format(parsedDate, 'MMM dd, yyyy')}</span>
+                            <span className="text-gray-400">{formatDistanceToNow(parsedDate, { addSuffix: true })}</span>
+                          </div>
+                        );
+                      } else {
+                        return 'Unknown time';
+                      }
+                    })()}
                   </div>
                 </div>
               </div>
