@@ -69,7 +69,9 @@ const NotificationItem = ({ notification, onMarkAsRead }) => {
             {notification.content}
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+            {notification.createdAt && !isNaN(new Date(notification.createdAt).getTime())
+              ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })
+              : 'Unknown time'}
           </p>
         </div>
         {!isRead && (

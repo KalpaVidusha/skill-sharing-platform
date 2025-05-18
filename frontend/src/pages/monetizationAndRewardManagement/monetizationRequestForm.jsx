@@ -1,9 +1,10 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { DollarSign, FileText, Video, Link as LinkIcon } from 'lucide-react';
+import { DollarSign, FileText, Video } from 'lucide-react';
 import Navbar from "../../components/Navbar";
 import Sidebar from "../../components/Sidebar";
+import { FaUser } from "react-icons/fa";
 
 const MonetizationForm = () => {
   const [contentType, setContentType] = useState("");
@@ -16,6 +17,20 @@ const MonetizationForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitStatus({ message: '', error: false });
+
+    // Custom validation
+    if (contentType.trim().length <= 3) {
+      setSubmitStatus({ message: "Content type must be more than 3 characters.", error: true });
+      return;
+    }
+    if (description.trim().length < 10) {
+      setSubmitStatus({ message: "Description must be at least 10 characters.", error: true });
+      return;
+    }
+    if (isNaN(expectedEarnings) || expectedEarnings.trim() === "") {
+      setSubmitStatus({ message: "Expected earnings must be a number.", error: true });
+      return;
+    }
 
     try {
       const token = localStorage.getItem("token");
@@ -44,7 +59,6 @@ const MonetizationForm = () => {
       );
 
       setSubmitStatus({ message: "Monetization request submitted successfully! Redirecting...", error: false });
-      console.log("Success Response:", res.data);
 
       setContentType("");
       setDescription("");
@@ -56,7 +70,6 @@ const MonetizationForm = () => {
       }, 2000);
 
     } catch (err) {
-      console.error("Submit Error:", err);
       let errorMessage = "Failed to submit request.";
       if (err.response) {
         errorMessage = err.response.data?.error || err.response.data?.message || `Error: ${err.response.status} - ${err.response.statusText}`;
@@ -71,15 +84,11 @@ const MonetizationForm = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      
       <Navbar />
-      
       <div className="flex min-h-screen pt-20 font-sans">
-        {/* Sidebar */}
         <div className="sticky top-20 h-[calc(100vh-5rem)] self-start">
           <Sidebar defaultActiveTab="monetization" />
         </div>
-        
         <div 
           className="flex items-center justify-center flex-1 p-8"
           style={{
@@ -133,19 +142,19 @@ const MonetizationForm = () => {
                 />
               </div>
 
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-500 pointer-events-none">
-                <LinkIcon size={18} />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-500 pointer-events-none">
+                  <FaUser size={18} />
+                </div>
+                <input
+                  type="text"
+                  placeholder="User name"
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 pl-10 transition-all duration-300 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                />
               </div>
-              <input
-                type="text"
-                placeholder="Channel Link"
-                value={platform}
-                onChange={(e) => setPlatform(e.target.value)}
-                required
-                className="w-full px-4 py-3 pl-10 transition-all duration-300 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-              />
-            </div>
 
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-500 pointer-events-none">

@@ -1046,7 +1046,9 @@ const ProgressFeed = ({ userId, limit, sortOrder: externalSortOrder, hideFilters
                     {getDisplayName(progress.user)}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {formatDistanceToNow(new Date(progress.createdAt), { addSuffix: true })}
+                    {progress.createdAt && !isNaN(new Date(progress.createdAt).getTime())
+                      ? formatDistanceToNow(new Date(progress.createdAt), { addSuffix: true })
+                      : 'Unknown time'}
                   </div>
                 </div>
               </div>

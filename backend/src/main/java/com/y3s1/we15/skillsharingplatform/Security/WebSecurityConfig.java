@@ -92,7 +92,7 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
@@ -122,6 +122,7 @@ public class WebSecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/progress/templates").permitAll() // Allow public access to GET progress templates
                     .requestMatchers(HttpMethod.GET, "/api/progress/{progressId}/comments").permitAll() // Allow public access to GET progress comments
                     .requestMatchers(HttpMethod.GET, "/api/progress/*/comments").permitAll() // Alternative pattern for path variables
+                    .requestMatchers(HttpMethod.PATCH,"/api/monetization/**").permitAll()
                     // Secure admin endpoints - only accessible to users with ROLE_ADMIN
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
