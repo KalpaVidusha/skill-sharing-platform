@@ -37,7 +37,7 @@ const NotificationItem = ({ notification, onMarkAsRead }) => {
         // For progress notifications, we need to navigate to the user dashboard
         // If the notification's content contains "progress", it's likely about a progress update
         if (notification.content.toLowerCase().includes('progress')) {
-          navigate(`/user-dashboard`);
+          navigate(`/progress`);
           // After navigation, we want to switch to the progress tab
           setTimeout(() => {
             const progressTabElement = document.querySelector('[data-tab="progress"]');
