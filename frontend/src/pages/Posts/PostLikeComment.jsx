@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   FaPencilAlt, FaTrash, FaHeart, FaRegHeart,
-  FaComment
+  FaComment, FaUser
 } from 'react-icons/fa';
 import apiService from '../../services/api';
 
@@ -17,12 +17,31 @@ const PostLikeComment = ({ postId, isLoggedIn, isPostOwner, initialLikeCount = 0
   const [liked, setLiked] = useState(initialLiked);
   const [showConfirm, setShowConfirm] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
+  const [userCache, setUserCache] = useState({});
 
   useEffect(() => {
     const fetchComments = async () => {
       try {
         const commentsData = await apiService.getCommentsByPost(postId);
         setComments(commentsData);
+        
+        // Fetch user details for each comment
+        const uniqueUserIds = [...new Set(commentsData.map(comment => comment.userId))];
+        const newUserCache = { ...userCache };
+        
+        for (const userId of uniqueUserIds) {
+          if (!newUserCache[userId]) {
+            try {
+              const userData = await apiService.getUserById(userId);
+              newUserCache[userId] = userData;
+            } catch (userErr) {
+              console.error(`Error fetching user ${userId}:`, userErr);
+              newUserCache[userId] = { username: 'Unknown User' };
+            }
+          }
+        }
+        
+        setUserCache(newUserCache);
       } catch (err) {
         console.error('Error fetching comments:', err);
       }
@@ -46,6 +65,25 @@ const PostLikeComment = ({ postId, isLoggedIn, isPostOwner, initialLikeCount = 0
       setError('');
       const data = await apiService.getCommentsByPost(postId);
       setComments(data);
+      
+      // Update user cache for new comments
+      const newUserIds = data
+        .filter(comment => !userCache[comment.userId])
+        .map(comment => comment.userId);
+      
+      if (newUserIds.length > 0) {
+        const newUserCache = { ...userCache };
+        for (const userId of newUserIds) {
+          try {
+            const userData = await apiService.getUserById(userId);
+            newUserCache[userId] = userData;
+          } catch (userErr) {
+            console.error(`Error fetching user ${userId}:`, userErr);
+            newUserCache[userId] = { username: 'Unknown User' };
+          }
+        }
+        setUserCache(newUserCache);
+      }
     } catch (err) {
       console.error('Error adding comment:', err);
       setError('Failed to add comment.');
@@ -106,6 +144,22 @@ const PostLikeComment = ({ postId, isLoggedIn, isPostOwner, initialLikeCount = 0
   const canDeleteComment = (comment) => {
     const userId = localStorage.getItem('userId');
     return isLoggedIn && (comment.userId === userId || isPostOwner);
+  };
+
+  // Helper function to get the username for a comment
+  const getCommentAuthor = (comment) => {
+    if (!comment || !comment.userId) return 'Unknown User';
+    const user = userCache[comment.userId];
+    
+    if (!user) return 'Unknown User';
+    
+    // Return full name if both firstName and lastName are available
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    
+    // Fallback options in order of preference
+    return user.fullName || user.name || user.username || 'Unknown User';
   };
 
   return (
@@ -200,6 +254,17 @@ const PostLikeComment = ({ postId, isLoggedIn, isPostOwner, initialLikeCount = 0
                   </>
                 ) : (
                   <>
+                    <div className="flex items-center mb-3">
+                      <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 mr-2">
+                        <FaUser />
+                      </div>
+                      <Link 
+                        to={`/profile/${c.userId}`} 
+                        className="font-medium text-indigo-700 hover:text-indigo-900 hover:underline"
+                      >
+                        {getCommentAuthor(c)}
+                      </Link>
+                    </div>
                     <p className="text-gray-700 mb-3">{c.content}</p>
                     <div className="flex justify-between items-center mt-4">
                       <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">

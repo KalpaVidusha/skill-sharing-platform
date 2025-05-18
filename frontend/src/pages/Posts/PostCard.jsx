@@ -15,6 +15,7 @@ const PostCard = ({ post }) => {
   const hasMedia = post.mediaUrls && post.mediaUrls.length > 0;
   const defaultImageUrl = 'https://via.placeholder.com/400x200?text=No+Image';
   const instructor = post.user ? `${post.user.firstName} ${post.user.lastName}` : 'Unknown';
+  const instructorId = post.user?.id;
   
   const isVideoUrl = (url) => {
     return url && (url.includes('/video/') || url.endsWith('.mp4') || url.endsWith('.mov') || 
@@ -226,7 +227,19 @@ const PostCard = ({ post }) => {
       <div className="p-5 flex flex-col flex-grow">
         <h3 className="text-xl font-bold text-indigo-900 mb-2 line-clamp-2">{post.title}</h3>
         <p className="text-gray-600 text-sm mb-3 line-clamp-3">{post.description}</p>
-        <div className="text-sm text-indigo-700 mb-2"><strong>Instructor:</strong> {instructor}</div>
+        <div className="text-sm text-indigo-700 mb-2">
+          <strong>Instructor:</strong>{' '}
+          {instructorId ? (
+            <Link 
+              to={`/profile/${instructorId}`}
+              className="hover:text-indigo-900 hover:underline"
+            >
+              {instructor}
+            </Link>
+          ) : (
+            instructor
+          )}
+        </div>
 
         <div className="flex items-center gap-4 mt-3">
           <button 
