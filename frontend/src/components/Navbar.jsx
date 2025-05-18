@@ -89,21 +89,21 @@ const Navbar = () => {
   return (
     <>
      <nav className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-2 border-b border-gray-100/50' : 'bg-gradient-to-r from-indigo-50/95 to-blue-50/95 backdrop-blur-md py-3'}`}>
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="flex justify-between items-center h-16">
+  <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+    <div className="flex items-center justify-between h-16">
       {/* Logo and primary navigation */}
       <div className="flex items-center">
         <Link to="/" className="flex items-center space-x-2 group">
-          <div className="relative group-hover:rotate-12 transition-transform duration-300">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-800 rounded-full shadow-lg flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 rounded-full border-2 border-white/20"></div>
+          <div className="relative transition-transform duration-300 group-hover:rotate-12">
+            <div className="flex items-center justify-center w-10 h-10 overflow-hidden rounded-full shadow-lg bg-gradient-to-br from-blue-600 to-indigo-800">
+              <div className="absolute inset-0 border-2 rounded-full border-white/20"></div>
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
             </div>
           </div>
-          <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text text-transparent tracking-tight">
+          <span className="text-2xl font-bold tracking-tight text-transparent bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text">
             SkillSphere
           </span>
         </Link>
@@ -111,27 +111,27 @@ const Navbar = () => {
         <div className="hidden md:ml-10 md:flex md:items-center md:space-x-1">
           <Link 
             to="/posts" 
-            className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50/50 transition-all duration-300 flex items-center group"
+            className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-300 rounded-lg hover:text-indigo-700 hover:bg-indigo-50/50 group"
           >
-            <FiBook className="mr-2 text-indigo-500 group-hover:text-indigo-600 transition-colors" />
+            <FiBook className="mr-2 text-indigo-500 transition-colors group-hover:text-indigo-600" />
             <span className="relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-indigo-600 after:transition-all after:duration-300 group-hover:after:w-full">
               Courses
             </span>
           </Link>
           <Link 
-            to="/progress" 
-            className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50/50 transition-all duration-300 flex items-center group"
+            to="/userdashboard/progress" 
+            className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-300 rounded-lg hover:text-indigo-700 hover:bg-indigo-50/50 group"
           >
-            <FiTrendingUp className="mr-2 text-indigo-500 group-hover:text-indigo-600 transition-colors" />
+            <FiTrendingUp className="mr-2 text-indigo-500 transition-colors group-hover:text-indigo-600" />
             <span className="relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-indigo-600 after:transition-all after:duration-300 group-hover:after:w-full">
               Progress
             </span>
           </Link>
           <Link 
             to="/userdashboard/learning-plans" 
-            className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-indigo-700 hover:bg-indigo-50/50 transition-all duration-300 flex items-center group"
+            className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-300 rounded-lg hover:text-indigo-700 hover:bg-indigo-50/50 group"
           >
-            <FiBookmark className="mr-2 text-indigo-500 group-hover:text-indigo-600 transition-colors" />
+            <FiBookmark className="mr-2 text-indigo-500 transition-colors group-hover:text-indigo-600" />
             <span className="relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-indigo-600 after:transition-all after:duration-300 group-hover:after:w-full">
               Learning Plans
             </span>
@@ -140,17 +140,17 @@ const Navbar = () => {
       </div>
 
       {/* Search bar */}
-      <div className="hidden md:flex items-center flex-grow max-w-md mx-6">
+      <div className="items-center flex-grow hidden max-w-md mx-6 md:flex">
         <form onSubmit={handleSearch} className="w-full">
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FaSearch className="h-4 w-4 text-gray-400" />
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <FaSearch className="w-4 h-4 text-gray-400" />
             </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full pl-10 pr-4 py-2 border border-gray-200/80 rounded-xl leading-5 bg-white/90 backdrop-blur-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-transparent shadow-sm transition-all duration-300 hover:shadow-md"
+              className="block w-full py-2 pl-10 pr-4 leading-5 placeholder-gray-400 transition-all duration-300 border shadow-sm border-gray-200/80 rounded-xl bg-white/90 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-transparent hover:shadow-md"
               placeholder="Search skills, courses..."
             />
           </div>
@@ -165,10 +165,10 @@ const Navbar = () => {
             
             <button
               onClick={() => setIsChatOpen(true)}
-              className="relative p-2 rounded-full bg-white/80 text-gray-600 hover:text-indigo-600 transition-colors duration-300 shadow-sm hover:shadow-md group"
+              className="relative p-2 text-gray-600 transition-colors duration-300 rounded-full shadow-sm bg-white/80 hover:text-indigo-600 hover:shadow-md group"
             >
               <FaEnvelope className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+              <span className="absolute flex items-center justify-center w-4 h-4 text-xs text-white bg-red-500 rounded-full -top-1 -right-1 animate-pulse">
                 3
               </span>
             </button>
@@ -176,20 +176,20 @@ const Navbar = () => {
             <div className="relative group">
               <Link 
                 to="/userdashboard"
-                className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-white/80 hover:bg-white text-gray-700 transition-all duration-300 shadow-sm hover:shadow-md"
+                className="flex items-center px-3 py-2 space-x-2 text-gray-700 transition-all duration-300 rounded-lg shadow-sm bg-white/80 hover:bg-white hover:shadow-md"
               >
-                <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium overflow-hidden">
+                <div className="relative flex items-center justify-center w-8 h-8 overflow-hidden text-sm font-medium text-white rounded-full bg-gradient-to-r from-blue-500 to-indigo-600">
                   {username.charAt(0).toUpperCase()}
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
                 </div>
                 <span className="text-sm font-medium">{username}</span>
               </Link>
-              <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl py-1 z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-300">
+              <div className="absolute right-0 z-50 invisible w-48 py-1 mt-1 transition-all duration-300 bg-white rounded-lg shadow-xl opacity-0 group-hover:visible group-hover:opacity-100">
                 <Link to="/userdashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50/50">Your Profile</Link>
                 <Link to="/userdashboard/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50/50">Settings</Link>
                 <button 
                   onClick={() => setShowLogoutModal(true)}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50/50 flex items-center"
+                  className="flex items-center w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50/50"
                 >
                   <FiLogOut className="mr-2" /> Sign out
                 </button>
@@ -200,13 +200,13 @@ const Navbar = () => {
           <div className="flex items-center space-x-3">
             <Link 
               to="/login" 
-              className="px-4 py-2 rounded-lg text-sm font-medium text-indigo-700 hover:bg-indigo-50/50 transition-all duration-300 flex items-center shadow-sm hover:shadow-md"
+              className="flex items-center px-4 py-2 text-sm font-medium text-indigo-700 transition-all duration-300 rounded-lg shadow-sm hover:bg-indigo-50/50 hover:shadow-md"
             >
               <FaSignInAlt className="mr-2" /> Login
             </Link>
             <Link 
               to="/signup" 
-              className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-md hover:shadow-lg flex items-center"
+              className="flex items-center px-4 py-2 text-sm font-medium text-white transition-all duration-300 rounded-lg shadow-md bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 hover:shadow-lg"
             >
               <FaUserPlus className="mr-2" /> Register
             </Link>
@@ -220,20 +220,20 @@ const Navbar = () => {
       {/* Logout Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             {/* Background overlay */}
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"></div>
 
             {/* Trick for vertical centering */}
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
             {/* Modal content */}
-            <div className="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="inline-block overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:max-w-lg sm:w-full">
+              <div className="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                  <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-blue-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
                     <svg 
-                      className="h-6 w-6 text-blue-600" 
+                      className="w-6 h-6 text-blue-600" 
                       xmlns="http://www.w3.org/2000/svg" 
                       fill="none" 
                       viewBox="0 0 24 24" 
@@ -248,7 +248,7 @@ const Navbar = () => {
                     </svg>
                   </div>
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    <h3 className="text-lg font-medium leading-6 text-gray-900">
                       Ready to leave?
                     </h3>
                     <div className="mt-2">
@@ -259,17 +259,17 @@ const Navbar = () => {
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <div className="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button
                   type="button"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={handleLogout}
                 >
                   Log Out
                 </button>
                 <button
                   type="button"
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={handleCancelLogout}
                 >
                   Stay Logged In

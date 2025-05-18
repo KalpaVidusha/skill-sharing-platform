@@ -119,7 +119,7 @@ const Navbar = () => {
             </span>
           </Link>
           <Link 
-            to="/progress" 
+            to="/userdashboard/progress" 
             className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-300 rounded-lg hover:text-indigo-700 hover:bg-indigo-50/50 group"
           >
             <FiTrendingUp className="mr-2 text-indigo-500 transition-colors group-hover:text-indigo-600" />

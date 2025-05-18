@@ -157,7 +157,7 @@ function App() {
 
 
         {/* user progress */}
-        <Route path="/progress" element={<Progress />} />
+        <Route path="/userdashboard/progress" element={<Progress />} />
 
         <Route path="/oauth-success" element={<OAuthSuccess />} />
 
