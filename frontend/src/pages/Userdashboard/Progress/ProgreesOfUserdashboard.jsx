@@ -10,6 +10,14 @@ import Navbar from "../../../components/Navbar";
 import Sidebar from "../../../components/Sidebar";
 import Footer from "../../../components/Footer"; 
 
+
+// Helper function to check for valid date
+function isValidDate(date) {
+  const d = new Date(date);
+  return d instanceof Date && !isNaN(d);
+}
+
+
 // Helper function to get the display name for a user
 const getDisplayName = (user) => {
   if (!user) return localStorage.getItem('username') || "You";
@@ -941,7 +949,9 @@ const ProgreesOfUserdashboard = (props) => {
                               {getDisplayName(progress.user)}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {formatDistanceToNow(new Date(progress.createdAt), { addSuffix: true })}
+                              {isValidDate(progress.createdAt)
+                                ? formatDistanceToNow(new Date(progress.createdAt), { addSuffix: true })
+                                : "Invalid date"}
                             </div>
                           </div>
                         </div>

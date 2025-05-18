@@ -173,7 +173,7 @@ function App() {
         <Route path="/userdashboard/monetize" element={<MonetizationForm />} />
         <Route path="/userdashboard/Applications" element={<Applications />} />
         <Route path="/userdashboard/Applications/edit/:id" element={<EditRequest />} />
-        <Route path="/AdminDashboard" element={<AdminDashboard2 />} />
+        {/* <Route path="/AdminDashboard" element={<AdminDashboard2 />} /> */}
 
 
 
