@@ -4,6 +4,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { FaCheck } from 'react-icons/fa';
 import apiService from '../../services/api';
 
+// Helper function to check for valid date
+function isValidDate(date) {
+  const d = new Date(date);
+  return d instanceof Date && !isNaN(d);
+}
+
 const NotificationItem = ({ notification, onMarkAsRead }) => {
   const navigate = useNavigate();
   // Parse isRead properly to ensure it's treated as a boolean
@@ -69,7 +75,9 @@ const NotificationItem = ({ notification, onMarkAsRead }) => {
             {notification.content}
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+            {isValidDate(notification.createdAt)
+              ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })
+              : "Invalid date"}
           </p>
         </div>
         {!isRead && (

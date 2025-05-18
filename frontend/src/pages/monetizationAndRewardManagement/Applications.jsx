@@ -177,7 +177,7 @@ const Applications = () => {
                     <p className="mt-2 text-sm text-black ">
                       <span className="font-medium">User ID:</span> {req.userId}
                     </p>
-                    {/* <div className="flex justify-end gap-2 mt-4">
+                     <div className="flex justify-end gap-2 mt-4">
                       <button
                         onClick={() => handleEdit(req.id)}
                         className="px-3 py-1 text-sm font-medium text-white bg-yellow-500 rounded hover:bg-yellow-600"
@@ -190,7 +190,7 @@ const Applications = () => {
                       >
                         Delete
                       </button>
-                    </div> */}
+                    </div> 
                      <p className="mt-2 text-sm text-black">
                       <span className="font-medium">Status:</span> {req.approved ? <span className="font-semibold text-green-600">Approved</span> : <span className="font-semibold text-orange-600">Pending</span>}
                     </p>
