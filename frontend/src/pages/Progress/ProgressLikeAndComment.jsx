@@ -612,7 +612,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
   return (
     <div>
       {/* Like and Comment Actions */}
-      <div className="flex items-center pt-3 mt-3 space-x-6 border-t border-gray-200">
+      <div className="mt-3 pt-3 border-t border-gray-200 flex items-center space-x-6">
         {/* Like button - clickable for all users, but prompts login for non-logged in users */}
         <button 
           onClick={toggleLike}
@@ -642,47 +642,45 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
       
       {/* Comments Section - visible to all users */}
       {expandedComments && (
-        <div className="pt-4 mt-4 border-t border-gray-200">
+        <div className="mt-4 border-t border-gray-200 pt-4">
           {/* Loading Indicator */}
           {isLoadingComments && (
-            <div className="flex items-center justify-center py-6">
-              <div className="w-8 h-8 border-4 border-blue-200 rounded-full border-t-blue-600 animate-spin"></div>
+            <div className="flex justify-center items-center py-6">
+              <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
               <span className="ml-2 text-sm text-gray-600">Loading comments...</span>
             </div>
           )}
           
           {/* Comment List */}
           {!isLoadingComments && (
-            <div className="mb-3 space-y-3">
+            <div className="space-y-3 mb-3">
               {comments.length > 0 ? (
-                <div className="overflow-y-auto max-h-60 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                   {comments.map(comment => (
-                    <div key={comment.id} className="flex items-start mb-3 space-x-2">
+                    <div key={comment.id} className="flex items-start space-x-2 mb-3">
                       <div 
-                        className="flex items-center justify-center w-8 h-8 mr-2 font-bold text-white bg-indigo-500 rounded-full cursor-pointer"
+                        className="w-8 h-8 bg-indigo-500 rounded-full text-white flex items-center justify-center font-bold mr-2 cursor-pointer"
                         onClick={() => comment.userId && handleProfileClick(comment.userId)}
                       >
                         {getUserInitials({ firstName: comment.userName?.split(' ')[0] || '', lastName: comment.userName?.split(' ')[1] || '' })}
                       </div>
                       <div className="flex-1">
-                        <div className="p-2 bg-gray-100 rounded-lg">
-                          <div className="flex items-start justify-between">
+                        <div className="bg-gray-100 rounded-lg p-2">
+                          <div className="flex justify-between items-start">
                             <div className="flex items-baseline">
                               <span 
-                                className="font-medium text-indigo-700 cursor-pointer hover:text-indigo-500"
+                                className="font-medium text-indigo-700 hover:text-indigo-500 cursor-pointer"
                                 onClick={() => comment.userId && handleProfileClick(comment.userId)}
                               >
                                 {comment.userName || 'Unknown User'}
                               </span>
                               {currentUserId === comment.userId && (
-                                <span className="ml-1 text-xs font-normal text-indigo-600">(You)</span>
+                                <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
                               )}
                               <span className="text-xs text-gray-500 ml-2">
                                 {comment.createdAt && !isNaN(new Date(comment.createdAt).getTime())
                                   ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })
                                   : 'Unknown time'}
-                              <span className="ml-2 text-xs text-gray-500">
-                                {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                               </span>
                             </div>
                             <div className="flex space-x-2">
@@ -714,12 +712,12 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                           {editingComment === comment.id ? (
                             <div className="mt-1">
                               <textarea
-                                className="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-full text-sm border border-gray-300 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 value={editCommentText}
                                 onChange={e => setEditCommentText(e.target.value)}
                                 rows="2"
                               />
-                              <div className="flex justify-end mt-1 space-x-2">
+                              <div className="flex justify-end space-x-2 mt-1">
                                 <button 
                                   onClick={cancelEditComment}
                                   className="text-xs text-gray-700 hover:text-gray-900"
@@ -729,7 +727,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                                 </button>
                                 <button 
                                   onClick={() => handleUpdateComment(comment.id)}
-                                  className="px-2 py-1 text-xs text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-70"
+                                  className="text-xs text-white bg-blue-600 px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-70"
                                   disabled={isUpdatingComment || !editCommentText.trim()}
                                 >
                                   {isUpdatingComment ? (
@@ -744,10 +742,10 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                               </div>
                             </div>
                           ) : (
-                            <p className="mt-1 text-sm text-gray-700">{comment.content}</p>
+                            <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
                           )}
                           
-                          <div className="flex justify-between mt-1 text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 mt-1 flex justify-between">
                             {/* Show reply count if there are replies or if replies are expanded */}
                             {(commentReplies[comment.id]?.length > 0 || expandedReplies[comment.id]) && (
                               <button 
@@ -764,7 +762,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                         {replyingTo === comment.id && (
                           <div className="mt-2 ml-8">
                             <textarea
-                              className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full text-sm border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
                               placeholder="Write a reply..."
                               value={replyText[comment.id] || ''}
                               onChange={e => setReplyText(prev => ({ ...prev, [comment.id]: e.target.value }))}
@@ -773,14 +771,14 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                             <div className="flex justify-end mt-1 space-x-2">
                               <button
                                 onClick={cancelReply}
-                                className="px-3 py-1 text-sm text-gray-700 bg-gray-300 rounded-md hover:bg-gray-400"
+                                className="bg-gray-300 text-gray-700 text-sm px-3 py-1 rounded-md hover:bg-gray-400"
                                 disabled={isSubmittingReply[comment.id]}
                               >
                                 Cancel
                               </button>
                               <button
                                 onClick={() => handleAddReply(comment.id)}
-                                className="flex items-center px-3 py-1 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-70"
+                                className="bg-blue-600 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700 disabled:opacity-70 flex items-center"
                                 disabled={isSubmittingReply[comment.id] || !replyText[comment.id]?.trim()}
                               >
                                 {isSubmittingReply[comment.id] ? (
@@ -802,7 +800,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                             {/* Loading indicator for replies */}
                             {loadingReplies[comment.id] && (
                               <div className="flex items-center justify-center py-2">
-                                <div className="w-5 h-5 border-2 border-blue-200 rounded-full border-t-blue-600 animate-spin"></div>
+                                <div className="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
                                 <span className="ml-2 text-xs text-gray-500">Loading replies...</span>
                               </div>
                             )}
@@ -811,29 +809,27 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                               commentReplies[comment.id].map(reply => (
                                 <div key={reply.id} className="flex items-start space-x-2">
                                   <div 
-                                    className="flex items-center justify-center mr-2 font-bold text-white bg-purple-500 rounded-full cursor-pointer w-7 h-7"
+                                    className="w-7 h-7 bg-purple-500 rounded-full text-white flex items-center justify-center font-bold mr-2 cursor-pointer"
                                     onClick={() => reply.userId && handleProfileClick(reply.userId)}
                                   >
                                     {getUserInitials({ firstName: reply.userName?.split(' ')[0] || '', lastName: reply.userName?.split(' ')[1] || '' })}
                                   </div>
-                                  <div className="flex-1 p-2 rounded-lg bg-gray-50">
-                                    <div className="flex items-start justify-between">
+                                  <div className="flex-1 bg-gray-50 rounded-lg p-2">
+                                    <div className="flex justify-between items-start">
                                       <div className="flex items-baseline">
                                         <span 
-                                          className="font-medium text-purple-700 cursor-pointer hover:text-purple-500"
+                                          className="font-medium text-purple-700 hover:text-purple-500 cursor-pointer"
                                           onClick={() => reply.userId && handleProfileClick(reply.userId)}
                                         >
                                           {reply.userName || 'Unknown User'}
                                         </span>
                                         {currentUserId === reply.userId && (
-                                          <span className="ml-1 text-xs font-normal text-indigo-600">(You)</span>
+                                          <span className="ml-1 text-xs text-indigo-600 font-normal">(You)</span>
                                         )}
                                         <span className="text-xs text-gray-500 ml-2">
                                           {reply.createdAt && !isNaN(new Date(reply.createdAt).getTime())
                                             ? formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true })
                                             : 'Unknown time'}
-                                        <span className="ml-2 text-xs text-gray-500">
-                                          {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true })}
                                         </span>
                                       </div>
                                       {currentUserId === reply.userId && (
@@ -856,12 +852,12 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                                     {editingComment === reply.id ? (
                                       <div className="mt-1">
                                         <textarea
-                                          className="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                          className="w-full text-sm border border-gray-300 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                           value={editCommentText}
                                           onChange={e => setEditCommentText(e.target.value)}
                                           rows="2"
                                         />
-                                        <div className="flex justify-end mt-1 space-x-2">
+                                        <div className="flex justify-end space-x-2 mt-1">
                                           <button 
                                             onClick={cancelEditComment}
                                             className="text-xs text-gray-700 hover:text-gray-900"
@@ -871,7 +867,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                                           </button>
                                           <button 
                                             onClick={() => handleUpdateComment(reply.id)}
-                                            className="flex items-center px-2 py-1 text-xs text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-70"
+                                            className="text-xs text-white bg-blue-600 px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-70 flex items-center"
                                             disabled={isUpdatingComment || !editCommentText.trim()}
                                           >
                                             {isUpdatingComment ? (
@@ -886,13 +882,13 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                                         </div>
                                       </div>
                                     ) : (
-                                      <p className="mt-1 text-sm text-gray-700">{reply.content}</p>
+                                      <p className="text-sm text-gray-700 mt-1">{reply.content}</p>
                                     )}
                                   </div>
                                 </div>
                               ))
                             ) : (
-                              !loadingReplies[comment.id] && <p className="text-xs italic text-gray-500">No replies yet.</p>
+                              !loadingReplies[comment.id] && <p className="text-xs text-gray-500 italic">No replies yet.</p>
                             )}
                           </div>
                         )}
@@ -908,13 +904,13 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
           
           {/* Add Comment Form - improved UX for non-logged users */}
           {currentUserId ? (
-            <div className="flex mt-3 space-x-2">
-              <div className="flex items-center justify-center w-8 h-8 font-medium text-white bg-gray-300 rounded-full">
+            <div className="flex space-x-2 mt-3">
+              <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium">
                 {getUserInitials({ firstName: localStorage.getItem('username')?.split(' ')[0], lastName: localStorage.getItem('username')?.split(' ')[1] })}
               </div>
               <div className="flex-1">
                 <textarea
-                  className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-sm border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="Write a comment..."
                   value={commentText}
                   onChange={e => setCommentText(e.target.value)}
@@ -923,7 +919,7 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                 <div className="flex justify-end mt-1">
                   <button
                     onClick={handleAddComment}
-                    className="flex items-center px-3 py-1 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-70"
+                    className="bg-blue-600 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700 disabled:opacity-70 flex items-center"
                     disabled={isSubmittingComment || !commentText.trim()}
                   >
                     {isSubmittingComment ? (
@@ -939,22 +935,22 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
               </div>
             </div>
           ) : (
-            <div className="p-4 mt-4 text-center border border-blue-100 rounded-lg bg-blue-50">
+            <div className="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-4 text-center">
               <div className="flex items-center justify-center mb-2">
-                <FaLock className="mr-2 text-blue-500" />
-                <span className="font-medium text-blue-700">Join the conversation</span>
+                <FaLock className="text-blue-500 mr-2" />
+                <span className="text-blue-700 font-medium">Join the conversation</span>
               </div>
-              <p className="mb-3 text-sm text-blue-600">Sign in to like, comment, and interact with other learners</p>
+              <p className="text-sm text-blue-600 mb-3">Sign in to like, comment, and interact with other learners</p>
               <div className="flex justify-center space-x-3">
                 <button
                   onClick={() => checkAuthenticated('comment', handleAddComment)}
-                  className="px-4 py-2 text-sm text-white transition-colors bg-blue-600 rounded-md shadow-sm hover:bg-blue-700"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 shadow-sm transition-colors"
                 >
                   Sign in
                 </button>
                 <button
                   onClick={() => navigate('/register')}
-                  className="px-4 py-2 text-sm text-blue-600 transition-colors bg-white border border-blue-300 rounded-md hover:bg-blue-50"
+                  className="px-4 py-2 bg-white border border-blue-300 text-blue-600 rounded-md text-sm hover:bg-blue-50 transition-colors"
                 >
                   Create account
                 </button>
@@ -967,11 +963,11 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
       {/* Authentication Modal */}
       {showAuthModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
             {/* Background overlay */}
-            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={handleCloseAuthModal}></div>
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleCloseAuthModal}></div>
 
-            <div className="inline-block w-full mx-4 overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:max-w-md">
+            <div className="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-md w-full mx-4">
               <div className="absolute top-0 right-0 pt-3 pr-3">
                 <button 
                   onClick={handleCloseAuthModal}
@@ -981,13 +977,13 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                 </button>
               </div>
               
-              <div className="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
-                  <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-blue-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
-                    <FaLock className="w-6 h-6 text-blue-600" />
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <FaLock className="h-6 w-6 text-blue-600" />
                   </div>
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg font-medium leading-6 text-gray-900">Authentication Required</h3>
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Authentication Required</h3>
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
                         You need to be signed in to {authAction} on this platform. Join our community to engage with content and track your progress.
@@ -999,22 +995,22 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
                 <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                   <button
                     type="button"
-                    className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
                     onClick={handleLogin}
                   >
                     Sign in
                   </button>
                   <button
                     type="button"
-                    className="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
                     onClick={handleSignup}
                   >
                     Create Account
                   </button>
                 </div>
                 
-                <div className="pt-3 mt-3 border-t border-gray-200">
-                  <p className="text-xs text-center text-gray-500">
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 text-center">
                     By signing in, you'll be able to interact with progress updates, like posts, comment, and share your own learning journey.
                   </p>
                 </div>
@@ -1027,49 +1023,49 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && commentToDelete && (
         <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             {/* Background overlay */}
-            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={cancelDelete}></div>
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={cancelDelete}></div>
 
             {/* This element is to trick the browser into centering the modal contents */}
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
             {/* Modal content */}
-            <div className="inline-block overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:max-w-lg sm:w-full">
-              <div className="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
+            <div className="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
-                  <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-red-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
-                    <svg className="w-6 h-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg font-medium leading-6 text-gray-900">Delete {isParentComment ? 'Comment' : 'Reply'}</h3>
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Delete {isParentComment ? 'Comment' : 'Reply'}</h3>
                     <div className="mt-2">
-                      <p className="mb-2 text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 mb-2">
                         Are you sure you want to delete this {isParentComment ? 'comment' : 'reply'}? This action cannot be undone.
                       </p>
-                      <div className="p-3 mt-2 rounded-md bg-gray-50">
+                      <div className="mt-2 p-3 bg-gray-50 rounded-md">
                         <p className="text-sm font-medium text-gray-600">
                           <span className="text-blue-600">{commentToDelete.userName || 'User'}</span> wrote:
                         </p>
-                        <p className="mt-1 text-sm text-gray-700">{commentToDelete.content}</p>
+                        <p className="text-sm text-gray-700 mt-1">{commentToDelete.content}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse">
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button 
                   type="button" 
-                  className="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={confirmDeleteComment}
                 >
                   Delete
                 </button>
                 <button 
                   type="button" 
-                  className="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={cancelDelete}
                 >
                   Cancel
@@ -1084,7 +1080,3 @@ const ProgressLikeAndComment = ({ progress, onProgressUpdate }) => {
 };
 
 export default ProgressLikeAndComment; 
-
-
-
-

@@ -24,9 +24,7 @@ import MonetizationRequest from "./pages/monetizationAndRewardManagement/monetiz
 import MonetizationForm from "./pages/monetizationAndRewardManagement/monetizationRequestForm";
 import EditRequest from "./pages/monetizationAndRewardManagement/EditMonetization"; // This will be the edit page
 import Applications from "./pages/monetizationAndRewardManagement/Applications";
-import AdminFind from "./pages/monetizationAndRewardManagement/UserDashboard";
-import fUsers from "./pages/monetizationAndRewardManagement/UserSearch";
-
+import AdminMonetize from "./pages/Admin/AdminMonetize";
 
 //progress
 import Progress from "./pages/Progress/ProgressAll";
@@ -44,7 +42,6 @@ import ProgressManagement from './pages/Admin/ProgressManagement';
 import PostManagement from './pages/Admin/PostManagement';
 import CommentManagement from './pages/Admin/CommentManagement';
 import AdminProtectedRoute from './pages/Admin/AdminProtectedRoute';
-import AdminMonetize from './pages/Admin/AdminMonetize';
 
 //Learning Plans
 import { LearningPlans, LearningPlanDetails } from './pages/LearningPlans';
@@ -64,9 +61,9 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
-      <ToastContainer
-        position="top-center"
-        autoClose={3000}
+      <ToastContainer 
+        position="top-center" 
+        autoClose={3000} 
         hideProgressBar={false}
         newestOnTop
         closeOnClick
@@ -80,7 +77,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-
+        
         {/* Post Management */}
         <Route path="/posts" element={<Posts />} />
         <Route path="/posts/:id" element={<PostDetail />} />
@@ -99,7 +96,7 @@ function App() {
             <EditPost />
           </ProtectedRoute>
         } />
-
+        
         {/* User Management - Protected */}
         <Route path="/userdashboard" element={
           <ProtectedRoute>
@@ -125,7 +122,7 @@ function App() {
           <ProtectedRoute>
             <UserProfile />
           </ProtectedRoute>} />
-
+          
         <Route path="/user-posts/:userId" element={<Posts />} />
         <Route path="/userdashboard/progress" element={
           <ProtectedRoute>
@@ -155,9 +152,8 @@ function App() {
           </ProtectedRoute>
         } />
 
-
         {/* user progress */}
-        <Route path="/userdashboard/progress" element={<Progress />} />
+        <Route path="/progress" element={<Progress />} />
 
         <Route path="/oauth-success" element={<OAuthSuccess />} />
 
@@ -168,21 +164,61 @@ function App() {
         } />
 
 
-        {/*Monetization and reward management */}
-        <Route path="/monetization/form" element={<MonetizationRequest />} />
-        <Route path="/userdashboard/monetize" element={<MonetizationForm />} />
-        <Route path="/userdashboard/Applications" element={<Applications />} />
-        <Route path="/userdashboard/Applications/edit/:id" element={<EditRequest />} />
-        {/* <Route path="/AdminDashboard" element={<AdminDashboard2 />} /> */}
+        {/*Monetization and reward management - Protected */}
+        <Route path="/monetization/form" element={
+          <ProtectedRoute>
+            <MonetizationRequest />
+          </ProtectedRoute>
+        } />
+        <Route path="/userdashboard/monetize" element={
+          <ProtectedRoute>
+            <MonetizationForm />
+          </ProtectedRoute>
+        } />
+        <Route path="/userdashboard/Applications" element={
+          <ProtectedRoute>
+            <Applications />
+          </ProtectedRoute>
+        } />
+        <Route path="/userdashboard/Applications/edit/:id" element={
+          <ProtectedRoute>
+            <EditRequest />
+          </ProtectedRoute>
+        } />
 
-
-
-        {/* Admin Routes */}
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/user-management" element={<UserManagement />} />
-        <Route path="/admin/progress-management" element={<ProgressManagement />} />
-        <Route path="/admin/AdminMonetize" element={<AdminMonetize />} />
-
+        
+        {/* Admin Routes - Protected with AdminProtectedRoute for enhanced security */}
+        <Route path="/admin" element={
+          <AdminProtectedRoute>
+            <AdminDashboard />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/user-management" element={
+          <AdminProtectedRoute>
+            <UserManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/progress-management" element={
+          <AdminProtectedRoute>
+            <ProgressManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/post-management" element={
+          <AdminProtectedRoute>
+            <PostManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/comment-management" element={
+          <AdminProtectedRoute>
+            <CommentManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/AdminMonetize" element={
+          <AdminProtectedRoute>
+            <AdminMonetize />
+          </AdminProtectedRoute>
+        } />
+        
         {/* Optional: Category Filter */}
         <Route path="/category/:categoryName" element={<Home />} />
 
