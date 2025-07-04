@@ -1,4 +1,4 @@
-# SkillShare - Skill-Sharing & Learning Platform
+# SkillSphere - Skill-Sharing & Learning Platform
 
  <!-- Replace with actual screenshot -->
 
