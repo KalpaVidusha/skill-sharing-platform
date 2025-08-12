@@ -15,6 +15,8 @@ Built with **Spring Boot REST API** (backend) and **React** (frontend), the plat
 * [🏗 System Architecture](#-system-architecture)
 * [⚙ Installation Guide](#-installation-guide)
 * [👥 Contributors](#-contributors)
+* [🤝 Contributing](#-contributing)
+* [🙏 Acknowledgments](#-acknowledgments)
 
 ---
 
@@ -215,7 +217,7 @@ npm start
 ```
 ---
 
-## 👥 Meet Our Amazing Team
+## 👥 Contributors
 
 |                                 👨‍💻 Developer        | 🎯 Focus Area    | 🌟 Contribution                                                                     |
 |-----------------------------------------------------|-------------------|--------------------------------------------------------------------------------------|
