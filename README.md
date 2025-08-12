@@ -215,7 +215,7 @@ npm start
 ```
 ---
 
-## 👥 Contributors
+## 👥 Meet Our Amazing Team
 
 |                                 👨‍💻 Developer        | 🎯 Focus Area    | 🌟 Contribution                                                                     |
 |-----------------------------------------------------|-------------------|--------------------------------------------------------------------------------------|
@@ -223,19 +223,6 @@ npm start
 | **[KalpaVidusha](https://github.com/KalpaVidusha)** | Media Specialist  | Skill Sharing Posts, Cloudinary Integration                                          |
 | **[DilmiJ](https://github.com/DilmiJ)**             | Engagement Expert | Like & Comment System, User Interactions                                             |
 | **[SanilkaSrimal](https://github.com/SanilkaSrimal)** | Business Logic  | Monetization System, Reward Management                                               |
-
----
-
-## 📊 Project Stats
-
-<div align="center">
-
-[![GitHub stars](https://img.shields.io/github/stars/buwaneka99/skill-sharing-platform?style=social)](https://github.com/buwaneka99/skill-sharing-platform/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/buwaneka99/skill-sharing-platform?style=social)](https://github.com/buwaneka99/skill-sharing-platform/network)
-[![GitHub issues](https://img.shields.io/github/issues/buwaneka99/skill-sharing-platform)](https://github.com/buwaneka99/skill-sharing-platform/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/buwaneka99/skill-sharing-platform)](https://github.com/buwaneka99/skill-sharing-platform/pulls)
-
-</div>
 
 ---
 
