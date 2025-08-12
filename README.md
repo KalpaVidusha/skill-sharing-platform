@@ -174,16 +174,11 @@ npm start
 
 ## 👥 Contributors
 
-| Component                    | Developer                                         |
-| ---------------------------- | ------------------------------------------------- |
-| User Management              | [Buwaneka99](https://github.com/Buwaneka99)       |
-| Progress Tracking            | [Buwaneka99](https://github.com/Buwaneka99)       |
-| Learning Plans               | [Buwaneka99](https://github.com/Buwaneka99)       |
-| Social Features              | [Buwaneka99](https://github.com/Buwaneka99)       |
-| Admin Dashboard              | [Buwaneka99](https://github.com/Buwaneka99)       |
-| Technical Enhancements       | [Buwaneka99](https://github.com/Buwaneka99)       |
-| Skill Sharing Posts          | [KalpaVidusha](https://github.com/KalpaVidusha)   |
-| Like & Comment Management    | [DilmiJ](https://github.com/DilmiJ)               |
-| Monetization & Reward System | [SanilkaSrimal](https://github.com/SanilkaSrimal) |
+|                                 👨‍💻 Developer        | 🎯 Focus Area    | 🌟 Contribution                                                                     |
+|-----------------------------------------------------|-------------------|--------------------------------------------------------------------------------------|
+| **[Buwaneka99](https://github.com/Buwaneka99)**     | Full-Stack Lead   | User Management, Progress Tracking, Learning Plans, Social Features, Admin Dashboard |
+| **[KalpaVidusha](https://github.com/KalpaVidusha)** | Media Specialist  | Skill Sharing Posts, Cloudinary Integration                                          |
+| **[DilmiJ](https://github.com/DilmiJ)**             | Engagement Expert | Like & Comment System, User Interactions                                             |
+| **[SanilkaSrimal](https://github.com/SanilkaSrimal)** | Business Logic  | Monetization System, Reward Management                                               |
 
 ---
