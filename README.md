@@ -265,6 +265,4 @@ We love contributions! Here's how you can help make SkillSphere even better:
 
 **Made with ❤️ by the SkillSphere Team**
 
-[🔝 Back to Top](#-skillsphere--the-ultimate-skill-sharing--learning-platform)
-
 </div>
