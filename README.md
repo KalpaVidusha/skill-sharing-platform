@@ -125,51 +125,94 @@ Built with **Spring Boot REST API** (backend) and **React** (frontend), the plat
 ## 🏗 System Architecture
 
 ```mermaid
-graph TD
-    A[React Frontend] -->|HTTP Requests| B[Spring Boot API]
-    B --> C[MongoDB]
-    B --> D[Cloudinary]
-    D --> E[Media Storage]
-    B --> F[OAuth Providers]
-    F --> G[Google OAuth]
+graph TB
+    subgraph "Frontend Layer"
+        A[React App]
+        B[Material-UI Components]
+        C[Real-time Chat]
+    end
+    
+    subgraph "API Gateway"
+        D[Spring Boot API]
+        E[Security Layer]
+        F[WebSocket Handler]
+    end
+    
+    subgraph "Data Layer"
+        G[(MongoDB)]
+        H[Cloudinary CDN]
+        I[OAuth Providers]
+    end
+    
+    A --> D
+    B --> D
+    C --> F
+    D --> G
+    D --> H
+    E --> I
+    
+    style A fill:#61DAFB,stroke:#333,stroke-width:2px
+    style D fill:#6DB33F,stroke:#333,stroke-width:2px
+    style G fill:#4EA94B,stroke:#333,stroke-width:2px
 ```
 
 ---
 
 ## ⚙ Installation Guide
 
-### Prerequisites
+### 🎯 Prerequisites
 
-* Java 17+
-* Node.js 18+
-* MongoDB 6.0+
-* Cloudinary account (for media storage)
-
-### Backend Setup
+Before diving in, make sure you have these installed:
 
 ```bash
-# Clone the repository
+☑️ Java 17+ (OpenJDK recommended)
+☑️ Node.js 18+ & npm
+☑️ MongoDB 6.0+
+☑️ Git
+☑️ OAuth client secrets
+☑️ Cloudinary account (for media storage)
+```
+
+### 🛠️ Installation Steps
+
+#### 1️⃣ Clone the Repository
+```bash
 git clone https://github.com/yourusername/skillshare-platform.git
-cd skillshare-platform/backend
+cd skillshare-platform
+```
 
-# Configure application.properties
-spring.data.mongodb.uri=mongodb://localhost:27017/skillshare
-cloudinary.cloud-name=your_cloud_name
-cloudinary.api-key=your_api_key
-cloudinary.api-secret=your_api_secret
+#### 2️⃣ Backend Setup
+```bash
+# Navigate to backend directory
+cd backend
 
-# Run backend
+# Copy and configure environment variables (application.properties)
+cp application.properties.example application.properties
+
+    # - MongoDB connection string
+    spring.data.mongodb.uri=mongodb://localhost:27017/skillshare
+    # Cloudinary API keys
+    cloudinary.cloud-name=your_cloud_name
+    cloudinary.api-key=your_api_key
+    cloudinary.api-secret=your_api_secret
+    # OAuth client secrets
+
+# Install dependencies and run
+./mvnw clean install
 ./mvnw spring-boot:run
 ```
 
-### Frontend Setup
-
+#### 3️⃣ Frontend Setup
 ```bash
-cd ../frontend
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
 npm install
+
+# Start development server
 npm start
 ```
-
 ---
 
 ## 👥 Contributors
@@ -182,3 +225,57 @@ npm start
 | **[SanilkaSrimal](https://github.com/SanilkaSrimal)** | Business Logic  | Monetization System, Reward Management                                               |
 
 ---
+
+## 📊 Project Stats
+
+<div align="center">
+
+[![GitHub stars](https://img.shields.io/github/stars/buwaneka99/skill-sharing-platform?style=social)](https://github.com/buwaneka99/skill-sharing-platform/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/buwaneka99/skill-sharing-platform?style=social)](https://github.com/buwaneka99/skill-sharing-platform/network)
+[![GitHub issues](https://img.shields.io/github/issues/buwaneka99/skill-sharing-platform)](https://github.com/buwaneka99/skill-sharing-platform/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/buwaneka99/skill-sharing-platform)](https://github.com/buwaneka99/skill-sharing-platform/pulls)
+
+</div>
+
+---
+
+## 🤝 Contributing
+
+We love contributions! Here's how you can help make SkillSphere even better:
+
+### 🌟 Ways to Contribute
+- 🐛 **Report Bugs**: Found something broken? Let us know!
+- 💡 **Suggest Features**: Have an idea? We'd love to hear it!
+- 🔧 **Submit PRs**: Ready to code? Fork and submit a pull request!
+- 📖 **Improve Docs**: Help make our documentation clearer
+
+### 🔄 Development Workflow
+1. **Fork** the repository
+2. **Create** your feature branch (`git checkout -b feature/AmazingFeature`)
+3. **Commit** your changes (`git commit -m 'Add some AmazingFeature'`)
+4. **Push** to the branch (`git push origin feature/AmazingFeature`)
+5. **Open** a Pull Request
+
+---
+
+## 🙏 Acknowledgments
+
+- 💙 **Spring Boot Team** for the amazing framework
+- ⚛️ **React Community** for continuous innovation
+- 🍃 **MongoDB** for flexible data storage
+- ☁️ **Cloudinary** for seamless media management
+- 🎨 **Material-UI** for beautiful components
+
+---
+
+<div align="center">
+
+### 🌟 Star us on GitHub if you find SkillSphere helpful!
+
+[![GitHub stars](https://img.shields.io/github/stars/buwaneka99/skill-sharing-platform?style=social&label=Star)](https://github.com/buwaneka99/skill-sharing-platform)
+
+**Made with ❤️ by the SkillSphere Team**
+
+[🔝 Back to Top](#-skillsphere--the-ultimate-skill-sharing--learning-platform)
+
+</div>
