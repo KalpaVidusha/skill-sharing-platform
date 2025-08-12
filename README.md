@@ -6,6 +6,8 @@
 
 Built with **Spring Boot REST API** (backend) and **React** (frontend), the platform supports real-time communication, cloud-based media storage, and responsive design for an optimal experience on all devices.
 
+<img width="1907" height="996" alt="Image" src="https://github.com/user-attachments/assets/5b12dd33-0711-4489-bf48-f20e85657978" />
+
 ---
 
 ## 📌 Table of Contents
